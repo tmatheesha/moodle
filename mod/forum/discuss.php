@@ -9,6 +9,8 @@
     $parent = optional_param('parent', 0, PARAM_INT);        // If set, then display this post and all children.
     $mode   = optional_param('mode', 0, PARAM_INT);          // If set, changes the layout of the thread
     $move   = optional_param('move', 0, PARAM_INT);          // If set, moves this discussion to another forum
+    $group  = optional_param('group', 0, PARAM_INT);         // Group id to be used if groupflag is set.
+    $groupflag  = optional_param('groupflag', 0, PARAM_INT); // If set, changes the group for the discussion.
     $mark   = optional_param('mark', '', PARAM_ALPHA);       // Used for tracking read posts if user initiated.
     $postid = optional_param('postid', 0, PARAM_INT);        // Used for tracking read posts if user initiated.
 
@@ -94,6 +96,13 @@
         redirect($return.'&amp;moved=-1&amp;sesskey='.sesskey());
     }
 
+/// Change the group if selected.
+    if ($groupflag > 0 and confirm_sesskey()) {
+         require_capability('mod/forum:changegroup', $modcontext); // This needs to be included. TODO figure out why it isn't working. - maybe to do with the version!.
+        // Change the group id for the current discussion.
+        set_field('forum_discussions', 'groupid', $group, 'id', $discussion->id);
+    }
+    
     $logparameters = "d=$discussion->id";
     if ($parent) {
         $logparameters .= "&amp;parent=$parent";
@@ -167,12 +176,13 @@
 
     echo '<table width="100%" class="discussioncontrols"><tr><td>';
 
-    // groups selector not needed here
-
     echo "</td><td>";
     forum_print_mode_form($discussion->id, $displaymode);
     echo "</td><td>";
 
+/// find out current groups mode
+    groups_print_activity_menu($cm, $CFG->wwwroot . '/mod/forum/discuss.php?d=' . $d . '&groupflag=1&sesskey='.sesskey());
+    
     if ($forum->type != 'single'
                 && has_capability('mod/forum:movediscussions', $modcontext)) {
 

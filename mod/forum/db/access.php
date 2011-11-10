@@ -203,6 +203,17 @@ $mod_forum_capabilities = array(
             'admin' => CAP_ALLOW
         )
     ),
+    
+    'mod/forum:changegroup' => array(
+
+        'captype' => 'read',
+        'contextlevel' => CONTEXT_MODULE,
+        'legacy' => array(
+            'teacher' => CAP_ALLOW,
+            'editingteacher' => CAP_ALLOW,
+            'admin' => CAP_ALLOW
+        )
+    ),
 
     'mod/forum:editanypost' => array(
 
