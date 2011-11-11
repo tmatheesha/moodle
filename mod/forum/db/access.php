@@ -234,6 +234,17 @@ $capabilities = array(
             'manager' => CAP_ALLOW
         )
     ),
+    
+    'mod/forum:changegroup' => array(
+
+        'captype' => 'read',
+        'contextlevel' => CONTEXT_MODULE,
+        'archetypes' => array(
+            'teacher' => CAP_ALLOW,
+            'editingteacher' => CAP_ALLOW,
+            'manager' => CAP_ALLOW
+        )
+    ),
 
     'mod/forum:editanypost' => array(
 

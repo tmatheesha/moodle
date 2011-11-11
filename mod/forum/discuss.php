@@ -30,6 +30,8 @@
     $parent = optional_param('parent', 0, PARAM_INT);        // If set, then display this post and all children.
     $mode   = optional_param('mode', 0, PARAM_INT);          // If set, changes the layout of the thread
     $move   = optional_param('move', 0, PARAM_INT);          // If set, moves this discussion to another forum
+    $group  = optional_param('group', 0, PARAM_INT);         // Group id to be used if groupflag is set.
+    $groupflag  = optional_param('groupflag', 0, PARAM_INT); // If set, changes the group for the discussion.
     $mark   = optional_param('mark', '', PARAM_ALPHA);       // Used for tracking read posts if user initiated.
     $postid = optional_param('postid', 0, PARAM_INT);        // Used for tracking read posts if user initiated.
 
@@ -113,6 +115,14 @@
         redirect($return.'&moved=-1&sesskey='.sesskey());
     }
 
+ /// Change the group if selected.  
+     if ($groupflag > 0 and confirm_sesskey()) {
+          require_capability('mod/forum:changegroup', $modcontext);
+          // Change the group id for the current discussion.
+          $DB->set_field('forum_discussions', 'groupid', $group, array('id' => $discussion->id));
+          add_to_log($course->id, 'forum', 'update group', "discuss.php?d=$discussion->id",'Group changed to ' . $group, $cm->id);
+     }
+    
     add_to_log($course->id, 'forum', 'view discussion', $PAGE->url->out(false), $discussion->id, $cm->id);
 
     unset($SESSION->fromdiscussion);
@@ -211,6 +221,9 @@
     forum_print_mode_form($discussion->id, $displaymode);
     echo "</div>";
 
+ /// find out current groups mode  
+    groups_print_activity_menu($cm, $CFG->wwwroot . '/mod/forum/discuss.php?d=' . $d . '&groupflag=1&sesskey='.sesskey());
+    
     if ($forum->type != 'single'
                 && has_capability('mod/forum:movediscussions', $modcontext)) {
 
