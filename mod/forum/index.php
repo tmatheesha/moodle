@@ -26,6 +26,8 @@ require_once($CFG->dirroot . '/course/lib.php');
 require_once($CFG->dirroot . '/mod/forum/lib.php');
 require_once($CFG->libdir . '/rsslib.php');
 
+require_course_login($course); // Make sure the user is logged in before giving them the ability to subscribe or unsubscribe MDL-27334
+
 $id = optional_param('id', 0, PARAM_INT);                   // Course id
 $subscribe = optional_param('subscribe', null, PARAM_INT);  // Subscribe/Unsubscribe all forums
 
@@ -44,7 +46,6 @@ if ($id) {
     $course = get_site();
 }
 
-require_course_login($course);
 $PAGE->set_pagelayout('incourse');
 $coursecontext = get_context_instance(CONTEXT_COURSE, $course->id);
 
