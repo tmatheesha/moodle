@@ -112,13 +112,19 @@ class mod_forum_post_form extends moodleform {
         }
 
         if (groups_get_activity_groupmode($cm, $course)) { // hack alert
-            if (empty($post->groupid)) {
-                $groupname = get_string('allparticipants');
+            if (has_capability('mod/forum:movediscussions', $coursecontext) && empty($post->parent)) {
+                $groupoptions = groups_get_groups_for_course($cm);
+                $mform->addElement('select','groupinfo', get_string('group'), $groupoptions->groupmenu);
+                $mform->setDefault('groupinfo', $post->groupid);
             } else {
-                $group = groups_get_group($post->groupid);
-                $groupname = format_string($group->name);
-            }
-            $mform->addElement('static', 'groupinfo', get_string('group'), $groupname);
+                if (empty($post->groupid)) {
+                    $groupname = get_string('allparticipants');
+                } else {
+                    $group = groups_get_group($post->groupid);
+                    $groupname = format_string($group->name);
+                }
+                $mform->addElement('static', 'groupname', get_string('group'), $groupname);
+             }
         }
 
         //-------------------------------------------------------------------------------

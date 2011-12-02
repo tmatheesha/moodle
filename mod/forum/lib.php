@@ -4251,6 +4251,7 @@ function forum_update_post($post, $mform, &$message) {
         $discussion->name      = $post->subject;
         $discussion->timestart = $post->timestart;
         $discussion->timeend   = $post->timeend;
+        $discussion->groupid   = $post->groupid;
     }
     $post->message = file_save_draft_area_files($post->itemid, $context->id, 'mod_forum', 'post', $post->id, array('subdirs'=>true), $post->message);
     $DB->set_field('forum_posts', 'message', $post->message, array('id'=>$post->id));

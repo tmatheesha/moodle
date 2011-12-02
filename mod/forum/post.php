@@ -621,6 +621,11 @@ if ($fromform = $mform_post->get_data()) {
             print_error('cannotupdatepost', 'forum');
         }
 
+        // If the user has move discussion capability and they are changing the group, then update the post.
+        if (isset($fromform->groupinfo) && has_capability('mod/forum:movediscussions', $modcontext)) {
+            $fromform->groupid = $fromform->groupinfo;
+        }
+
         $updatepost = $fromform; //realpost
         $updatepost->forum = $forum->id;
         if (!forum_update_post($updatepost, $mform_post, $message)) {
@@ -711,6 +716,10 @@ if ($fromform = $mform_post->get_data()) {
     } else {                     // Adding a new discussion
         if (!forum_user_can_post_discussion($forum, $fromform->groupid, -1, $cm, $modcontext)) {
             print_error('cannotcreatediscussion', 'forum');
+        }
+        // If the user has move discussions capability let them choose the group.
+        if (isset($fromform->groupinfo) && has_capability('mod/forum:movediscussions', $modcontext)) {
+            $fromform->groupid = $fromform->groupinfo;
         }
         if (empty($fromform->groupid)) {
             $fromform->groupid = -1;

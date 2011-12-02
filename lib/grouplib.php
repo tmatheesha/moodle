@@ -472,7 +472,7 @@ function groups_print_course_menu($course, $urlroot, $return=false) {
  * @return mixed void or string depending on $return param
  */
 function groups_print_activity_menu($cm, $urlroot, $return=false, $hideallparticipants=false) {
-    global $USER, $OUTPUT;
+    global $OUTPUT;
 
     if ($urlroot instanceof moodle_url) {
         // no changes necessary
@@ -499,24 +499,7 @@ function groups_print_activity_menu($cm, $urlroot, $return=false, $hideallpartic
     $context = get_context_instance(CONTEXT_MODULE, $cm->id);
     $aag = has_capability('moodle/site:accessallgroups', $context);
 
-    if ($groupmode == VISIBLEGROUPS or $aag) {
-        $allowedgroups = groups_get_all_groups($cm->course, 0, $cm->groupingid); // any group in grouping
-    } else {
-        $allowedgroups = groups_get_all_groups($cm->course, $USER->id, $cm->groupingid); // only assigned groups
-    }
-
-    $activegroup = groups_get_activity_group($cm, true, $allowedgroups);
-
-    $groupsmenu = array();
-    if ((!$allowedgroups or $groupmode == VISIBLEGROUPS or $aag) and !$hideallparticipants) {
-        $groupsmenu[0] = get_string('allparticipants');
-    }
-
-    if ($allowedgroups) {
-        foreach ($allowedgroups as $group) {
-            $groupsmenu[$group->id] = format_string($group->name);
-        }
-    }
+    $groupsmenu = groups_get_groups_for_course($cm, $hideallparticipants);
 
     if ($groupmode == VISIBLEGROUPS) {
         $grouplabel = get_string('groupsvisible');
@@ -530,11 +513,11 @@ function groups_print_activity_menu($cm, $urlroot, $return=false, $hideallpartic
         }
     }
 
-    if (count($groupsmenu) == 1) {
-        $groupname = reset($groupsmenu);
+    if (count($groupsmenu->groupmenu) == 1) {
+        $groupname = reset($groupsmenu->groupmenu);
         $output = $grouplabel.': '.$groupname;
     } else {
-        $select = new single_select($urlroot, 'group', $groupsmenu, $activegroup, null, 'selectgroup');
+        $select = new single_select($urlroot, 'group', $groupsmenu->groupmenu, $groupsmenu->activegroup, null, 'selectgroup');
         $select->label = $grouplabel;
         $output = $OUTPUT->render($select);
     }
@@ -755,4 +738,41 @@ function _group_verify_activegroup($courseid, $groupmode, $groupingid, array $al
             $SESSION->activegroup[$courseid][$groupmode][$groupingid] = 0;
         }
     }
+}
+
+/**
+ * Get groups for the selected course.
+ *
+ * @param stdClass $cm course module object.
+ * @return stdClass with an array of menu options and information about whether groups are active.
+ */
+function groups_get_groups_for_course($cm, $hideallparticipants=false) {
+    Global $USER;
+    $groupmode = groups_get_activity_groupmode($cm);
+
+    $context = get_context_instance(CONTEXT_MODULE, $cm->id);
+    $aag = has_capability('moodle/site:accessallgroups', $context);
+
+    if ($groupmode == VISIBLEGROUPS or $aag) {
+        $allowedgroups = groups_get_all_groups($cm->course, 0, $cm->groupingid); // any group in grouping
+    } else {
+        $allowedgroups = groups_get_all_groups($cm->course, $USER->id, $cm->groupingid); // only assigned groups
+    }
+
+    $activegroup = groups_get_activity_group($cm, true, $allowedgroups);    
+
+    $groupsmenu = array();
+    if ((!$allowedgroups or $groupmode == VISIBLEGROUPS or $aag) and !$hideallparticipants) {
+        $groupsmenu[0] = get_string('allparticipants');
+    }
+
+    if ($allowedgroups) {
+        foreach ($allowedgroups as $group) {
+            $groupsmenu[$group->id] = format_string($group->name);
+        }
+    }
+    $groupdata = new stdClass();
+    $groupdata->groupmenu = $groupsmenu;
+    $groupdata->activegroup = $activegroup;
+    return $groupdata;
 }
