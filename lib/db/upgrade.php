@@ -6753,6 +6753,12 @@ FROM
         upgrade_main_savepoint(true, 2011070104.09);
     }
 
+    if ($oldversion < 2011070104.12) {
+        // Main savepoint reached
+        fix_course_sortorder(); //MDL-28383
+        upgrade_main_savepoint(true, 2011070104.12);
+    }
+
     return true;
 }
 
