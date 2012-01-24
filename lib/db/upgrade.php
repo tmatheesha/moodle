@@ -6724,6 +6724,15 @@ FROM
         upgrade_main_savepoint(true, 2011070103.04);
     }
 
+    if ($oldversion < 2011070104.08) {
+        // When upgrading It's possible that the old encryption key may still be in use. This will set this
+        // flag to off to continue using that. When doing a fresh install (where we know that there are no
+        // modules, blocks etc using the ecryption key) we use a randomly generated key.
+        set_config('changeencrypttoken', 0);
+        // Main savepoint reached
+        upgrade_main_savepoint(true, 2011070104.08);
+    }
+
     return true;
 }
 
