@@ -175,11 +175,11 @@ abstract class session_stub implements moodle_session {
             $this->prepare_cookies();
             $this->init_session_storage();
 
-            $newsession = empty($_COOKIE['MoodleSession'.$CFG->sessioncookie]);
+            $newsession = empty($_COOKIE['MoodleSession1'.$CFG->sessioncookie]);
 
             ini_set('session.use_trans_sid', '0');
 
-            session_name('MoodleSession'.$CFG->sessioncookie);
+            session_name('MoodleSession1'.$CFG->sessioncookie);
             session_set_cookie_params(0, $CFG->sessioncookiepath, $CFG->sessioncookiedomain, $CFG->cookiesecure, $CFG->cookiehttponly);
             session_start();
             if (!isset($_SESSION['SESSION'])) {

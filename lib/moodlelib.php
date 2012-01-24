@@ -7314,7 +7314,12 @@ class emoticon_manager {
  * @return string The now encrypted data
  */
 function rc4encrypt($data) {
-    $password = get_site_identifier();
+    global $CFG;
+    if ($CFG->changeencrypttoken) {
+        $password = get_site_identifier();
+    } else {
+        $password = 'nfgjeingjk';
+    }
     return endecrypt($password, $data, '');
 }
 
@@ -7327,7 +7332,12 @@ function rc4encrypt($data) {
  * @return string The now decrypted data
  */
 function rc4decrypt($data) {
-    $password = get_site_identifier();
+    global $CFG;
+    if ($CFG->changeencrypttoken) {
+        $password = get_site_identifier();
+    } else {
+        $password = 'nfgjeingjk';
+    }
     return endecrypt($password, $data, 'de');
 }
 
