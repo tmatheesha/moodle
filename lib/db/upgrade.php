@@ -145,6 +145,15 @@ function xmldb_main_upgrade($oldversion) {
         upgrade_main_savepoint(true, 2012020200.06);
     }
 
+    if ($oldversion < 2012021700.01) {
+        // When upgrading It's possible that the old encryption key may still be in use. This will set this
+        // flag to off to continue using that. When doing a fresh install (where we know that there are no
+        // modules, blocks etc using the ecryption key) we use a randomly generated key.
+        set_config('changeencrypttoken', 0);
+        // Main savepoint reached
+        upgrade_main_savepoint(true, 2012021700.01);
+    }
+
     return true;
 }
 
