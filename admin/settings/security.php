@@ -71,6 +71,7 @@ if ($hassiteconfig) { // speedup for non-admins, add all caps used on this page
     $temp->add(new admin_setting_configcheckbox('emailchangeconfirmation', get_string('emailchangeconfirmation', 'admin'), get_string('configemailchangeconfirmation', 'admin'), 1));
     $temp->add(new admin_setting_configselect('rememberusername', get_string('rememberusername','admin'), get_string('rememberusername_desc','admin'), 2, array(1=>get_string('yes'), 0=>get_string('no'), 2=>get_string('optional'))));
     $temp->add(new admin_setting_configcheckbox('strictformsrequired', get_string('strictformsrequired', 'admin'), get_string('configstrictformsrequired', 'admin'), 0));
+    $temp->add(new admin_setting_configcheckbox('changeencrypttoken', new lang_string('changeencrypttoken', 'admin'), new lang_string('changeencrypttoken_help', 'admin'), 1, 1, 0));
     $ADMIN->add('security', $temp);
 
 
