@@ -2741,7 +2741,7 @@ function set_moodle_cookie($thing) {
         return;
     }
 
-    $cookiename = 'MOODLEID_'.$CFG->sessioncookie;
+    $cookiename = 'MOODLEID2_'.$CFG->sessioncookie;
 
     $days = 60;
     $seconds = DAYSECS*$days;
@@ -2759,7 +2759,7 @@ function set_moodle_cookie($thing) {
 function get_moodle_cookie() {
     global $CFG;
 
-    $cookiename = 'MOODLEID_'.$CFG->sessioncookie;
+    $cookiename = 'MOODLEID2_'.$CFG->sessioncookie;
 
     if (empty($_COOKIE[$cookiename])) {
         return '';
@@ -6029,7 +6029,12 @@ function get_list_of_currencies() {
  * @todo Finish documenting this function
  */
 function rc4encrypt($data) {
-    $password = get_site_identifier();
+    global $CFG;
+    if (isset($CFG->changeencrypttoken) && $CFG->changeencrypttoken) {
+        $password = get_site_identifier();
+    } else {
+        $password = 'nfgjeingjk';
+    }
     return endecrypt($password, $data, '');
 }
 
@@ -6041,7 +6046,12 @@ function rc4encrypt($data) {
  * @todo Finish documenting this function
  */
 function rc4decrypt($data) {
-    $password = get_site_identifier();
+    global $CFG;
+    if (isset($CFG->changeencrypttoken) && $CFG->changeencrypttoken) {
+        $password = get_site_identifier();
+    } else {
+        $password = 'nfgjeingjk';
+    }
     return endecrypt($password, $data, 'de');
 }
 

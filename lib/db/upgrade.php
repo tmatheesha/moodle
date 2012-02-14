@@ -3389,6 +3389,15 @@ function xmldb_main_upgrade($oldversion=0) {
         upgrade_main_savepoint($result, 2007101591.05);
     }
 
+    if ($oldversion < 2007101591.12) {
+        // When upgrading It's possible that the old encryption key may still be in use. This will set this
+        // flag to off to continue using that. When doing a fresh install (where we know that there are no
+        // modules, blocks etc using the ecryption key) we use a randomly generated key.
+        set_config('changeencrypttoken', 0);
+        set_moodle_cookie($USER->username);
+        // Main savepoint reached
+        upgrade_main_savepoint(true, 2007101591.12);
+    }
 
     return $result;
 }

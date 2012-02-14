@@ -44,6 +44,8 @@ $string['calendarsettings'] = 'Calendar';
 $string['cfgwwwrootwarning'] = 'You have defined &#36;CFG->wwwroot incorrectly in your config.php file. It does not match the URL you are using to access this page. Please correct it, or you will experience strange bugs like <a href=\'http://tracker.moodle.org/browse/MDL-11061\'>MDL-11061</a>.';
 $string['cfgwwwrootslashwarning'] = 'You have defined &#36;CFG->wwwroot incorrectly in your config.php file. You have included a \'/\' character at the end. Please remove it, or you will experience strange bugs like <a href=\'http://tracker.moodle.org/browse/MDL-11061\'>MDL-11061</a>.';
 $string['change'] = 'change';
+$string['changeencrypttoken'] = 'Change the encrytion token';
+$string['changeencrypttoken_help'] = 'Change the encryption password to a random generated key. WARNING! changing this setting may result in some plugins not working and the username in the login form / login block to display strange characters.';
 $string['changesitelang'] = 'Change site language';
 $string['checkboxyes'] = 'Yes';
 $string['checkboxno'] = 'No';
