@@ -1,4 +1,4 @@
-<?PHP // $Id$
+<?PHP // $Id: view.php,v 1.38.2.13 2010/07/06 08:06:32 gbateson Exp $
     /// This page prints a hotpot quiz
     if (defined('HOTPOT_FIRST_ATTEMPT') && HOTPOT_FIRST_ATTEMPT==false) {
         // this script is being included (by attempt.php)
@@ -356,14 +356,20 @@
         $body .= ""
         .   '<script type="text/javascript">'."\n"
         .   "//<![CDATA[\n"
-        .   "   var s = (typeof(window.onload)=='function') ? onload.toString() : '';\n"
-        .   "   if (s.indexOf('".$matches[3]."')<0) {\n"
-        .   "       if (s=='') {\n" // no previous onload
-        .   "           window.onload = new Function('".$matches[3]."');\n"
-        .   "       } else {\n"
-        .   "           window.onload_hotpot = onload;\n"
-        .   "           window.onload = new Function('window.onload_hotpot();'+'".$matches[3]."');\n"
-        .   "       }\n"
+        .   "    var re = new RegExp('\\\\s+', 'g');\n"
+        .   "    if (typeof(window.onload)=='function') {\n"
+        .   "        var s = onload.toString();\n"
+        .   "        s = s.replace(re, '');\n"
+        .   "    } else {\n"
+        .   "        var s = '';\n"
+        .   "    }\n"
+        .   "    if (s.indexOf('".$matches[3]."'.replace(re, ''))<0) {\n"
+        .   "        if (s=='') {\n" // no previous onload
+        .   "            window.onload = new Function('".$matches[3]."');\n"
+        .   "        } else {\n"
+        .   "            window.onload_hotpot = onload;\n"
+        .   "            window.onload = new Function('window.onload_hotpot();'+'".$matches[3]."');\n"
+        .   "        }\n"
         .   "    }\n"
         .   "//]]>\n"
         .   "</script>\n"
