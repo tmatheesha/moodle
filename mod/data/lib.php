@@ -669,35 +669,33 @@ function data_update_instance($data) {
  * deletes an instance of a data                                        *
  ************************************************************************/
 function data_delete_instance($id) {    // takes the dataid
-
     global $CFG;
+
     if (! $data = get_record('data', 'id', $id)) {
         return false;
     }
 
-    // Delete all the associated information
-    // get all the records in this data
-    $sql = 'SELECT c.* FROM '.$CFG->prefix.'data_records r LEFT JOIN '.
-           $CFG->prefix.'data_content c ON c.recordid = r.id WHERE r.dataid = '.$id;
-
-    if ($contents = get_records_sql($sql)) {
-        foreach($contents as $content) {
-            $field = get_record('data_fields','id',$content->fieldid);
-            if ($g = data_get_field($field, $data)) {
-                $g->delete_content_files($id, $content->recordid, $content->content);
-            }
-            //delete the content itself
-            delete_records('data_content','id', $content->id);
-        }
+    // delete contents and fields.
+    $fields = get_records('data_fields', 'dataid', $id);
+    foreach ($fields as $field) {
+        $dataobject = new data_field_base($field->id, $id);
+        $result = $dataobject->delete_content();
+        $result = $dataobject->delete_field() && $result;
     }
 
-    // delete all the records and fields
-    delete_records('data_records', 'dataid', $id);
-    delete_records('data_fields','dataid',$id);
+    // delete any other files that weren't deleted above.
+    require_once($CFG->libdir.'/filelib.php');
+    $dir = $CFG->dataroot . '/' . $data->course . '/' . $CFG->moddata . '/data/' . $data->id;
+    fulldelete($dir);
+
+    // cleanup gradebook
+    data_grade_item_delete($data);
+
+    // delete records
+    $result = delete_records('data_records', 'dataid', $id) && $result;
 
     // Delete the instance itself
-    $result = delete_records('data', 'id', $id);
-    data_grade_item_delete($data);
+    $result = delete_records('data', 'id', $id) && $result;
     return $result;
 }
 
