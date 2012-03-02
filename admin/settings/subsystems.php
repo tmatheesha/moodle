@@ -43,4 +43,5 @@ if ($hassiteconfig) { // speedup for non-admins, add all caps used on this page
     $checkbox->set_affects_modinfo(true);
 
     $optionalsubsystems->add(new admin_setting_configcheckbox('enableplagiarism', get_string('enableplagiarism','plagiarism'), get_string('configenableplagiarism','plagiarism'), 0));
+    $optionalsubsystems->add(new admin_setting_configcheckbox('enableaccessibility', get_string('enableaccessibility','admin'), get_string('configenableaccessibility','admin'), 0));
 }

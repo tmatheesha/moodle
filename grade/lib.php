@@ -379,8 +379,11 @@ function print_grade_plugin_selector($plugin_info, $active_type, $active_plugin,
 
     // finally print/return the popup form
     if ($count > 1) {
-        $select = new url_select($menu, $active, null, 'choosepluginreport');
-
+        if ($CFG->enableaccessibility) {
+            $select = new url_select($menu, $active, null, 'choosepluginreport', get_string('go'));
+        } else {
+            $select = new url_select($menu, $active, null, 'choosepluginreport');
+        }
         if ($return) {
             return $OUTPUT->render($select);
         } else {
