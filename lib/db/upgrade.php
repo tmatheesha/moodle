@@ -187,6 +187,12 @@ function xmldb_main_upgrade($oldversion) {
         upgrade_main_savepoint(true, 2012021700.02);
     }
 
+    if ($oldversion < 2012030100.01) {
+        // Main savepoint reached
+        fix_course_sortorder(); //MDL-28383
+        upgrade_main_savepoint(true, 2012030100.01);
+    }
+
     return true;
 }
 
