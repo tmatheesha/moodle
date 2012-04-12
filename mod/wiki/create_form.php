@@ -64,6 +64,21 @@ class mod_wiki_create_form extends moodleform {
         $mform->setType('pageformat', PARAM_ALPHANUMEXT);
         $mform->addRule('pageformat', get_string('required'), 'required', null, 'client');
 
+        foreach ($this->_customdata['groups']->availablegroups as $groupdata) {
+            $groupinfo[$groupdata->id] = $groupdata->name;
+        }
+        if (!empty($groupinfo)) {
+            if (count($groupinfo) > 1) {
+                $mform->addElement('select', 'groupinfo', get_string('group'), $groupinfo);
+                $mform->setDefault('groupinfo', $this->_customdata['groups']->currentgroup);
+            } else {
+                $groupid = key($groupinfo);
+                $groupname = $groupinfo[$groupid];
+                $mform->addElement('static', 'groupid', get_string('group'), $groupname);
+                $mform->addElement('hidden', 'groupinfo', $groupid);
+            }
+        }
+
         //hiddens
         $mform->addElement('hidden', 'action', 'create');
         $mform->setType('action', PARAM_ALPHA);
