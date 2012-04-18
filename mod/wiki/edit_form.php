@@ -42,8 +42,7 @@ class mod_wiki_edit_form extends moodleform {
 
         $version = $this->_customdata['version'];
         $format = $this->_customdata['format'];
-        $pagetitle = $this->_customdata['pagetitle'];
-
+ 
         if (empty($this->_customdata['contextid'])) {
             // Hack alert
             // This is being done ONLY to aid those who may have created there own wiki pages. It should be removed sometime
@@ -56,6 +55,7 @@ class mod_wiki_edit_form extends moodleform {
         }
 
         if (isset($this->_customdata['pagetitle'])) {
+            $pagetitle = $this->_customdata['pagetitle'];
             // Page title must be formatted properly here as this is output and not an element.
             $pagetitle = get_string('editingpage', 'wiki', format_string($pagetitle, true, array('context' => get_context_instance_by_id($contextid, MUST_EXIST))));
         } else {
