@@ -2113,6 +2113,8 @@ function validate_' . $this->_formName . '(frm) {
                 if ($unset !== false) {
                     unset($this->_required[$unset]);
                 }
+                // Hard freeze has been used
+                $this->setConstant($name, $this->_elements[$key]->getValue());
             }
         }
 
