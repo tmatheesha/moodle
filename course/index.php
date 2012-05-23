@@ -292,7 +292,6 @@ function print_category_edit($category, $displaylist, $parentslist, $depth=-1, $
 
     if (is_null($str)) {
         $str = new stdClass;
-        $str->edit     = get_string('edit');
         $str->delete   = get_string('delete');
         $str->moveup   = get_string('moveup');
         $str->movedown = get_string('movedown');

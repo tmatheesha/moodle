@@ -38,6 +38,11 @@ $moveup = optional_param('moveup', 0, PARAM_INT);
 $movedown = optional_param('movedown', 0, PARAM_INT);
 $moveto = optional_param('moveto', 0, PARAM_INT);
 $resort = optional_param('resort', 0, PARAM_BOOL);
+$categoryhide = optional_param('categoryhide', 0, PARAM_INT);
+$categoryshow = optional_param('categoryshow', 0, PARAM_INT);
+$categorymoveup = optional_param('categorymoveup', 0, PARAM_INT);
+$categorymovedown = optional_param('categorymovedown', 0, PARAM_INT);
+$categoryresort = optional_param('categoryresort', 0, PARAM_BOOL);
 $sesskey = optional_param('sesskey', '', PARAM_RAW);
 
 if (empty($id)) {
@@ -70,18 +75,77 @@ if (!$category->visible) {
 }
 
 $canmanage = has_capability('moodle/category:manage', $context);
+$canviewhidden = has_capability('moodle/category:viewhiddencategories', $context);
 $sesskeyprovided = !empty($sesskey) && confirm_sesskey($sesskey);
 
 // Process any category actions.
-if ($canmanage && $resort && $sesskeyprovided) {
-    // Resort the category if requested
-    if ($courses = get_courses($category->id, "fullname ASC", 'c.id,c.fullname,c.sortorder')) {
-        $i = 1;
-        foreach ($courses as $course) {
-            $DB->set_field('course', 'sortorder', $category->sortorder+$i, array('id'=>$course->id));
-            $i++;
+if ($canmanage && $sesskeyprovided) {
+    /// Hide category
+    if (!empty($categoryhide) && $canviewhidden) {
+        $DB->update_record('course_categories', array('id' => $categoryhide, 'visible' => 0));
+    }
+    // Show category
+    if (!empty($categoryshow)) {
+        $DB->update_record('course_categories', array('id' => $categoryshow, 'visible' => 1));
+    }
+    // Move subcategory up or down
+    if ((!empty($categorymoveup) or !empty($categorymovedown))) {
+        // Ensure the course order has continuous ordering
+        fix_course_sortorder();
+        $swapcategory = NULL;
+        if (!empty($categorymoveup)) {
+            if ($movecategory = $DB->get_record('course_categories', array('id' => $categorymoveup))) {
+                // searching for previous category. Skipping invisible categories if user cannot see them
+                if ($canviewhidden) {
+                    $sql_where = "sortorder<? AND parent=?";
+                } else {
+                    $sql_where = "sortorder<? AND parent=? AND visible=1";
+                }
+                if ($swapcategory = $DB->get_records_select('course_categories', $sql_where, array($movecategory->sortorder, $movecategory->parent), 'sortorder DESC', 'id,sortorder', 0, 1)) {
+                    $swapcategory = reset($swapcategory);
+                }
+            }
         }
-        fix_course_sortorder(); // should not be needed
+        if (!empty($categorymovedown)) {
+            if ($movecategory = $DB->get_record('course_categories', array('id' => $categorymovedown))) {
+                // searching for next category. Skipping invisible categories if user cannot see them
+                if ($canviewhidden) {
+                    $sql_where = "sortorder>? AND parent=?";
+                } else {
+                    $sql_where = "sortorder>? AND parent=? AND visible=1";
+                }
+                if ($swapcategory = $DB->get_records_select('course_categories', $sql_where, array($movecategory->sortorder, $movecategory->parent), 'sortorder ASC', 'id,sortorder', 0, 1)) {
+                    $swapcategory = reset($swapcategory);
+                }
+            }
+        }
+        if ($movecategory and $swapcategory) {
+            $DB->set_field('course_categories', 'sortorder', $swapcategory->sortorder, array('id' => $movecategory->id));
+            $DB->set_field('course_categories', 'sortorder', $movecategory->sortorder, array('id' => $swapcategory->id));
+            fix_course_sortorder(); // must be called to avoid problems when categories have different subcategories count
+        }
+    }
+    // Resort subcategories by name
+    if (!empty($categoryresort)) {
+        if ($subcategories = $DB->get_records('course_categories', array('parent' => $id), 'name ASC')) {
+            $i = 1;
+            foreach ($subcategories as $subcategory) {
+                $DB->set_field('course_categories', 'sortorder', $i, array('id' => $subcategory->id));
+                $i++;
+            }
+            fix_course_sortorder(); // must be called to renumber subcategories
+        }
+    }
+    // Resort the courses in category by name
+    if ($resort) {
+        if ($courses = get_courses($category->id, "fullname ASC", 'c.id,c.fullname,c.sortorder')) {
+            $i = 1;
+            foreach ($courses as $course) {
+                $DB->set_field('course', 'sortorder', $category->sortorder+$i, array('id'=>$course->id));
+                $i++;
+            }
+            fix_course_sortorder(); // should not be needed
+        }
     }
 }
 
@@ -232,6 +296,17 @@ if ($editingon && $canmanage) {
     $url = new moodle_url('/course/editcategory.php', array('id' => $category->id));
     echo $OUTPUT->single_button($url, get_string('editcategorythis'), 'get');
 
+    // Print button to delete this category. 
+    // Need to have manage capability in parent context to delete category, otherwise user can lockout himself
+    if (has_capability('moodle/category:manage', get_category_or_system_context($category->parent))) {
+        $options = array('id' => $category->id, 'sesskey' => sesskey());
+        echo $OUTPUT->single_button(new moodle_url('/course/deletecategory.php', $options), get_string('deletecategorythis'), 'get');
+    }
+
+    // Button for resorting subcategories by name
+    $options = array('id' => $category->id, 'categoryresort' => 'name', 'sesskey' => sesskey());
+    echo $OUTPUT->single_button(new moodle_url('category.php', $options), get_string('resortsubcategoriesbyname'), 'get');
+
     // Print button for creating new categories
     $url = new moodle_url('/course/editcategory.php', array('parent' => $category->id));
     echo $OUTPUT->single_button($url, get_string('addsubcategory'), 'get');
@@ -242,7 +317,7 @@ if ($editingon && $canmanage) {
 // Print out all the sub-categories
 // In order to view hidden subcategories the user must have the viewhiddencategories
 // capability in the current category.
-if (has_capability('moodle/category:viewhiddencategories', $context)) {
+if ($canviewhidden) {
     $categorywhere = '';
 } else {
     $categorywhere = 'AND cc.visible = 1';
@@ -262,7 +337,26 @@ $subcategories = $DB->get_recordset_sql($sql, array('parentid' => $category->id,
 // Prepare a table to display the sub categories.
 $table = new html_table;
 $table->attributes = array('border' => '0', 'cellspacing' => '2', 'cellpadding' => '4', 'class' => 'generalbox boxaligncenter category_subcategories');
-$table->head = array(new lang_string('subcategories'));
+if ($editingon) {
+    $table->head = array(new lang_string('subcategories'), new lang_string('edit'));
+    $str_edit = new lang_string('editcategorythis');
+    $str_roles = new lang_string('assignroles','core_role');
+    $str_delete = new lang_string('deletecategorythis');
+    $str_moveup = new lang_string('moveup');
+    $str_movedown = new lang_string('movedown');
+    $str_hide = new lang_string('hide');
+    $str_show = new lang_string('show');
+    $count = 0;
+    $count_sql = "SELECT COUNT(1)
+			  FROM {course_categories} cc
+			  JOIN {context} ctx ON cc.id = ctx.instanceid
+			 WHERE cc.parent = :parentid AND
+				   ctx.contextlevel = :contextlevel
+				   $categorywhere";
+    $numsubcategories = $DB->count_records_sql($count_sql, array('parentid' => $category->id, 'contextlevel' => CONTEXT_COURSECAT));
+} else {
+    $table->head = array(new lang_string('subcategories'));
+}
 $table->data = array();
 $baseurl = new moodle_url('/course/category.php');
 foreach ($subcategories as $subcategory) {
@@ -274,7 +368,35 @@ foreach ($subcategories as $subcategory) {
     $text = format_string($subcategory->name, true, array('context' => $context));
     // Add the subcategory to the table
     $baseurl->param('id', $subcategory->id);
-    $table->data[] = array(html_writer::link($baseurl, $text, $attributes));
+    if ($editingon) {
+        $icons = array();
+        $icons[] = $OUTPUT->action_icon(new moodle_url('/course/editcategory.php', array('id' => $subcategory->id)), new pix_icon('t/edit', $str_edit));
+        if (has_capability('moodle/role:assign', $context)) {
+            $icons[] = $OUTPUT->action_icon(new moodle_url('/admin/roles/assign.php', array('contextid' => $context->id)), new pix_icon('i/roles', $str_roles));
+        }
+        $icons[] = $OUTPUT->action_icon(new moodle_url('/course/deletecategory.php', array('id' => $subcategory->id, 'sesskey' => sesskey())), new pix_icon('t/delete', $str_delete));
+        if (!empty($subcategory->visible)) {
+            if ($canviewhidden) {
+                $icons[] = $OUTPUT->action_icon(new moodle_url('/course/category.php',
+                    array('id' => $category->id, 'categoryhide' => $subcategory->id, 'sesskey' => sesskey())), new pix_icon('t/hide', $str_hide));
+            }
+        } else {
+            $icons[] = $OUTPUT->action_icon(new moodle_url('/course/category.php',
+                    array('id' => $category->id, 'categoryshow' => $subcategory->id, 'sesskey' => sesskey())), new pix_icon('t/show', $str_show));
+        }
+        $count++;
+        if ($count > 1) {
+            $icons[] = $OUTPUT->action_icon(new moodle_url('/course/category.php',
+                    array('id' => $category->id, 'categorymoveup' => $subcategory->id, 'sesskey' => sesskey())), new pix_icon('t/up', $str_moveup));
+        }
+        if ($count < $numsubcategories) {
+            $icons[] = $OUTPUT->action_icon(new moodle_url('/course/category.php',
+                    array('id' => $category->id, 'categorymovedown' => $subcategory->id, 'sesskey' => sesskey())), new pix_icon('t/down', $str_movedown));
+        }
+        $table->data[] = array(html_writer::link($baseurl, $text, $attributes), implode(' ', $icons));
+    } else {
+        $table->data[] = array(html_writer::link($baseurl, $text, $attributes));
+    }
 }
 
 $subcategorieswereshown = (count($table->data) > 0);
