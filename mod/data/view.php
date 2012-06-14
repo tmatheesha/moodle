@@ -622,20 +622,20 @@ if ($showactivity) {
             $nowperpage = $perpage;
         }
 
-    /// Get the actual records
-
-        if (!$records = $DB->get_records_sql($sqlselect, $allparams, $page * $nowperpage, $nowperpage)) {
-            // Nothing to show!
-            if ($record) {         // Something was requested so try to show that at least (bug 5132)
-                if (has_capability('mod/data:manageentries', $context) || empty($data->approval) ||
+        // Get the actual records.
+        // If a record exists then we are showing a single entry and don't need to
+        // do another query.
+        if ($record) {
+            if (has_capability('mod/data:manageentries', $context) || empty($data->approval) ||
                          $record->approved || (isloggedin() && $record->userid == $USER->id)) {
-                    if (!$currentgroup || $record->groupid == $currentgroup || $record->groupid == 0) {
-                        // OK, we can show this one
-                        $records = array($record->id => $record);
-                        $totalcount = 1;
-                    }
+                if (!$currentgroup || $record->groupid == $currentgroup || $record->groupid == 0) {
+                    // OK, we can show this one
+                    $records = array($record->id => $record);
+                    $totalcount = 1;
                 }
             }
+        } else {
+            $records = $DB->get_records_sql($sqlselect, $allparams, $page * $nowperpage, $nowperpage);
         }
 
         if (empty($records)) {
