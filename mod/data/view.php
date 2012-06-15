@@ -609,24 +609,37 @@ if ($showactivity) {
         } else {
             $maxcount = count($recordids);
         }
-
+        $nowperpage = 1;
+        $totalcount = 0;
         if ($record) {     // We need to just show one, so where is it in context?
-            $nowperpage = 1;
             $mode = 'single';
-            $page = (int)array_search($record->id, $recordids);
-
         } else if ($mode == 'single') {  // We rely on ambient $page settings
             $nowperpage = 1;
-
         } else {
             $nowperpage = $perpage;
         }
 
-    /// Get the actual records
-
-        if (!$records = $DB->get_records_sql($sqlselect, $allparams, $page * $nowperpage, $nowperpage)) {
-            // Nothing to show!
-            if ($record) {         // Something was requested so try to show that at least (bug 5132)
+        // Get the actual records
+        if ($allrecordids = $DB->get_records_sql($sqlselect, $allparams)) {
+            $totalcount = count($allrecordids);
+            $recordcounter = 0;
+            if ($record) {
+                foreach ($allrecordids as $recorddata) {
+                    if ($record->id == $recorddata->id) {
+                        // Page is same as the record counter, as records shown perpage is 1
+                        $page = $recordcounter;
+                        break;
+                    }
+                    $recordcounter++;
+                }
+            }
+            $firstrecordtoshow = $page * $nowperpage;
+            if ($totalcount - $firstrecordtoshow > 0 ) {
+                $records = array_slice($allrecordids, $firstrecordtoshow, $nowperpage, true);
+            }
+        } else {
+            // Something was requested so try to show that at least (bug 5132)
+            if ($record) {
                 if (has_capability('mod/data:manageentries', $context) || empty($data->approval) ||
                          $record->approved || (isloggedin() && $record->userid == $USER->id)) {
                     if (!$currentgroup || $record->groupid == $currentgroup || $record->groupid == 0) {
