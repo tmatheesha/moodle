@@ -159,6 +159,53 @@ if ($grade = $DB->get_record('grade_grades', array('itemid' => $grade_item->id, 
     $grade->feedback = array('text'=>$grade->feedback, 'format'=>$grade->feedbackformat);
 
     $mform->set_data($grade);
+
+     // access control - disable not allowed elements
+    if (!has_capability('moodle/grade:manage', $context)) {
+        $mform->hardfreeze_and_setconstant('excluded', $grade->excluded);
+    }
+
+    if (!has_capability('moodle/grade:manage', $context) and !has_capability('moodle/grade:hide', $context)) {
+        $mform->hardfreeze_and_setconstant('hidden', $grade->hidden);
+        $mform->hardfreeze_and_setconstant('hiddenuntil', $grade->hiddenuntil);
+    }
+
+    if (!$grade_item->is_overridable_item()) {
+        $mform->removeElement('overridden');
+    }
+
+    if ($grade_item->is_hidden()) {
+        $mform->hardfreeze_and_setconstant('hidden', $grade->hidden);
+    }
+
+    $old_grade_grade = new grade_grade(array('itemid'=>$grade_item->id, 'userid'=>$userid));
+    if ($old_grade_grade->is_locked()) {
+        if ($grade_item->is_locked()) {
+            $mform->hardfreeze_and_setconstant('locked', $grade->locked);
+            $mform->hardfreeze_and_setconstant('locktime', $grade->locktime);
+        }
+
+        $mform->hardfreeze_and_setconstant('overridden', $grade->overridden);
+        $mform->hardfreeze_and_setconstant('finalgrade', $grade->finalgrade);
+        $mform->hardfreeze_and_setconstant('feedback', $grade->feedback);
+
+    } else {
+        if (empty($old_grade_grade->id)) {
+            $old_grade_grade->locked = $grade_item->locked;
+            $old_grade_grade->locktime = $grade_item->locktime;
+        }
+
+        if (($old_grade_grade->locked or $old_grade_grade->locktime)
+          and (!has_capability('moodle/grade:manage', $context) and !has_capability('moodle/grade:unlock', $context))) {
+            $mform->hardfreeze_and_setconstant('locked', $old_grade_grade->locked);
+            $mform->hardfreeze_and_setconstant('locktime', $old_grade_grade->locktime);
+
+        } else if ((!$old_grade_grade->locked and !$old_grade_grade->locktime)
+          and (!has_capability('moodle/grade:manage', $context) and !has_capability('moodle/grade:lock', $context))) {
+            $mform->hardfreeze_and_setconstant('locked', $old_grade_grade->locked);
+            $mform->hardfreeze_and_setconstant('locktime', $old_grade_grade->locktime);
+        }
+    }
 } else {
     $grade = new stdClass();
     $grade->feedback = array('text'=>'', 'format'=>FORMAT_HTML);

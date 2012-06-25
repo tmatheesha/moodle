@@ -1205,6 +1205,17 @@ abstract class moodleform {
             )
         );
     }
+
+    /**
+     * Allows for hardfreezing of the form element and then setting the value
+     * of the form element as a constant.
+     * @param string $elementname  Name of the form element that is being affected.
+     * @param string $value        The value stored in the form element.
+     */
+    public function hardfreeze_and_setconstant($elementname, $value) {
+        $this->_form->hardFreeze($elementname);
+        $this->_form->setConstant($elementname, $value);
+    }
 }
 
 /**

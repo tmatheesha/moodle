@@ -161,55 +161,5 @@ class edit_grade_form extends moodleform {
         }
         $itemname_el =& $mform->getElement('itemname');
         $itemname_el->setValue($itemname);
-
-        // access control - disable not allowed elements
-        if (!has_capability('moodle/grade:manage', $context)) {
-            $mform->hardFreeze('excluded');
-        }
-
-        if (!has_capability('moodle/grade:manage', $context) and !has_capability('moodle/grade:hide', $context)) {
-            $mform->hardFreeze('hidden');
-            $mform->hardFreeze('hiddenuntil');
-        }
-
-        $old_grade_grade = new grade_grade(array('itemid'=>$grade_item->id, 'userid'=>$userid));
-
-        if (!$grade_item->is_overridable_item()) {
-            $mform->removeElement('overridden');
-        }
-
-        if ($grade_item->is_hidden()) {
-            $mform->hardFreeze('hidden');
-        }
-
-        if ($old_grade_grade->is_locked()) {
-            if ($grade_item->is_locked()) {
-                $mform->hardFreeze('locked');
-                $mform->hardFreeze('locktime');
-            }
-
-            $mform->hardFreeze('overridden');
-            $mform->hardFreeze('finalgrade');
-            $mform->hardFreeze('feedback');
-
-        } else {
-            if (empty($old_grade_grade->id)) {
-                $old_grade_grade->locked = $grade_item->locked;
-                $old_grade_grade->locktime = $grade_item->locktime;
-            }
-
-            if (($old_grade_grade->locked or $old_grade_grade->locktime)
-              and (!has_capability('moodle/grade:manage', $context) and !has_capability('moodle/grade:unlock', $context))) {
-                $mform->hardFreeze('locked');
-                $mform->hardFreeze('locktime');
-
-            } else if ((!$old_grade_grade->locked and !$old_grade_grade->locktime)
-              and (!has_capability('moodle/grade:manage', $context) and !has_capability('moodle/grade:lock', $context))) {
-                $mform->hardFreeze('locked');
-                $mform->hardFreeze('locktime');
-            }
-        }
     }
 }
-
-
