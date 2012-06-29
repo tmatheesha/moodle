@@ -82,11 +82,13 @@ $sesskeyprovided = !empty($sesskey) && confirm_sesskey($sesskey);
 if ($canmanage && $sesskeyprovided) {
     /// Hide category
     if (!empty($categoryhide) && $canviewhidden) {
-        $DB->update_record('course_categories', array('id' => $categoryhide, 'visible' => 0));
+        $hidecategory = $DB->get_record('course_categories', array('id'=>$categoryhide));
+        course_category_hide($hidecategory);
     }
     // Show category
     if (!empty($categoryshow)) {
-        $DB->update_record('course_categories', array('id' => $categoryshow, 'visible' => 1));
+        $showcategory = $DB->get_record('course_categories', array('id'=>$categoryshow));
+        course_category_show($showcategory);
     }
     // Move subcategory up or down
     if ((!empty($categorymoveup) or !empty($categorymovedown))) {
@@ -97,11 +99,11 @@ if ($canmanage && $sesskeyprovided) {
             if ($movecategory = $DB->get_record('course_categories', array('id' => $categorymoveup))) {
                 // searching for previous category. Skipping invisible categories if user cannot see them
                 if ($canviewhidden) {
-                    $sql_where = "sortorder<? AND parent=?";
+                    $sqlwhere = "sortorder<? AND parent=?";
                 } else {
-                    $sql_where = "sortorder<? AND parent=? AND visible=1";
+                    $sqlwhere = "sortorder<? AND parent=? AND visible=1";
                 }
-                if ($swapcategory = $DB->get_records_select('course_categories', $sql_where, array($movecategory->sortorder, $movecategory->parent), 'sortorder DESC', 'id,sortorder', 0, 1)) {
+                if ($swapcategory = $DB->get_records_select('course_categories', $sqlwhere, array($movecategory->sortorder, $movecategory->parent), 'sortorder DESC', 'id,sortorder', 0, 1)) {
                     $swapcategory = reset($swapcategory);
                 }
             }
@@ -110,11 +112,11 @@ if ($canmanage && $sesskeyprovided) {
             if ($movecategory = $DB->get_record('course_categories', array('id' => $categorymovedown))) {
                 // searching for next category. Skipping invisible categories if user cannot see them
                 if ($canviewhidden) {
-                    $sql_where = "sortorder>? AND parent=?";
+                    $sqlwhere = "sortorder>? AND parent=?";
                 } else {
-                    $sql_where = "sortorder>? AND parent=? AND visible=1";
+                    $sqlwhere = "sortorder>? AND parent=? AND visible=1";
                 }
-                if ($swapcategory = $DB->get_records_select('course_categories', $sql_where, array($movecategory->sortorder, $movecategory->parent), 'sortorder ASC', 'id,sortorder', 0, 1)) {
+                if ($swapcategory = $DB->get_records_select('course_categories', $sqlwhere, array($movecategory->sortorder, $movecategory->parent), 'sortorder ASC', 'id,sortorder', 0, 1)) {
                     $swapcategory = reset($swapcategory);
                 }
             }
@@ -296,7 +298,7 @@ if ($editingon && $canmanage) {
     $url = new moodle_url('/course/editcategory.php', array('id' => $category->id));
     echo $OUTPUT->single_button($url, get_string('editcategorythis'), 'get');
 
-    // Print button to delete this category. 
+    // Print button to delete this category.
     // Need to have manage capability in parent context to delete category, otherwise user can lockout himself
     if (has_capability('moodle/category:manage', get_category_or_system_context($category->parent))) {
         $options = array('id' => $category->id, 'sesskey' => sesskey());
@@ -339,21 +341,20 @@ $table = new html_table;
 $table->attributes = array('border' => '0', 'cellspacing' => '2', 'cellpadding' => '4', 'class' => 'generalbox boxaligncenter category_subcategories');
 if ($editingon) {
     $table->head = array(new lang_string('subcategories'), new lang_string('edit'));
-    $str_edit = new lang_string('editcategorythis');
-    $str_roles = new lang_string('assignroles','core_role');
-    $str_delete = new lang_string('deletecategorythis');
-    $str_moveup = new lang_string('moveup');
-    $str_movedown = new lang_string('movedown');
-    $str_hide = new lang_string('hide');
-    $str_show = new lang_string('show');
+    $stredit = new lang_string('editcategorythis');
+    $strroles = new lang_string('assignroles','core_role');
+    $strdelete = new lang_string('deletecategorythis');
+    $strmoveup = new lang_string('moveup');
+    $strmovedown = new lang_string('movedown');
+    $strhide = new lang_string('hide');
+    $strshow = new lang_string('show');
     $count = 0;
-    $count_sql = "SELECT COUNT(1)
+    $countsql = "SELECT COUNT(1)
 			  FROM {course_categories} cc
 			  JOIN {context} ctx ON cc.id = ctx.instanceid
-			 WHERE cc.parent = :parentid AND
-				   ctx.contextlevel = :contextlevel
-				   $categorywhere";
-    $numsubcategories = $DB->count_records_sql($count_sql, array('parentid' => $category->id, 'contextlevel' => CONTEXT_COURSECAT));
+			 WHERE cc.parent = :parentid
+                           AND ctx.contextlevel = :contextlevel $categorywhere";
+    $numsubcategories = $DB->count_records_sql($countsql, array('parentid' => $category->id, 'contextlevel' => CONTEXT_COURSECAT));
 } else {
     $table->head = array(new lang_string('subcategories'));
 }
@@ -370,28 +371,28 @@ foreach ($subcategories as $subcategory) {
     $baseurl->param('id', $subcategory->id);
     if ($editingon) {
         $icons = array();
-        $icons[] = $OUTPUT->action_icon(new moodle_url('/course/editcategory.php', array('id' => $subcategory->id)), new pix_icon('t/edit', $str_edit));
+        $icons[] = $OUTPUT->action_icon(new moodle_url('/course/editcategory.php', array('id' => $subcategory->id)), new pix_icon('t/edit', $stredit));
         if (has_capability('moodle/role:assign', $context)) {
-            $icons[] = $OUTPUT->action_icon(new moodle_url('/admin/roles/assign.php', array('contextid' => $context->id)), new pix_icon('i/roles', $str_roles));
+            $icons[] = $OUTPUT->action_icon(new moodle_url('/admin/roles/assign.php', array('contextid' => $context->id)), new pix_icon('i/roles', $strroles));
         }
-        $icons[] = $OUTPUT->action_icon(new moodle_url('/course/deletecategory.php', array('id' => $subcategory->id, 'sesskey' => sesskey())), new pix_icon('t/delete', $str_delete));
+        $icons[] = $OUTPUT->action_icon(new moodle_url('/course/deletecategory.php', array('id' => $subcategory->id, 'sesskey' => sesskey())), new pix_icon('t/delete', $strdelete));
         if (!empty($subcategory->visible)) {
             if ($canviewhidden) {
                 $icons[] = $OUTPUT->action_icon(new moodle_url('/course/category.php',
-                    array('id' => $category->id, 'categoryhide' => $subcategory->id, 'sesskey' => sesskey())), new pix_icon('t/hide', $str_hide));
+                    array('id' => $category->id, 'categoryhide' => $subcategory->id, 'sesskey' => sesskey())), new pix_icon('t/hide', $strhide));
             }
         } else {
             $icons[] = $OUTPUT->action_icon(new moodle_url('/course/category.php',
-                    array('id' => $category->id, 'categoryshow' => $subcategory->id, 'sesskey' => sesskey())), new pix_icon('t/show', $str_show));
+                    array('id' => $category->id, 'categoryshow' => $subcategory->id, 'sesskey' => sesskey())), new pix_icon('t/show', $strshow));
         }
         $count++;
         if ($count > 1) {
             $icons[] = $OUTPUT->action_icon(new moodle_url('/course/category.php',
-                    array('id' => $category->id, 'categorymoveup' => $subcategory->id, 'sesskey' => sesskey())), new pix_icon('t/up', $str_moveup));
+                    array('id' => $category->id, 'categorymoveup' => $subcategory->id, 'sesskey' => sesskey())), new pix_icon('t/up', $strmoveup));
         }
         if ($count < $numsubcategories) {
             $icons[] = $OUTPUT->action_icon(new moodle_url('/course/category.php',
-                    array('id' => $category->id, 'categorymovedown' => $subcategory->id, 'sesskey' => sesskey())), new pix_icon('t/down', $str_movedown));
+                    array('id' => $category->id, 'categorymovedown' => $subcategory->id, 'sesskey' => sesskey())), new pix_icon('t/down', $strmovedown));
         }
         $table->data[] = array(html_writer::link($baseurl, $text, $attributes), implode(' ', $icons));
     } else {
