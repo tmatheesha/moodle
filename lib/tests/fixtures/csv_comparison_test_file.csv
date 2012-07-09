@@ -1,0 +1,5 @@
+fullname,description,beer
+"William H T Macey","<p>A field that contains ""double quotes""</p>",Asahi
+"Phillip Jenkins","<p>This field has </p>
+<p>Multiple lines</p>
+<p>and also contains ""double quotes""</p>",Yebisu
