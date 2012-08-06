@@ -544,316 +544,158 @@ function print_mnet_log($hostid, $course, $user=0, $date=0, $order="l.time ASC",
 }
 
 
-function print_log_csv($course, $user, $date, $order='l.time DESC', $modname,
-                        $modid, $modaction, $groupid) {
-    global $DB, $CFG;
 
-    require_once($CFG->libdir . '/csvlib.class.php');
-
-    $csvexporter = new csv_export_writer('tab');
-
-    $header = array();
-    $header[] = get_string('course');
-    $header[] = get_string('time');
-    $header[] = get_string('ip_address');
-    $header[] = get_string('fullnameuser');
-    $header[] = get_string('action');
-    $header[] = get_string('info');
-
-    if (!$logs = build_logs_array($course, $user, $date, $order, '', '',
-                       $modname, $modid, $modaction, $groupid)) {
-        return false;
-    }
-
-    $courses = array();
-
-    if ($course->id == SITEID) {
-        $courses[0] = '';
-        if ($ccc = get_courses('all', 'c.id ASC', 'c.id,c.shortname')) {
-            foreach ($ccc as $cc) {
-                $courses[$cc->id] = $cc->shortname;
-            }
-        }
-    } else {
-        $courses[$course->id] = $course->shortname;
-    }
-
-    $count=0;
-    $ldcache = array();
-    $tt = getdate(time());
-    $today = mktime (0, 0, 0, $tt["mon"], $tt["mday"], $tt["year"]);
-
-    $strftimedatetime = get_string("strftimedatetime");
-
-    $csvexporter->set_filename('logs', '.txt');
-    $title = array(get_string('savedat').userdate(time(), $strftimedatetime));
-    $csvexporter->add_data($title);
-    $csvexporter->add_data($header);
-
-    if (empty($logs['logs'])) {
-        return true;
-    }
-
-    foreach ($logs['logs'] as $log) {
-        if (isset($ldcache[$log->module][$log->action])) {
-            $ld = $ldcache[$log->module][$log->action];
-        } else {
-            $ld = $DB->get_record('log_display', array('module'=>$log->module, 'action'=>$log->action));
-            $ldcache[$log->module][$log->action] = $ld;
-        }
-        if ($ld && !empty($log->info)) {
-            // ugly hack to make sure fullname is shown correctly
-            if (($ld->mtable == 'user') and ($ld->field ==  $DB->sql_concat('firstname', "' '" , 'lastname'))) {
-                $log->info = fullname($DB->get_record($ld->mtable, array('id'=>$log->info)), true);
-            } else {
-                $log->info = $DB->get_field($ld->mtable, $ld->field, array('id'=>$log->info));
-            }
-        }
-
-        //Filter log->info
-        $log->info = format_string($log->info);
-        $log->info = strip_tags(urldecode($log->info));    // Some XSS protection
-
-        $coursecontext = context_course::instance($course->id);
-        $firstField = format_string($courses[$log->course], true, array('context' => $coursecontext));
-        $fullname = fullname($log, has_capability('moodle/site:viewfullnames', $coursecontext));
-        $actionurl = $CFG->wwwroot. make_log_url($log->module,$log->url);
-        $row = array($firstField, userdate($log->time, $strftimedatetime), $log->ip, $fullname, $log->module.' '.$log->action.' ('.$actionurl.')', $log->info);
-        $csvexporter->add_data($row);
-    }
-    $csvexporter->download_file();
-    return true;
-}
-
-
-function print_log_xls($course, $user, $date, $order='l.time DESC', $modname,
-                        $modid, $modaction, $groupid) {
-
+function print_log_export($course, $user, $date, $order='l.time DESC', $modname, $modid, $modaction, $groupid, $format) {
     global $CFG, $DB;
 
-    require_once("$CFG->libdir/excellib.class.php");
-
-    if (!$logs = build_logs_array($course, $user, $date, $order, '', '',
-                       $modname, $modid, $modaction, $groupid)) {
+    if (!$logs = build_logs_array($course, $user, $date, $order, '', '', $modname, $modid, $modaction, $groupid, false, array('recordset'=>true))) {
         return false;
     }
 
-    $courses = array();
-
-    if ($course->id == SITEID) {
-        $courses[0] = '';
-        if ($ccc = get_courses('all', 'c.id ASC', 'c.id,c.shortname')) {
-            foreach ($ccc as $cc) {
-                $courses[$cc->id] = $cc->shortname;
-            }
-        }
-    } else {
-        $courses[$course->id] = $course->shortname;
+    // over 500k will hit memory for ODS and CPU for XLS so try to fail quickly
+    if ($format != 'csv' && $logs['totalcount'] > 500000) {
+        return false;
     }
 
-    $count=0;
+    $courses = array(0 => '', $course->id => strip_tags($course->shortname));
+    if ($course->id == SITEID) {
+        if ($ccc = get_courses('all', null, 'c.id,c.shortname')) {
+            foreach ($ccc as $cc) {
+                $courses[$cc->id] = strip_tags($cc->shortname);
+            }
+        }
+    }
+
     $ldcache = array();
+    $infocache = array();
+    $strings = array();
+    $coursecontext = context_course::instance($course->id);
+    $viewfullnames = has_capability('moodle/site:viewfullnames', $coursecontext);
     $tt = getdate(time());
     $today = mktime (0, 0, 0, $tt["mon"], $tt["mday"], $tt["year"]);
-
     $strftimedatetime = get_string("strftimedatetime");
-
-    $nroPages = ceil(count($logs)/(EXCELROWS-FIRSTUSEDEXCELROW+1));
+    $nroPages = ceil($logs['totalcount']/(EXCELROWS-FIRSTUSEDEXCELROW+1));
     $filename = 'logs_'.userdate(time(),get_string('backupnameformat', 'langconfig'),99,false);
-    $filename .= '.xls';
 
-    $workbook = new MoodleExcelWorkbook('-');
-    $workbook->send($filename);
-
-    $worksheet = array();
     $headers = array(get_string('course'), get_string('time'), get_string('ip_address'),
                         get_string('fullnameuser'),    get_string('action'), get_string('info'));
 
-    // Creating worksheets
-    for ($wsnumber = 1; $wsnumber <= $nroPages; $wsnumber++) {
-        $sheettitle = get_string('logs').' '.$wsnumber.'-'.$nroPages;
-        $worksheet[$wsnumber] =& $workbook->add_worksheet($sheettitle);
-        $worksheet[$wsnumber]->set_column(1, 1, 30);
-        $worksheet[$wsnumber]->write_string(0, 0, get_string('savedat').
-                                    userdate(time(), $strftimedatetime));
-        $col = 0;
-        foreach ($headers as $item) {
-            $worksheet[$wsnumber]->write(FIRSTUSEDEXCELROW-1,$col,$item,'');
-            $col++;
+    if ($format != 'csv') {
+        if ($format == 'ods') {
+            $filename .= '.ods';
+            require_once("$CFG->libdir/odslib.class.php");
+            $workbook = new MoodleODSWorkbook('-');
+            raise_memory_limit(MEMORY_EXTRA);
+        } else if ($format == 'xls') {
+            $filename .= '.xls';
+            require_once("$CFG->libdir/excellib.class.php");
+            $workbook = new MoodleExcelWorkbook('-');
+            $formatDate =& $workbook->add_format();
+            $formatDate->set_num_format(get_string('log_excel_date_format'));
         }
-    }
-
-    if (empty($logs['logs'])) {
-        $workbook->close();
-        return true;
-    }
-
-    $formatDate =& $workbook->add_format();
-    $formatDate->set_num_format(get_string('log_excel_date_format'));
-
-    $row = FIRSTUSEDEXCELROW;
-    $wsnumber = 1;
-    $myxls =& $worksheet[$wsnumber];
-    foreach ($logs['logs'] as $log) {
-        if (isset($ldcache[$log->module][$log->action])) {
-            $ld = $ldcache[$log->module][$log->action];
-        } else {
-            $ld = $DB->get_record('log_display', array('module'=>$log->module, 'action'=>$log->action));
-            $ldcache[$log->module][$log->action] = $ld;
-        }
-        if ($ld && !empty($log->info)) {
-            // ugly hack to make sure fullname is shown correctly
-            if (($ld->mtable == 'user') and ($ld->field == $DB->sql_concat('firstname', "' '" , 'lastname'))) {
-                $log->info = fullname($DB->get_record($ld->mtable, array('id'=>$log->info)), true);
-            } else {
-                $log->info = $DB->get_field($ld->mtable, $ld->field, array('id'=>$log->info));
+        $workbook->send($filename);
+        // Creating worksheets
+        $worksheet = array();
+        for ($wsnumber = 0; $wsnumber < $nroPages; $wsnumber++) {
+            $sheettitle = get_string('logs').' '.$wsnumber.'-'.$nroPages;
+            $worksheet[$wsnumber] =& $workbook->add_worksheet($sheettitle);
+            $worksheet[$wsnumber]->set_column(1, 1, 30);
+            $worksheet[$wsnumber]->write_string(0, 0, get_string('savedat').userdate(time(), $strftimedatetime));
+            $col = 0;
+            foreach ($headers as $item) {
+                $worksheet[$wsnumber]->write_string(FIRSTUSEDEXCELROW-1,$col,$item);
+                $col++;
             }
         }
-
-        // Filter log->info
-        $log->info = format_string($log->info);
-        $log->info = strip_tags(urldecode($log->info));  // Some XSS protection
-
-        if ($nroPages>1) {
-            if ($row > EXCELROWS) {
-                $wsnumber++;
-                $myxls =& $worksheet[$wsnumber];
-                $row = FIRSTUSEDEXCELROW;
-            }
-        }
-
-        $coursecontext = context_course::instance($course->id);
-
-        $myxls->write($row, 0, format_string($courses[$log->course], true, array('context' => $coursecontext)), '');
-        $myxls->write_date($row, 1, $log->time, $formatDate); // write_date() does conversion/timezone support. MDL-14934
-        $myxls->write($row, 2, $log->ip, '');
-        $fullname = fullname($log, has_capability('moodle/site:viewfullnames', $coursecontext));
-        $myxls->write($row, 3, $fullname, '');
-        $actionurl = $CFG->wwwroot. make_log_url($log->module,$log->url);
-        $myxls->write($row, 4, $log->module.' '.$log->action.' ('.$actionurl.')', '');
-        $myxls->write($row, 5, $log->info, '');
-
-        $row++;
-    }
-
-    $workbook->close();
-    return true;
-}
-
-function print_log_ods($course, $user, $date, $order='l.time DESC', $modname,
-                        $modid, $modaction, $groupid) {
-
-    global $CFG, $DB;
-
-    require_once("$CFG->libdir/odslib.class.php");
-
-    if (!$logs = build_logs_array($course, $user, $date, $order, '', '',
-                       $modname, $modid, $modaction, $groupid)) {
-        return false;
-    }
-
-    $courses = array();
-
-    if ($course->id == SITEID) {
-        $courses[0] = '';
-        if ($ccc = get_courses('all', 'c.id ASC', 'c.id,c.shortname')) {
-            foreach ($ccc as $cc) {
-                $courses[$cc->id] = $cc->shortname;
-            }
-        }
+        $wsnumber = 0;
+        $myxls =& $worksheet[$wsnumber];
+        $row = FIRSTUSEDEXCELROW;
     } else {
-        $courses[$course->id] = $course->shortname;
+        $filename .= '.txt';
+        header("Content-Type: application/download\n");
+        header("Content-Disposition: attachment; filename=$filename");
+        header("Expires: 0");
+        header("Cache-Control: must-revalidate,post-check=0,pre-check=0");
+        header("Pragma: public");
+
+        echo get_string('savedat').userdate(time(), $strftimedatetime)."\n";
+        echo implode("\t", $headers)."\n";
     }
 
-    $count=0;
-    $ldcache = array();
-    $tt = getdate(time());
-    $today = mktime (0, 0, 0, $tt["mon"], $tt["mday"], $tt["year"]);
-
-    $strftimedatetime = get_string("strftimedatetime");
-
-    $nroPages = ceil(count($logs)/(EXCELROWS-FIRSTUSEDEXCELROW+1));
-    $filename = 'logs_'.userdate(time(),get_string('backupnameformat', 'langconfig'),99,false);
-    $filename .= '.ods';
-
-    $workbook = new MoodleODSWorkbook('-');
-    $workbook->send($filename);
-
-    $worksheet = array();
-    $headers = array(get_string('course'), get_string('time'), get_string('ip_address'),
-                        get_string('fullnameuser'),    get_string('action'), get_string('info'));
-
-    // Creating worksheets
-    for ($wsnumber = 1; $wsnumber <= $nroPages; $wsnumber++) {
-        $sheettitle = get_string('logs').' '.$wsnumber.'-'.$nroPages;
-        $worksheet[$wsnumber] =& $workbook->add_worksheet($sheettitle);
-        $worksheet[$wsnumber]->set_column(1, 1, 30);
-        $worksheet[$wsnumber]->write_string(0, 0, get_string('savedat').
-                                    userdate(time(), $strftimedatetime));
-        $col = 0;
-        foreach ($headers as $item) {
-            $worksheet[$wsnumber]->write(FIRSTUSEDEXCELROW-1,$col,$item,'');
-            $col++;
+    if ($logs['totalcount'] == 0) {
+        if (isset($workbook)) {
+            $workbook->close();
         }
-    }
-
-    if (empty($logs['logs'])) {
-        $workbook->close();
         return true;
     }
 
-    $formatDate =& $workbook->add_format();
-    $formatDate->set_num_format(get_string('log_excel_date_format'));
+    // The following loop may time some time
+    set_time_limit(180);
 
-    $row = FIRSTUSEDEXCELROW;
-    $wsnumber = 1;
-    $myxls =& $worksheet[$wsnumber];
     foreach ($logs['logs'] as $log) {
-        if (isset($ldcache[$log->module][$log->action])) {
-            $ld = $ldcache[$log->module][$log->action];
-        } else {
-            $ld = $DB->get_record('log_display', array('module'=>$log->module, 'action'=>$log->action));
-            $ldcache[$log->module][$log->action] = $ld;
+        if (isset($workbook) && $nroPages > 1 && $row > EXCELROWS) {
+            $wsnumber++;
+            $myxls =& $worksheet[$wsnumber];
+            $row = FIRSTUSEDEXCELROW;
         }
+
+        $modact = $log->module.' '.$log->action;
+        if (!isset($ldcache[$modact])) {
+            $ldcache[$modact] = $DB->get_record('log_display', array('module'=>$log->module, 'action'=>$log->action));
+        }
+        $ld = $ldcache[$modact];
+        $modactinfo = $modact.' '.$log->info;
+
         if ($ld && !empty($log->info)) {
-            // ugly hack to make sure fullname is shown correctly
             if (($ld->mtable == 'user') and ($ld->field == $DB->sql_concat('firstname', "' '" , 'lastname'))) {
-                $log->info = fullname($DB->get_record($ld->mtable, array('id'=>$log->info)), true);
+                $log->info = strip_tags(fullname($log, $viewfullnames));
+            } else if (is_numeric($log->info) && (int)$log->info) {
+                if (!isset($infocache[$modactinfo])) {
+                    if (count($infocache) > 8192) {
+                        array_splice($infocache, 0, 2048);
+                    }
+                    $field = $DB->get_field($ld->mtable, $ld->field, array('id'=>(int)$log->info));
+                    $infocache[$modactinfo] = strip_tags($field ? $field : $log->info);
+                }
+                $log->info = $infocache[$modactinfo];
             } else {
-                $log->info = $DB->get_field($ld->mtable, $ld->field, array('id'=>$log->info));
+                $log->info = strip_tags($log->info);
             }
+        } else {
+            $log->info = strip_tags($log->info);
         }
 
-        // Filter log->info
-        $log->info = format_string($log->info);
-        $log->info = strip_tags(urldecode($log->info));  // Some XSS protection
+        $cols = array(0=>$courses[$log->course], 1=>$log->time, 2=>$log->ip, 3=>fullname($log, $viewfullnames), 4=>$modact, 5=>$log->info);
 
-        if ($nroPages>1) {
-            if ($row > EXCELROWS) {
-                $wsnumber++;
-                $myxls =& $worksheet[$wsnumber];
-                $row = FIRSTUSEDEXCELROW;
-            }
+        if ($format == 'csv') {
+            $cols[1] = userdate($log->time, $strftimedatetime);
+            echo implode("\t", array_values($cols))."\n";
+        } else {
+            // write_date() does conversion/timezone support. MDL-14934
+            $myxls->write_string($row, 0, $cols[0]);
+            $myxls->write_date($row, 1, $cols[1], $format=='xls' ? $formatDate : 0);
+            unset($cols[0], $cols[1]);
+            $myxls->write_strings($row, $cols);
         }
-
-        $coursecontext = context_course::instance($course->id);
-
-        $myxls->write_string($row, 0, format_string($courses[$log->course], true, array('context' => $coursecontext)));
-        $myxls->write_date($row, 1, $log->time);
-        $myxls->write_string($row, 2, $log->ip);
-        $fullname = fullname($log, has_capability('moodle/site:viewfullnames', $coursecontext));
-        $myxls->write_string($row, 3, $fullname);
-        $actionurl = $CFG->wwwroot. make_log_url($log->module,$log->url);
-        $myxls->write_string($row, 4, $log->module.' '.$log->action.' ('.$actionurl.')');
-        $myxls->write_string($row, 5, $log->info);
-
         $row++;
     }
-
-    $workbook->close();
+    if (isset($workbook)) {
+        $workbook->close();
+    }
     return true;
 }
 
+function print_log_csv($course, $user, $date, $order='l.time DESC', $modname, $modid, $modaction, $groupid) {
+    return print_log_export($course, $user, $date, $order, $modname, $modid, $modaction, $groupid, 'csv');
+}
+
+function print_log_xls($course, $user, $date, $order='l.time DESC', $modname, $modid, $modaction, $groupid) {
+    return print_log_export($course, $user, $date, $order, $modname, $modid, $modaction, $groupid, 'xls');
+}
+
+function print_log_ods($course, $user, $date, $order='l.time DESC', $modname, $modid, $modaction, $groupid) {
+    return print_log_export($course, $user, $date, $order, $modname, $modid, $modaction, $groupid, 'ods');
+}
 
 function print_overview($courses, array $remote_courses=array()) {
     global $CFG, $USER, $DB, $OUTPUT;
