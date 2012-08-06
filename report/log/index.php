@@ -135,6 +135,9 @@ if (!empty($chooselog)) {
         $dateinfo = userdate($date, get_string('strftimedaydate'));
     }
 
+    $count = 0;
+    $export = false;
+
     switch ($logformat) {
         case 'showashtml':
             if ($hostid != $CFG->mnet_localhost_id || $course->id == SITEID) {
@@ -160,29 +163,30 @@ if (!empty($chooselog)) {
             }
             break;
         case 'downloadascsv':
-            if (!print_log_csv($course, $user, $date, 'l.time DESC', $modname,
-                    $modid, $modaction, $group)) {
-                echo $OUTPUT->notification("No logs found!");
-                echo $OUTPUT->footer();
-            }
-            exit;
+            $export = 'csv';
+            break;
         case 'downloadasods':
-            if (!print_log_ods($course, $user, $date, 'l.time DESC', $modname,
-                    $modid, $modaction, $group)) {
-                echo $OUTPUT->notification("No logs found!");
-                echo $OUTPUT->footer();
-            }
-            exit;
+            $export = 'ods';
+            break;
         case 'downloadasexcel':
-            if (!print_log_xls($course, $user, $date, 'l.time DESC', $modname,
-                    $modid, $modaction, $group)) {
-                echo $OUTPUT->notification("No logs found!");
-                echo $OUTPUT->footer();
-            }
-            exit;
+            $export = 'xls';
+            break;
     }
 
-
+    if ($export) {
+        $ok = print_log_export($course, $user, $date, 'l.time DESC', $modname, $modid, $modaction, $group, $export);
+        if ($ok === true) {
+            exit;
+        }
+        $PAGE->set_title($course->shortname .': '. $strlogs);
+        $PAGE->set_heading($course->fullname);
+        echo $OUTPUT->header();
+        if ($ok === -2) {
+            echo $OUTPUT->notification("Too many log entries, please retry with CSV!");
+        } else {
+            echo $OUTPUT->notification("No logs found!");
+        }
+    }
 } else {
     if ($hostid != $CFG->mnet_localhost_id || $course->id == SITEID) {
         admin_externalpage_setup('reportlog', '', null, '', array('pagelayout'=>'report'));
