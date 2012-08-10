@@ -1926,7 +1926,7 @@ function user_accesstime_log($courseid=0) {
  * @param int $totalcount Passed in by reference.
  * @return array
  */
-function get_logs($select, array $params=null, $order='l.time DESC', $limitfrom='', $limitnum='', &$totalcount) {
+function get_logs($select, array $params=null, $order='l.time DESC', $limitfrom='', $limitnum='', &$totalcount, $docount=true, $recordset=false) {
     global $DB;
 
     if ($order) {
@@ -1940,17 +1940,23 @@ function get_logs($select, array $params=null, $order='l.time DESC', $limitfrom=
         $select = "WHERE $select";
     }
 
-    $sql = "SELECT COUNT(*)
-              FROM {log} l
-           $select";
+    if ($docount) {
+        $sql = "SELECT COUNT(*)
+                  FROM {log} l
+               $select";
 
-    $totalcount = $DB->count_records_sql($sql, $params);
+        $totalcount = $DB->count_records_sql($sql, $params);
+    }
 
     $sql = "SELECT l.*, u.firstname, u.lastname, u.picture
               FROM {log} l
               LEFT JOIN {user} u ON l.userid = u.id
            $select
             $order";
+
+    if ($recordset) {
+        return $DB->get_recordset_sql($sql, $params, $limitfrom, $limitnum) ;
+    }
 
     return $DB->get_records_sql($sql, $params, $limitfrom, $limitnum) ;
 }

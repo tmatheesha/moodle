@@ -218,7 +218,7 @@ function build_mnet_logs_array($hostid, $course, $user=0, $date=0, $order="l.tim
 }
 
 function build_logs_array($course, $user=0, $date=0, $order="l.time ASC", $limitfrom='', $limitnum='',
-                   $modname="", $modid=0, $modaction="", $groupid=0) {
+                   $modname="", $modid=0, $modaction="", $groupid=0, $get_count_only=false, array $options = array()) {
     global $DB, $SESSION, $USER;
     // It is assumed that $date is the GMT time of midnight for that day,
     // and so the next 86400 seconds worth of logs are printed.
@@ -302,8 +302,22 @@ function build_logs_array($course, $user=0, $date=0, $order="l.time ASC", $limit
 
     $totalcount = 0;  // Initialise
     $result = array();
-    $result['logs'] = get_logs($selector, $params, $order, $limitfrom, $limitnum, $totalcount);
-    $result['totalcount'] = $totalcount;
+    if ($get_count_only === true) {
+       // we need to get only the number of elements in log table
+        $countsql = '{log} l '.((strlen($selector) > 0) ? ' WHERE '. $selector : '');
+        $totalcount = $DB->count_records_sql("SELECT COUNT(*) FROM $countsql", $params);
+        $result['logs'] = array();
+        $result['totalcount'] = $totalcount;
+    } else {
+        // we need to get everything
+        $docount = empty($options['docount']) ? true : $options['docount'];
+        $recordset = empty($options['recordset']) ? false : $options['recordset'];
+        $result['logs'] = get_logs($selector, $params, $order, $limitfrom, $limitnum, $totalcount, $docount, $recordset);
+        if ($docount) {
+            $result['totalcount'] = $totalcount;
+        }
+    }
+
     return $result;
 }
 
