@@ -85,7 +85,7 @@ class MoodleODSWorkbook {
         $files[] = "$dir/mimetype";
 
         $handle = fopen("$dir/content.xml", 'w');
-        fwrite($handle, get_ods_content($this->worksheets));
+        get_ods_content($this->worksheets, $handle);
         $files[] = "$dir/content.xml";
 
         $handle = fopen("$dir/meta.xml", 'w');
@@ -131,6 +131,7 @@ class MoodleODSWorksheet {
     var $data = array();
     var $columns = array();
     var $rows = array();
+    var $strings = array();
     var $name;
 
 
@@ -151,10 +152,24 @@ class MoodleODSWorksheet {
         if (!array_key_exists($row, $this->data)) {
             $this->data[$row] = array();
         }
-        $this->data[$row][$col] = new stdClass();
-        $this->data[$row][$col]->value = $str;
-        $this->data[$row][$col]->type = 'string';
-        $this->data[$row][$col]->format = $format;
+        if ($format === 0) {
+            $this->data[$row][$col] = $str;
+        } else {
+            $this->data[$row][$col] = (object) array('value'=>$str, 'type'=>'string', 'format'=>$format);
+        }
+    }
+
+    /* Write a set of strings for a row in the worksheet
+     * @param integer $row  Zero indexed row
+     * @param array   $strs Column-indexed array of strings to write
+     */
+    function write_strings($row, &$strs) {
+        if (!isset($this->data[$row])) {
+            $this->data[$row] = array();
+        }
+        foreach ($strs as $col => &$str) {
+            $this->data[$row][$col] =& $str;
+        }
     }
 
     /* Write one number somewhere in the worksheet
@@ -167,10 +182,11 @@ class MoodleODSWorksheet {
         if (!array_key_exists($row, $this->data)) {
             $this->data[$row] = array();
         }
-        $this->data[$row][$col] = new stdClass();
-        $this->data[$row][$col]->value = $num;
-        $this->data[$row][$col]->type = 'float';
-        $this->data[$row][$col]->format = $format;
+        if ($format === 0) {
+            $this->data[$row][$col] = (float) $num;
+        } else {
+            $this->data[$row][$col] = (object) array('value'=>$num, 'type'=>'float', 'format'=>$format);
+        }
     }
 
     /* Write one url somewhere in the worksheet
@@ -199,10 +215,7 @@ class MoodleODSWorksheet {
         if (!array_key_exists($row, $this->data)) {
             $this->data[$row] = array();
         }
-        $this->data[$row][$col] = new stdClass();
-        $this->data[$row][$col]->value = $date;
-        $this->data[$row][$col]->type = 'date';
-        $this->data[$row][$col]->format = $format;
+        $this->data[$row][$col] = (object) array('value'=>$date, 'type'=>'date', 'format'=>$format);
     }
 
     /**
@@ -569,7 +582,7 @@ class MoodleODSFormat {
 //=============================
 // OpenDocument XML functions
 //=============================
-function get_ods_content(&$worksheets) {
+function get_ods_content(&$worksheets, $fhandle = null) {
 
 
     // find out the size of worksheets and used styles
@@ -718,6 +731,11 @@ $buffer .= $colstyles;
   <office:spreadsheet>
 ';
 
+    if ($fhandle) {
+        fwrite($fhandle, $buffer);
+        $buffer = '';
+    }
+
     foreach($worksheets as $wsnum=>$ws) {
 
     /// worksheet header
@@ -756,6 +774,17 @@ $buffer .= $colstyles;
             for($c=0; $c<=$ws->maxc; $c++) {
                 if (isset($ws->data[$r][$c])) {
                     $cell = $ws->data[$r][$c];
+                    if (is_string($cell)) {
+                        $cell = (object) array('value'=>$cell, 'type'=>'string', 'format'=>0);
+                    } else if (is_float($cell) || is_int($cell)) {
+                        $cell = (object) array('value'=>$cell, 'type'=>'float', 'format'=>0);
+                    } else if (is_array($cell)) {
+                        if (isset($cell['date'])) {
+                            $cell = (object) array('value'=>$cell['date'], 'type'=>'date', 'format'=>0);
+                        } else {
+                            $cell = (object) $cell;
+                        }
+                    }
                     $extra = ' ';
                     if (!empty($cell->format)) {
                         $extra = ' table:style-name="format'.$cell->format->id.'"';
@@ -782,6 +811,11 @@ $buffer .= $colstyles;
                 }
             }
             $buffer .= '</table:table-row>'."\n";
+
+            if ($fhandle && strlen($buffer) > 1024*1024) {
+                fwrite($fhandle, $buffer);
+                $buffer = '';
+            }
         }
     /// worksheet footer
         $buffer .= '</table:table>'."\n";
@@ -793,6 +827,11 @@ $buffer .= $colstyles;
 '  </office:spreadsheet>
  </office:body>
 </office:document-content>';
+
+    if ($fhandle) {
+        fwrite($fhandle, $buffer);
+        return true;
+    }
 
     return $buffer;
 }
