@@ -2326,15 +2326,15 @@ function get_user_timezone($tz = 99) {
         isset($CFG->forcetimezone) ? $CFG->forcetimezone : 99,
         isset($USER->timezone) ? $USER->timezone : 99,
         isset($CFG->timezone) ? $CFG->timezone : 99,
-        );
+    );
 
-    $tz = 99;
-
-    while(($tz == '' || $tz == 99 || $tz == NULL) && $next = each($timezones)) {
-        $tz = $next['value'];
+    foreach ($timezones as $tz) {
+        if ($tz != 99 && $tz != NULL && $tz != '') {
+            return is_numeric($tz) ? (float) $tz : $tz;
+        }
     }
 
-    return is_numeric($tz) ? (float) $tz : $tz;
+    return (float) 99;
 }
 
 /**
