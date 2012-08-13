@@ -356,6 +356,12 @@ class Spreadsheet_Excel_Writer_Worksheet extends Spreadsheet_Excel_Writer_BIFFwr
     var $_input_encoding;
 
     /**
+    * Buffer fwrites
+    */
+    var $_buff = '';
+    var $_bufflen = 0;
+
+    /**
     * Constructor
     *
     * @param string  $name         The name of the new worksheet
@@ -497,6 +503,8 @@ class Spreadsheet_Excel_Writer_Worksheet extends Spreadsheet_Excel_Writer_BIFFwr
     {
         $num_sheets = count($sheetnames);
 
+        $this->_flush();
+
         /***********************************************
         * Prepend in reverse order!!
         */
@@ -626,6 +634,7 @@ class Spreadsheet_Excel_Writer_Worksheet extends Spreadsheet_Excel_Writer_BIFFwr
     function getData()
     {
         $buffer = 4096;
+        $this->_flush();
 
         // Return data stored in memory
         if (isset($this->_data)) {
@@ -1255,14 +1264,31 @@ class Spreadsheet_Excel_Writer_Worksheet extends Spreadsheet_Excel_Writer_BIFFwr
     function _append($data)
     {
         if ($this->_using_tmpfile) {
+            $len = strlen($data);
             // Add CONTINUE records if necessary
-            if (strlen($data) > $this->_limit) {
+            if ($len > $this->_limit) {
                 $data = $this->_addContinue($data);
             }
-            fwrite($this->_filehandle, $data);
-            $this->_datasize += strlen($data);
+            $this->_buff .= $data;
+            $this->_bufflen += $len;
+            $this->_datasize += $len;
+            if ($this->_bufflen > 1024*1024) { // 1 MB
+                $this->_flush();
+            }
         } else {
+            $this->_flush();
             parent::_append($data);
+        }
+    }
+
+    /**
+     * Make sure the buffered tmpfile output is flushed
+     */
+    private final function _flush() {
+        if ($this->_using_tmpfile && $this->_bufflen > 0) {
+            fwrite($this->_filehandle, $this->_buff);
+            $this->_buff = '';
+            $this->_bufflen = 0;
         }
     }
 
@@ -1410,40 +1436,35 @@ class Spreadsheet_Excel_Writer_Worksheet extends Spreadsheet_Excel_Writer_BIFFwr
     */
     function writeNumber($row, $col, $num, $format = null)
     {
-        $record    = 0x0203;                 // Record identifier
-        $length    = 0x000E;                 // Number of bytes to follow
-
-        $xf        = $this->_XF($format);    // The cell format
-
         // Check that row and col are valid and store max and min values
-        if ($row >= $this->_xls_rowmax) {
-            return(-2);
+        if ($row >= $this->_xls_rowmax || $col >= $this->_xls_colmax) {
+            return -2;
         }
-        if ($col >= $this->_xls_colmax) {
-            return(-2);
-        }
-        if ($row <  $this->_dim_rowmin)  {
-            $this->_dim_rowmin = $row;
-        }
-        if ($row >  $this->_dim_rowmax)  {
+        if ($row > $this->_dim_rowmax) {
             $this->_dim_rowmax = $row;
         }
-        if ($col <  $this->_dim_colmin)  {
-            $this->_dim_colmin = $col;
+        else if ($row < $this->_dim_rowmin) {
+            $this->_dim_rowmin = $row;
         }
-        if ($col >  $this->_dim_colmax)  {
+        if ($col > $this->_dim_colmax) {
             $this->_dim_colmax = $col;
         }
-
-        $header    = pack("vv",  $record, $length);
-        $data      = pack("vvv", $row, $col, $xf);
-        $xl_double = pack("d",   $num);
-        if ($this->_byte_order) { // if it's Big Endian
-            $xl_double = strrev($xl_double);
+        else if ($col < $this->_dim_colmin) {
+            $this->_dim_colmin = $col;
         }
 
-        $this->_append($header.$data.$xl_double);
-        return(0);
+        $xf = $format !== null ? $this->_XF($format) : 0x0f;
+
+        if (!$this->_byte_order) {
+            $data = pack('vvvvvd', 0x0203, 0x000E, $row, $col, $xf, $num);
+        } else {
+            // if it's Big Endian
+            $xl_double = strrev(pack('d', $num));
+            $data = pack('vvvvv', 0x0203, 0x000E, $row, $col, $xf).$xl_double;
+        }
+
+        $this->_append($data);
+        return 0;
     }
 
     /**
@@ -1537,45 +1558,49 @@ class Spreadsheet_Excel_Writer_Worksheet extends Spreadsheet_Excel_Writer_BIFFwr
     */
     function writeStringBIFF8($row, $col, $str, $format = null)
     {
-        if ($this->_input_encoding == 'UTF-16LE')
-        {
-            $strlen = function_exists('mb_strlen') ? mb_strlen($str, 'UTF-16LE') : (strlen($str) / 2);
-            $encoding  = 0x1;
+        if (!isset($this->_mb)) {
+            $this->_mb = function_exists('mb_strlen');
         }
-        elseif ($this->_input_encoding != '')
-        {
-            $str = iconv($this->_input_encoding, 'UTF-16LE', $str);
-            $strlen = function_exists('mb_strlen') ? mb_strlen($str, 'UTF-16LE') : (strlen($str) / 2);
-            $encoding  = 0x1;
-        }
-        else
-        {
-            $strlen    = strlen($str);
-            $encoding  = 0x0;
-        }
-        $record    = 0x00FD;                   // Record identifier
-        $length    = 0x000A;                   // Bytes to follow
-        $xf        = $this->_XF($format);      // The cell format
 
-        $str_error = 0;
+        if (!empty($this->_input_encoding)) {
+            if ($this->_input_encoding !== 'UTF-16LE') {
+                $str = iconv($this->_input_encoding, 'UTF-16LE', $str);
+            }
+            $strlen = $this->_mb ? mb_strlen($str, 'UTF-16LE') : (strlen($str) / 2);
+            $encoding = 0x1;
+        } else {
+            $strlen = strlen($str);
+            $encoding = 0x0;
+        }
 
-        // Check that row and col are valid and store max and min values
-        if ($this->_checkRowCol($row, $col) == false) {
+        if ($row >= $this->_xls_rowmax || $col >= $this->_xls_colmax) {
             return -2;
+        }
+        if ($row > $this->_dim_rowmax) {
+            $this->_dim_rowmax = $row;
+        }
+        else if ($row < $this->_dim_rowmin) {
+            $this->_dim_rowmin = $row;
+        }
+        if ($col > $this->_dim_colmax) {
+            $this->_dim_colmax = $col;
+        }
+        else if ($col < $this->_dim_colmin) {
+            $this->_dim_colmin = $col;
         }
 
         $str = pack('vC', $strlen, $encoding).$str;
+        $xf = $format !== null ? $this->_XF($format) : 0x0f;
+        $this->_str_total++;
 
         /* check if string is already present */
         if (!isset($this->_str_table[$str])) {
             $this->_str_table[$str] = $this->_str_unique++;
         }
-        $this->_str_total++;
 
-        $header    = pack('vv',   $record, $length);
-        $data      = pack('vvvV', $row, $col, $xf, $this->_str_table[$str]);
-        $this->_append($header.$data);
-        return $str_error;
+        $data = pack('vvvvvV', 0x00FD, 0x000A, $row, $col, $xf, $this->_str_table[$str]);
+        $this->_append($data);
+        return 0;
     }
 
     /**
@@ -1588,25 +1613,21 @@ class Spreadsheet_Excel_Writer_Worksheet extends Spreadsheet_Excel_Writer_BIFFwr
     * @return boolean true for success, false if row and/or col are grester
     *                 then maximums allowed.
     */
-    function _checkRowCol($row, $col)
-    {
-        if ($row >= $this->_xls_rowmax) {
+    function _checkRowCol($row, $col) {
+        if ($row >= $this->_xls_rowmax || $col >= $this->_xls_colmax) {
             return false;
         }
-        if ($col >= $this->_xls_colmax) {
-            return false;
-        }
-        if ($row <  $this->_dim_rowmin) {
-            $this->_dim_rowmin = $row;
-        }
-        if ($row >  $this->_dim_rowmax) {
+        if ($row > $this->_dim_rowmax) {
             $this->_dim_rowmax = $row;
         }
-        if ($col <  $this->_dim_colmin) {
-            $this->_dim_colmin = $col;
+        else if ($row < $this->_dim_rowmin) {
+            $this->_dim_rowmin = $row;
         }
-        if ($col >  $this->_dim_colmax) {
+        if ($col > $this->_dim_colmax) {
             $this->_dim_colmax = $col;
+        }
+        else if ($col < $this->_dim_colmin) {
+            $this->_dim_colmin = $col;
         }
         return true;
     }
@@ -2320,7 +2341,7 @@ class Spreadsheet_Excel_Writer_Worksheet extends Spreadsheet_Excel_Writer_BIFFwr
         $coldx   += 0.72;            // Fudge. Excel subtracts 0.72 !?
         $coldx   *= 256;             // Convert to units of 1/256 of a char
 
-        $ixfe     = $this->_XF($format);
+        $ixfe     = $format !== null ? $this->_XF($format) : 0x0f;
         $reserved = 0x00;            // Reserved
 
         $level = max(0, min($level, 7));
