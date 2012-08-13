@@ -166,6 +166,9 @@ class MoodleExcelWorksheet {
     function write_string($row, $col, $str, $format=null) {
     /// Calculate the internal PEAR format
         $format = $this->MoodleExcelFormat2PearExcelFormat($format);
+        if ($format !== null) {
+            $format = $this->MoodleExcelFormat2PearExcelFormat($format);
+        }
     /// Convert the text from its original encoding to UTF-16LE
         if (!$this->latin_output) { /// Only if don't want to use latin (win1252) stronger output
             $str = textlib::convert($str, 'utf-8', 'utf-16le');
@@ -174,6 +177,27 @@ class MoodleExcelWorksheet {
         }
     /// Add the string safely to the PEAR Worksheet
         $this->pear_excel_worksheet->writeString($row, $col, $str, $format);
+    }
+
+    /**
+     * Write a set of strings for a row
+     *
+     * @param integer $row  Zero indexed row
+     * @param string  $strs Column-indexed array of strings to write
+     */
+    function write_strings($row, &$strs) {
+        foreach ($strs as $col => &$str) {
+            if (!$this->latin_output) {
+                $str = textlib::convert($str, 'utf-8', 'utf-16le');
+            } else {
+                $str = textlib::convert($str, 'utf-8', 'windows-1252');
+            }
+            if ($this->pear_excel_worksheet->_BIFF_version == 0x0600) {
+                $this->pear_excel_worksheet->writeStringBIFF8($row, $col, $str);
+            } else {
+                $this->pear_excel_worksheet->writeString($row, $col, $str);
+            }
+        }
     }
 
     /**
@@ -186,7 +210,9 @@ class MoodleExcelWorksheet {
      */
     function write_number($row, $col, $num, $format=null) {
     /// Calculate the internal PEAR format
-        $format = $this->MoodleExcelFormat2PearExcelFormat($format);
+        if ($format !== null) {
+            $format = $this->MoodleExcelFormat2PearExcelFormat($format);
+        }
     /// Add  the number safely to the PEAR Worksheet
         $this->pear_excel_worksheet->writeNumber($row, $col, $num, $format);
     }
@@ -215,16 +241,17 @@ class MoodleExcelWorksheet {
      */
     function write_date($row, $col, $date, $format=null) {
     /// Calculate the internal PEAR format
-        $format = $this->MoodleExcelFormat2PearExcelFormat($format);
-    /// Convert the date to Excel format
-        $timezone = get_user_timezone_offset();
-        if ($timezone == 99) {
-            // system timezone offset in seconds
-            $offset = (int)date('Z');
-        } else {
-            $offset = (int)($timezone * HOURSECS * 2);
+        if ($format !== null) {
+            $format = $this->MoodleExcelFormat2PearExcelFormat($format);
         }
-        $value = ((usertime($date) + $offset) / 86400) + 25569;
+    /// Convert the date to Excel format
+        if (!isset($this->_timezone)) {
+            $this->_timezone = get_user_timezone_offset();
+            $this->_tzoffs = (int) date('Z');
+        }
+        $offset = $this->_timezone == 99 ? $this->_tzoffs : (int)($this->_timezone * HOURSECS * 2);
+        $date = abs($this->_timezone) > 13 ? $date : $date - (int)($this->_timezone * HOURSECS);
+        $value = (($date + $offset) / 86400) + 25569;
     /// Add  the date safely to the PEAR Worksheet
         $this->pear_excel_worksheet->writeNumber($row, $col, $value, $format);
     }
@@ -253,7 +280,9 @@ class MoodleExcelWorksheet {
      */
     function write_blank($row, $col, $format=null) {
     /// Calculate the internal PEAR format
-        $format = $this->MoodleExcelFormat2PearExcelFormat($format);
+        if ($format !== null) {
+            $format = $this->MoodleExcelFormat2PearExcelFormat($format);
+        }
     /// Add  the blank safely to the PEAR Worksheet
         $this->pear_excel_worksheet->writeBlank($row, $col, $format);
     }
