@@ -151,13 +151,7 @@ class profile_define_base {
             $data->sortorder = $DB->count_records('user_info_field', array('categoryid'=>$data->categoryid)) + 1;
         }
 
-
-        if (empty($data->id)) {
-            unset($data->id);
-            $data->id = $DB->insert_record('user_info_field', $data);
-        } else {
-            $DB->update_record('user_info_field', $data);
-        }
+        profile_field_base::set_field($data);
     }
 
     /**
@@ -202,7 +196,7 @@ function profile_reorder_fields() {
                     $f = new stdClass();
                     $f->id = $field->id;
                     $f->sortorder = $i++;
-                    $DB->update_record('user_info_field', $f);
+                    profile_field_base::set_field($f);
                 }
             }
         }
@@ -268,8 +262,7 @@ function profile_delete_category($id) {
                 $f->id = $field->id;
                 $f->sortorder = $sortorder++;
                 $f->categoryid = $newcategory->id;
-                $DB->update_record('user_info_field', $f);
-                //echo "<pre>";var_dump($f);echo"</pre>";
+                profile_field_base::set_field($f);
             }
         }
     }
@@ -297,7 +290,7 @@ function profile_delete_field($id) {
     rebuild_course_cache();
 
     /// Try to remove the record from the database
-    $DB->delete_records('user_info_field', array('id'=>$id));
+    profile_field_base::delete_fields(array($id));
 
     /// Reorder the remaining fields in the same category
     profile_reorder_fields();
@@ -336,8 +329,8 @@ function profile_move_field($id, $move) {
         $field->sortorder     = $neworder;
 
         /// Update the field records
-        $DB->update_record('user_info_field', $field);
-        $DB->update_record('user_info_field', $swapfield);
+        profile_field_base::set_field($field);
+        profile_field_base::set_field($swapfield);
     }
 
     profile_reorder_fields();
