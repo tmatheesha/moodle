@@ -9,7 +9,6 @@ require_once($CFG->libdir.'/adminlib.php');
 $format = optional_param('format', '', PARAM_ALPHA);
 
 require_login();
-admin_externalpage_setup('userbulk');
 require_capability('moodle/user:update', context_system::instance());
 
 $return = $CFG->wwwroot.'/'.$CFG->admin.'/user/user_bulk.php';
@@ -38,20 +37,18 @@ if ($format) {
                     'msn'       => 'msn',
                     'country'   => 'country');
 
-    if ($extrafields = $DB->get_records('user_info_field')) {
+    require_once($CFG->dirroot.'/user/profile/lib.php');
+    if ($extrafields = profile_field_base::get_fields_list()) {
         foreach ($extrafields as $n=>$v){
             $fields['profile_field_'.$v->shortname] = 'profile_field_'.$v->shortname;
         }
     }
 
-    switch ($format) {
-        case 'csv' : user_download_csv($fields);
-        case 'ods' : user_download_ods($fields);
-        case 'xls' : user_download_xls($fields);
-
-    }
+    user_download_generic(array_values($fields), $format);
     die;
 }
+
+admin_externalpage_setup('userbulk');
 
 echo $OUTPUT->header();
 echo $OUTPUT->heading(get_string('download', 'admin'));
@@ -68,113 +65,84 @@ echo $OUTPUT->continue_button($return);
 
 echo $OUTPUT->footer();
 
-function user_download_ods($fields) {
+function user_download_generic($fields, $format='csv') {
     global $CFG, $SESSION, $DB;
 
-    require_once("$CFG->libdir/odslib.class.php");
-    require_once($CFG->dirroot.'/user/profile/lib.php');
-
-    $filename = clean_filename(get_string('users').'.ods');
-
-    $workbook = new MoodleODSWorkbook('-');
-    $workbook->send($filename);
-
-    $worksheet = array();
-
-    $worksheet[0] =& $workbook->add_worksheet('');
-    $col = 0;
-    foreach ($fields as $fieldname) {
-        $worksheet[0]->write(0, $col, $fieldname);
-        $col++;
+    $formats = array('csv', 'ods', 'xls');
+    if (!in_array($format, $formats)) {
+        die;
     }
 
+    $filename = clean_filename(get_string('users').'.'.$format);
+    @set_time_limit(180);
+
+    if ($format == 'csv') {
+        require_once($CFG->libdir . '/csvlib.class.php');
+        $csvexport = new csv_export_writer();
+        $csvexport->set_filename($filename);
+        $csvexport->add_data($fields);
+    } else {
+        if ($format == 'xls') {
+            require_once("$CFG->libdir/excellib.class.php");
+            $workbook = new MoodleExcelWorkbook('-');
+        } else if ($format == 'ods') {
+            require_once("$CFG->libdir/odslib.class.php");
+            $workbook = new MoodleODSWorkbook('-');
+            @raise_memory_limit(MEMORY_EXTRA);
+        }
+        $workbook->send($filename);
+        $worksheet =& $workbook->add_worksheet('');
+        $worksheet->write_strings(0, $fields);
+    }
+
+    $profiles = count(preg_grep('#^profile_field_#', $fields)) > 0;
+    $fields = array_fill_keys($fields, true);
+    $strings = array();
     $row = 1;
-    foreach ($SESSION->bulk_users as $userid) {
-        if (!$user = $DB->get_record('user', array('id'=>$userid))) {
+    sort($SESSION->bulk_users, SORT_NUMERIC);
+
+    foreach (array_chunk($SESSION->bulk_users, 500) as $uids) {
+        list($where, $params) = $DB->get_in_or_equal($uids);
+        if (!$users = $DB->get_records_select('user', 'id '.$where, $params, 'id ASC')) {
             continue;
         }
-        $col = 0;
-        profile_load_data($user);
-        foreach ($fields as $field=>$unused) {
-            $worksheet[0]->write($row, $col, $user->$field);
-            $col++;
-        }
-        $row++;
-    }
-
-    $workbook->close();
-    die;
-}
-
-function user_download_xls($fields) {
-    global $CFG, $SESSION, $DB;
-
-    require_once("$CFG->libdir/excellib.class.php");
-    require_once($CFG->dirroot.'/user/profile/lib.php');
-
-    $filename = clean_filename(get_string('users').'.xls');
-
-    $workbook = new MoodleExcelWorkbook('-');
-    $workbook->send($filename);
-
-    $worksheet = array();
-
-    $worksheet[0] =& $workbook->add_worksheet('');
-    $col = 0;
-    foreach ($fields as $fieldname) {
-        $worksheet[0]->write(0, $col, $fieldname);
-        $col++;
-    }
-
-    $row = 1;
-    foreach ($SESSION->bulk_users as $userid) {
-        if (!$user = $DB->get_record('user', array('id'=>$userid))) {
-            continue;
-        }
-        $col = 0;
-        profile_load_data($user);
-        foreach ($fields as $field=>$unused) {
-            $worksheet[0]->write($row, $col, $user->$field);
-            $col++;
-        }
-        $row++;
-    }
-
-    $workbook->close();
-    die;
-}
-
-function user_download_csv($fields) {
-    global $CFG, $SESSION, $DB;
-
-    require_once($CFG->dirroot.'/user/profile/lib.php');
-    require_once($CFG->libdir . '/csvlib.class.php');
-
-    $filename = clean_filename(get_string('users'));
-
-    $csvexport = new csv_export_writer();
-    $csvexport->set_filename($filename);
-    $csvexport->add_data($fields);
-
-    foreach ($SESSION->bulk_users as $userid) {
-        $row = array();
-        if (!$user = $DB->get_record('user', array('id'=>$userid))) {
-            continue;
-        }
-        profile_load_data($user);
-        $userprofiledata = array();
-        foreach ($fields as $field=>$unused) {
-            // Custom user profile textarea fields come in an array
-            // The first element is the text and the second is the format.
-            // We only take the text.
-            if (is_array($user->$field)) {
-                $userprofiledata[] = reset($user->$field);
-            } else {
-                $userprofiledata[] = $user->$field;
+        profile_field_base::preload_data($uids);
+        foreach ($users as $user) {
+            if ($profiles) {
+                profile_load_data($user);
             }
+            $user = array_intersect_key((array)$user, $fields);
+            foreach ($user as $key => $value) {
+                // Custom user profile textarea fields come in an array
+                // The first element is the text and the second is the format.
+                // We only take the text.
+                if (is_array($value)) {
+                    $user[$key] = reset($value);
+                }
+            }
+            $user = array_values(array_merge($fields, $user)); // sort by the provided field order
+            if ($format == 'csv') {
+                $csvexport->add_data($user);
+            } else {
+                if ($format == 'ods') {
+                    // HACK: dedup of strings in memory saves space as ODS does not write to a temporary file
+                    foreach ($user as $k => $v) {
+                        if (!isset($strings[$v])) {
+                            $strings[$v] = $v;
+                        }
+                        $user[$k] = &$strings[$v];
+                    }
+                }
+                $worksheet->write_strings($row, $user);
+            }
+            $row++;
         }
-        $csvexport->add_data($userprofiledata);
+        profile_field_base::preload_clear();
     }
-    $csvexport->download_file();
+    if (isset($workbook)) {
+        $workbook->close();
+    } else {
+        $csvexport->download_file();
+    }
     die;
 }
