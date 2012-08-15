@@ -10,6 +10,9 @@ class profile_field_menu extends profile_field_base {
      * the corresponding key for the data if it exists
      */
     function profile_field_menu($fieldid=0, $userid=0) {
+        static $choose;
+        static $optformat;
+
         //first call parent constructor
         $this->profile_field_base($fieldid, $userid);
 
@@ -17,10 +20,14 @@ class profile_field_menu extends profile_field_base {
         $options = explode("\n", $this->field->param1);
         $this->options = array();
         if ($this->field->required){
-            $this->options[''] = get_string('choose').'...';
+            $choose = isset($choose) ? $choose : get_string('choose').'...';
+            $this->options[''] = $choose;
         }
         foreach($options as $key => $option) {
-            $this->options[$key] = format_string($option);//multilang formatting
+            if (isset($optformat[$option])) {
+                $optformat[$option] = format_string($option);
+            }
+            $this->options[$key] = $optformat[$option];//multilang formatting
         }
 
         /// Set the data key
