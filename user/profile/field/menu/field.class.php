@@ -24,7 +24,7 @@ class profile_field_menu extends profile_field_base {
             $this->options[''] = $choose;
         }
         foreach($options as $key => $option) {
-            if (isset($optformat[$option])) {
+            if (!isset($optformat[$option])) {
                 $optformat[$option] = format_string($option);
             }
             $this->options[$key] = $optformat[$option];//multilang formatting
