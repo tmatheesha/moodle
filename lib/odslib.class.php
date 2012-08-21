@@ -159,9 +159,10 @@ class MoodleODSWorksheet {
         }
     }
 
-    /* Write a set of strings for a row in the worksheet
-     * @param integer $row  Zero indexed row
-     * @param array   $strs Column-indexed array of strings to write
+    /* Write a set of strings for a row in the worksheet.
+     *
+     * @param int     $row  Zero indexed row.
+     * @param array   $strs Column-indexed array of strings to write.
      */
     function write_strings($row, &$strs) {
         if (!isset($this->data[$row])) {

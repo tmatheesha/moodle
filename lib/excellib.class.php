@@ -180,10 +180,10 @@ class MoodleExcelWorksheet {
     }
 
     /**
-     * Write a set of strings for a row
+     * Write a set of strings for a row.
      *
-     * @param integer $row  Zero indexed row
-     * @param string  $strs Column-indexed array of strings to write
+     * @param int     $row  Zero indexed row.
+     * @param string  $strs Column-indexed array of strings to write.
      */
     function write_strings($row, &$strs) {
         foreach ($strs as $col => &$str) {

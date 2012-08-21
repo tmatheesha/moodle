@@ -2338,16 +2338,15 @@ function get_user_timezone($tz = 99) {
         isset($CFG->forcetimezone) ? $CFG->forcetimezone : 99,
         isset($USER->timezone) ? $USER->timezone : 99,
         isset($CFG->timezone) ? $CFG->timezone : 99,
-    );
+        );
 
+    $tz = 99;
 
-    foreach ($timezones as $tz) {
-        if ($tz != 99 && $tz != NULL && !empty($tz)) {
-            return is_numeric($tz) ? (float) $tz : $tz;
-        }
+    // Loop while $tz is, empty but not zero, or 99, and there is another timezone is the array
+    while(((empty($tz) && !is_numeric($tz)) || $tz == 99) && $next = each($timezones)) {
+        $tz = $next['value'];
     }
-
-    return (float) 99;
+    return is_numeric($tz) ? (float) $tz : $tz;
 }
 
 /**

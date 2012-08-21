@@ -356,7 +356,7 @@ class Spreadsheet_Excel_Writer_Worksheet extends Spreadsheet_Excel_Writer_BIFFwr
     var $_input_encoding;
 
     /**
-    * Buffer fwrites
+    * Buffer fwrites.
     */
     var $_buff = '';
     var $_bufflen = 0;
@@ -1282,7 +1282,7 @@ class Spreadsheet_Excel_Writer_Worksheet extends Spreadsheet_Excel_Writer_BIFFwr
     }
 
     /**
-     * Make sure the buffered tmpfile output is flushed
+     * Make sure the buffered tmpfile output is flushed.
      */
     private final function _flush() {
         if ($this->_using_tmpfile && $this->_bufflen > 0) {

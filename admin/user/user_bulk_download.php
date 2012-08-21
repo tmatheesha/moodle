@@ -8,7 +8,7 @@ require_once($CFG->libdir.'/adminlib.php');
 
 $format = optional_param('format', '', PARAM_ALPHA);
 
-require_login();
+admin_externalpage_setup('userbulk');
 require_capability('moodle/user:update', context_system::instance());
 
 $return = $CFG->wwwroot.'/'.$CFG->admin.'/user/user_bulk.php';
@@ -48,8 +48,6 @@ if ($format) {
     die;
 }
 
-admin_externalpage_setup('userbulk');
-
 echo $OUTPUT->header();
 echo $OUTPUT->heading(get_string('download', 'admin'));
 
@@ -65,8 +63,14 @@ echo $OUTPUT->continue_button($return);
 
 echo $OUTPUT->footer();
 
+/**
+ * A general file export function.
+ *
+ * @param type $fields  Fields being exported.
+ * @param array $format  The file format.
+ */
 function user_download_generic($fields, $format='csv') {
-    global $CFG, $SESSION, $DB;
+    global $CFG, $SESSION, $DB, $PAGE;
 
     $formats = array('csv', 'ods', 'xls');
     if (!in_array($format, $formats)) {
@@ -79,7 +83,7 @@ function user_download_generic($fields, $format='csv') {
     if ($format == 'csv') {
         require_once($CFG->libdir . '/csvlib.class.php');
         $csvexport = new csv_export_writer();
-        $csvexport->set_filename($filename);
+        $csvexport->set_filename(get_string('users'), '.' . $format);
         $csvexport->add_data($fields);
     } else {
         if ($format == 'xls') {
@@ -92,7 +96,9 @@ function user_download_generic($fields, $format='csv') {
         }
         $workbook->send($filename);
         $worksheet =& $workbook->add_worksheet('');
-        $worksheet->write_strings(0, $fields);
+        // Create a copy of $fields as the xls function of write_strings() uses $fields1 as a reference.
+        $fields1 = $fields;
+        $worksheet->write_strings(0, $fields1);
     }
 
     $profiles = count(preg_grep('#^profile_field_#', $fields)) > 0;
@@ -100,32 +106,32 @@ function user_download_generic($fields, $format='csv') {
     $strings = array();
     $row = 1;
     sort($SESSION->bulk_users, SORT_NUMERIC);
+    $PAGE->set_context(context_system::instance());
 
-    foreach (array_chunk($SESSION->bulk_users, 500) as $uids) {
-        list($where, $params) = $DB->get_in_or_equal($uids);
-        if (!$users = $DB->get_records_select('user', 'id '.$where, $params, 'id ASC')) {
-            continue;
-        }
-        profile_field_base::preload_data($uids);
+    list($where, $params) = $DB->get_in_or_equal($SESSION->bulk_users);
+
+    $users = $DB->get_recordset_select('user', 'id ' . $where, $params, 'id ASC');
+    if ($users->valid()) {
+        profile_field_base::preload_data($SESSION->bulk_users);
         foreach ($users as $user) {
             if ($profiles) {
                 profile_load_data($user);
             }
             $user = array_intersect_key((array)$user, $fields);
             foreach ($user as $key => $value) {
-                // Custom user profile textarea fields come in an array
+                // Custom user profile textarea fields come in an array.
                 // The first element is the text and the second is the format.
                 // We only take the text.
                 if (is_array($value)) {
                     $user[$key] = reset($value);
                 }
             }
-            $user = array_values(array_merge($fields, $user)); // sort by the provided field order
+            $user = array_values(array_merge($fields, $user)); // Sort by the provided field order.
             if ($format == 'csv') {
                 $csvexport->add_data($user);
             } else {
                 if ($format == 'ods') {
-                    // HACK: dedup of strings in memory saves space as ODS does not write to a temporary file
+                    // HACK: Dedup of strings in memory saves space as ODS does not write to a temporary file.
                     foreach ($user as $k => $v) {
                         if (!isset($strings[$v])) {
                             $strings[$v] = $v;
@@ -134,10 +140,11 @@ function user_download_generic($fields, $format='csv') {
                     }
                 }
                 $worksheet->write_strings($row, $user);
+                $row++;
             }
-            $row++;
         }
         profile_field_base::preload_clear();
+        $users->close(); // Important! Close the recordset.
     }
     if (isset($workbook)) {
         $workbook->close();

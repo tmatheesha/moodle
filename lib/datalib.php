@@ -1924,6 +1924,8 @@ function user_accesstime_log($courseid=0) {
  * @param string $limitfrom return a subset of records, starting at this point (optional, required if $limitnum is set)
  * @param int $limitnum return a subset comprising this many records (optional, required if $limitfrom is set)
  * @param int $totalcount Passed in by reference.
+ * @param bool $docount Whether we want to count the log entries or not.
+ * @param bool $recordset Whether to return a record set or just plane records.
  * @return array
  */
 function get_logs($select, array $params=null, $order='l.time DESC', $limitfrom='', $limitnum='', &$totalcount, $docount=true, $recordset=false) {

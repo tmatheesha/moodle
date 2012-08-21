@@ -217,8 +217,25 @@ function build_mnet_logs_array($hostid, $course, $user=0, $date=0, $order="l.tim
     return $result;
 }
 
+/**
+ * Creates an array of log entries.
+ *
+ * @param object $course  The course we are getting logs for.
+ * @param int $user  Get logs with this specific user ID.
+ * @param int $date  Get logs from this starting date.
+ * @param string $order  SQL order by clause to sort the records returned.
+ * @param string $limitfrom  return a subset of records, starting at this point.
+ * @param int $limitnum  return a subset comprising this many records.
+ * @param string $modname  The name of the module.
+ * @param int $modid  The module ID.
+ * @param string $modaction  The action done in the module. e.g. update, view, add post.
+ * @param int $groupid  The group ID of the group we are getting logs for.
+ * @param bool $getcountonly  Whether we are just getting a count of logs or all logs.
+ * @param array $options  Additional options.
+ * @return array An array of log entries.
+ */
 function build_logs_array($course, $user=0, $date=0, $order="l.time ASC", $limitfrom='', $limitnum='',
-                   $modname="", $modid=0, $modaction="", $groupid=0, $get_count_only=false, array $options = array()) {
+                   $modname="", $modid=0, $modaction="", $groupid=0, $getcountonly=false, array $options = array()) {
     global $DB, $SESSION, $USER;
     // It is assumed that $date is the GMT time of midnight for that day,
     // and so the next 86400 seconds worth of logs are printed.
@@ -302,14 +319,14 @@ function build_logs_array($course, $user=0, $date=0, $order="l.time ASC", $limit
 
     $totalcount = 0;  // Initialise
     $result = array();
-    if ($get_count_only === true) {
-       // we need to get only the number of elements in log table
+    if ($getcountonly === true) {
+       // We need to get only the number of elements in log table.
         $countsql = '{log} l '.((strlen($selector) > 0) ? ' WHERE '. $selector : '');
         $totalcount = $DB->count_records_sql("SELECT COUNT(*) FROM $countsql", $params);
         $result['logs'] = array();
         $result['totalcount'] = $totalcount;
     } else {
-        // we need to get everything
+        // We need to get everything.
         $docount = empty($options['docount']) ? true : $options['docount'];
         $recordset = empty($options['recordset']) ? false : $options['recordset'];
         $result['logs'] = get_logs($selector, $params, $order, $limitfrom, $limitnum, $totalcount, $docount, $recordset);
@@ -543,8 +560,20 @@ function print_mnet_log($hostid, $course, $user=0, $date=0, $order="l.time ASC",
     echo $OUTPUT->paging_bar($totalcount, $page, $perpage, "$url&perpage=$perpage");
 }
 
-
-
+/**
+ * Print a log to export.
+ *
+ * @param object $course  The course object.
+ * @param int $user  Get logs for this specific user ID.
+ * @param int $date  Start date for getting the logs.
+ * @param string $order  Order that the logs will be presented.
+ * @param string $modname  The name of the module.
+ * @param int $modid  The module ID.
+ * @param string $modaction  The action done in the module. e.g. update, view, add post.
+ * @param int $groupid  The group ID of the group that we are getting logs for.
+ * @param string $format  The format of the file being exported.
+ * @return bool  True if successful else false.
+ */
 function print_log_export($course, $user, $date, $order='l.time DESC', $modname, $modid, $modaction, $groupid, $format) {
     global $CFG, $DB;
 
@@ -552,7 +581,7 @@ function print_log_export($course, $user, $date, $order='l.time DESC', $modname,
         return false;
     }
 
-    // over 500k will hit memory for ODS and CPU for XLS so try to fail quickly
+    // Over 500k will hit memory for ODS and CPU for XLS so try to fail quickly.
     if ($format != 'csv' && $logs['totalcount'] > 500000) {
         return false;
     }
@@ -594,7 +623,7 @@ function print_log_export($course, $user, $date, $order='l.time DESC', $modname,
             $formatDate->set_num_format(get_string('log_excel_date_format'));
         }
         $workbook->send($filename);
-        // Creating worksheets
+        // Creating worksheets.
         $worksheet = array();
         for ($wsnumber = 0; $wsnumber < $nroPages; $wsnumber++) {
             $sheettitle = get_string('logs').' '.$wsnumber.'-'.$nroPages;
@@ -611,15 +640,12 @@ function print_log_export($course, $user, $date, $order='l.time DESC', $modname,
         $myxls =& $worksheet[$wsnumber];
         $row = FIRSTUSEDEXCELROW;
     } else {
-        $filename .= '.txt';
-        header("Content-Type: application/download\n");
-        header("Content-Disposition: attachment; filename=$filename");
-        header("Expires: 0");
-        header("Cache-Control: must-revalidate,post-check=0,pre-check=0");
-        header("Pragma: public");
-
-        echo get_string('savedat').userdate(time(), $strftimedatetime)."\n";
-        echo implode("\t", $headers)."\n";
+        require_once($CFG->libdir . '/csvlib.class.php');
+        $csvexporter = new csv_export_writer('tab');
+        $csvexporter->set_filename('logs', '.txt');
+        $title = array(get_string('savedat').userdate(time(), $strftimedatetime));
+        $csvexporter->add_data($title);
+        $csvexporter->add_data($headers);
     }
 
     if ($logs['totalcount'] == 0) {
@@ -629,7 +655,7 @@ function print_log_export($course, $user, $date, $order='l.time DESC', $modname,
         return true;
     }
 
-    // The following loop may time some time
+    // The following loop may take some time.
     set_time_limit(180);
 
     foreach ($logs['logs'] as $log) {
@@ -669,30 +695,71 @@ function print_log_export($course, $user, $date, $order='l.time DESC', $modname,
 
         if ($format == 'csv') {
             $cols[1] = userdate($log->time, $strftimedatetime);
-            echo implode("\t", array_values($cols))."\n";
+            $csvexporter->add_data($cols);
         } else {
-            // write_date() does conversion/timezone support. MDL-14934
+            // @todo MDL-14934 write_date() does conversion/timezone support.
             $myxls->write_string($row, 0, $cols[0]);
             $myxls->write_date($row, 1, $cols[1], $format=='xls' ? $formatDate : 0);
             unset($cols[0], $cols[1]);
             $myxls->write_strings($row, $cols);
+            $row++;
         }
-        $row++;
     }
     if (isset($workbook)) {
         $workbook->close();
+    } else {
+        $csvexporter->download_file();
     }
     return true;
 }
 
+/**
+ * Print logs in a CSV format.
+ *
+ * @param object $course  The course object.
+ * @param int $user  Get logs for this specific user ID.
+ * @param int $date  Start date for getting the logs.
+ * @param string $order  Order that the logs will be presented.
+ * @param string $modname  The name of the module.
+ * @param int $modid  The module ID.
+ * @param string $modaction  The action done in the module. e.g. update, view, add post.
+ * @param int $groupid  The group ID of the group that we are getting logs for.
+ * @return bool  True if successful else false.
+ */
 function print_log_csv($course, $user, $date, $order='l.time DESC', $modname, $modid, $modaction, $groupid) {
     return print_log_export($course, $user, $date, $order, $modname, $modid, $modaction, $groupid, 'csv');
 }
 
+/**
+ * Print logs in an XLS format.
+ *
+  * @param object $course  The course object.
+ * @param int $user  Get logs for this specific user ID.
+ * @param int $date  Start date for getting the logs.
+ * @param string $order  Order that the logs will be presented.
+ * @param string $modname  The name of the module.
+ * @param int $modid  The module ID.
+ * @param string $modaction  The action done in the module. e.g. update, view, add post.
+ * @param int $groupid  The group ID of the group that we are getting logs for.
+ * @return bool  True if successful else false.
+ */
 function print_log_xls($course, $user, $date, $order='l.time DESC', $modname, $modid, $modaction, $groupid) {
     return print_log_export($course, $user, $date, $order, $modname, $modid, $modaction, $groupid, 'xls');
 }
 
+/**
+ * Print logs in an ODS format.
+ *
+  * @param object $course  The course object.
+ * @param int $user  Get logs for this specific user ID.
+ * @param int $date  Start date for getting the logs.
+ * @param string $order  Order that the logs will be presented.
+ * @param string $modname  The name of the module.
+ * @param int $modid The module ID.
+ * @param string $modaction  The action done in the module. e.g. update, view, add post.
+ * @param int $groupid  The group ID of the group that we are getting logs for.
+ * @return bool  True if successful else false.
+ */
 function print_log_ods($course, $user, $date, $order='l.time DESC', $modname, $modid, $modaction, $groupid) {
     return print_log_export($course, $user, $date, $order, $modname, $modid, $modaction, $groupid, 'ods');
 }

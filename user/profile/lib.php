@@ -27,8 +27,8 @@ class profile_field_base {
 
     /**
      * Constructor method.
-     * @param   integer   id of the profile from the user_info_field table
-     * @param   integer   id of the user for whom we are displaying data
+     * @param   int   ID of the profile from the user_info_field table.
+     * @param   int   ID of the user for whom we are displaying data.
      */
     function profile_field_base($fieldid=0, $userid=0) {
         global $USER;
@@ -332,9 +332,10 @@ class profile_field_base {
     }
 
     /**
-     * Fetch the record for a given field
-     * @param   integer id from the user_info_field table
-     * @return  field record or null if field with the given id does not exist
+     * Fetch the record for a given field.
+     *
+     * @param   int $fieldid   ID from the user_info_field table.
+     * @return  field record or null if field with the given id does not exist.
      */
     public static function get_field($fieldid=0) {
         if (!$fieldid) {
@@ -349,9 +350,10 @@ class profile_field_base {
     }
 
     /**
-     * Update or insert the given field record
-     * @param   object  Field record to insert or update
-     * @return  boolean true is success, false otherwise
+     * Update or insert the given field record.
+     *
+     * @param   object  $field  Field record to insert or update.
+     * @return  bool true is success, false otherwise.
      */
     public static function set_field($field) {
         global $DB;
@@ -375,25 +377,28 @@ class profile_field_base {
     }
 
     /**
-     * Delete the fields with given fieldids
+     * Delete the fields with given fieldids.
+     *
+     * @param array $fieldids  Field ids to delete.
      */
     public static function delete_fields($fieldids = null) {
         global $DB;
         if (empty($fieldids) || !is_array($fieldids)) {
-            $fieldids = array_keys(get_fields_list());
+            $fieldids = array_keys(self::get_fields_list());
         }
-        if (count($fieldids) >= count(get_fields_list())) {
+        if (count($fieldids) >= count(self::get_fields_list())) {
             $DB->delete_records('user_info_field');
             self::$fields = array();
         } else {
-            $DB->delete_records_list('user_info_field', 'fieldid', $fieldids);
+            $DB->delete_records_list('user_info_field', 'id', $fieldids);
             self::$fields = array_diff_key(self::$fields, array_fill_keys($fieldids, true));
         }
     }
 
     /**
-     * Get all the available profile field records
-     * @return  array   Array of all user_info_field records
+     * Get all the available profile field records.
+     *
+     * @return  array   Array of all user_info_field records.
      */
     public static function get_fields_list() {
         global $DB;
@@ -406,11 +411,12 @@ class profile_field_base {
     }
 
     /**
-     * Preload into a static cache the field data for the given list of users
+     * Preload into a static cache the field data for the given list of users.
      * A restricted list of fieldids to fetch for may optionally be specified
-     * Otherwise data for all fields will be retrieved.
-     * @param   array   userids     array of user IDs to prefetch field data for
-     * @param   array   fieldids    array of field IDs to prefetch data for
+     * otherwise data for all fields will be retrieved.
+     *
+     * @param   array   $userids     Array of user IDs to prefetch field data for.
+     * @param   array   $fieldids    Array of field IDs to prefetch data for.
      */
     public static function preload_data($userids, $fieldids=null) {
         global $DB;
@@ -436,25 +442,25 @@ class profile_field_base {
 
             foreach ($records as $record) {
                 $key = $record->fieldid.'_'.$record->userid;
-                $data = (object) array('data'=>$record->data, 'dataformat'=>$record->dataformat);
                 self::$preload[$key] = (object) $record;
             }
         }
     }
 
     /**
-     * Clear all preloaded field data for users
+     * Clear all preloaded field data for users.
      */
     public static function preload_clear() {
         self::$preload = array();
     }
 
     /**
-     * Get the field data for a single user/field, optionally filling the cache too
-     * This function will check the preloaded data first, then the DB on a miss
-     * @param   integer fieldid id of the field to fetch data for
-     * @param   integer userid  id of the user to fetch field data for
-     * @param   boolean cache   store the retrieved value in cache
+     * Get the field data for a single user/field, optionally filling the cache too.
+     * This function will check the preloaded data first, then the DB on a miss.
+     *
+     * @param   int $fieldid id of the field to fetch data for.
+     * @param   int $userid  id of the user to fetch field data for.
+     * @param   bool $cache   store the retrieved value in cache.
      */
     public static function get_user_field($fieldid, $userid, $cache=false) {
         global $DB;
