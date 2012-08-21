@@ -612,15 +612,12 @@ function print_log_export($course, $user, $date, $order='l.time DESC', $modname,
         $myxls =& $worksheet[$wsnumber];
         $row = FIRSTUSEDEXCELROW;
     } else {
-        $filename .= '.txt';
-        header("Content-Type: application/download\n");
-        header("Content-Disposition: attachment; filename=$filename");
-        header("Expires: 0");
-        header("Cache-Control: must-revalidate,post-check=0,pre-check=0");
-        header("Pragma: public");
-
-        echo get_string('savedat').userdate(time(), $strftimedatetime)."\n";
-        echo implode("\t", $headers)."\n";
+        require_once($CFG->libdir . '/csvlib.class.php');
+        $csvexporter = new csv_export_writer('tab');
+        $csvexporter->set_filename('logs', '.txt');
+        $title = array(get_string('savedat').userdate(time(), $strftimedatetime));
+        $csvexporter->add_data($title);
+        $csvexporter->add_data($headers);
     }
 
     if ($logs['totalcount'] == 0) {
@@ -670,18 +667,20 @@ function print_log_export($course, $user, $date, $order='l.time DESC', $modname,
 
         if ($format == 'csv') {
             $cols[1] = userdate($log->time, $strftimedatetime);
-            echo implode("\t", array_values($cols))."\n";
+            $csvexporter->add_data($cols);
         } else {
             // write_date() does conversion/timezone support. MDL-14934
             $myxls->write_string($row, 0, $cols[0]);
             $myxls->write_date($row, 1, $cols[1], $format=='xls' ? $formatDate : 0);
             unset($cols[0], $cols[1]);
             $myxls->write_strings($row, $cols);
+            $row++;
         }
-        $row++;
     }
     if (isset($workbook)) {
         $workbook->close();
+    } else {
+        $csvexporter->download_file();
     }
     return true;
 }
