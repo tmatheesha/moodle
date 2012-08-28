@@ -405,11 +405,13 @@ class blog_entry {
      * @return void
      */
     public function delete() {
-        global $DB, $USER;
-
-        $returnurl = '';
+        global $DB, $CFG;
 
         $this->delete_attachments();
+
+        if (!empty($CFG->useblogassociations)) {
+            $this->remove_associations();
+        }
 
         $DB->delete_records('post', array('id' => $this->id));
         tag_set('post', $this->id, array());
