@@ -314,4 +314,69 @@ class courselib_testcase extends advanced_testcase {
         $this->assertTrue(empty($modinfo->sections[0]));
         $this->assertFalse(empty($modinfo->sections[3]));
     }
+
+    function test_move_course_to_category_check() {
+        $this->resetAfterTest(true);
+
+        // Create a user
+        $user = $this->getDataGenerator()->create_user();
+
+        // Now to create a few categories to try to move courses around.
+        $category1 = $this->getDataGenerator()->create_category(array('name' => 'Fishing'));
+        $category2 = $this->getDataGenerator()->create_category(array('name' => 'Climbing'));
+        $category3 = $this->getDataGenerator()->create_category(array('name' => 'Eating'));
+
+        // Create a  few courses to move.
+        $coursedata = array();
+        $coursedata[] = array('category' => $category1->id, 
+            'fullname' => 'Having fun with Unit tests', 
+            'shortname' => 'HFUT 100');
+        $coursedata[] = array('category' => $category2->id, 
+            'fullname' => 'Jumping for Joy',
+            'shortname' => 'JFJ 2500');
+        $coursedata[] = array('category' => $category3->id, 
+            'fullname' => 'Cartography',
+            'shortname' => 'C101');
+        $coursedata[] = array('category' => $category3->id, 
+            'fullname' => 'Port Making',
+            'shortname' => 'PM300');
+        $courses = array();
+        for ($i = 0; $i < count($coursedata); $i++) {
+            $courses[] = $this->getDataGenerator()->create_course($coursedata[$i]);
+        }
+        
+        // 2 is the id for the role of course creator (variable initialisation).
+        $roleid = 2;
+        $cat1context = context_coursecat::instance($category1->id);
+        $cat2context = context_coursecat::instance($category3->id);
+        // This is to ensure that we get the correct role id.
+        $roles = role_get_names($cat1context);
+        foreach ($roles as $role) {
+            if ($role->shortname == 'coursecreator') {
+                $roleid = $role->id;
+            }
+        }
+
+        // Assign the user course creator role for category 1 and 3.
+        role_assign($roleid, $user->id, $cat1context);
+        role_assign($roleid, $user->id, $cat2context);
+
+        // Course creators can not by default move courses between categories.
+        // Here we are giving the user category manage for course 1 and 2 as well as course delete.
+        assign_capability('moodle/category:manage', CAP_ALLOW, $roleid, $cat1context, true);
+        assign_capability('moodle/category:manage', CAP_ALLOW, $roleid, $cat2context, true);
+        assign_capability('moodle/course:delete', CAP_ALLOW, $roleid, $cat1context, true);
+
+        // Log in as the user.
+        $this->setUser($user);
+
+        // Here we are trying to move to a category which we don't have category:manage permissions.
+        $canmove = can_move_courses_to_category($courses[0]->id, $category2->id, $category1->id);
+        $this->assertEquals($canmove, false);
+
+        // In this assertion we have all the necessary permissions to move the course.
+        $canmove = can_move_courses_to_category($courses[0]->id, $category3->id, $category1->id);
+        $this->assertEquals($canmove, true);
+        
+    }
 }
