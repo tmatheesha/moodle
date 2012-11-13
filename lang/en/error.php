@@ -103,6 +103,7 @@ $string['cannotmarktopic'] = 'Could not mark that topic for this course';
 $string['cannotmigratedatacomments'] = 'Cannot migrate data module comments';
 $string['cannotmodulename'] = 'Cannot get the module name in build navigation';
 $string['cannotmoduletype'] = 'Cannot get the module type in build navigation';
+$string['cannotmovecoursetocategory'] = 'You can not move this course to the category specified';
 $string['cannotmoverolewithid'] = 'Cannot move role with ID {$a}';
 $string['cannotnetgeo'] = 'Cannot connect to NetGeo server at http://netgeo.caida.org, please check proxy settings or better install MaxMind GeoLite City data file';
 $string['cannotopencsv'] = 'Cannot open CSV file';
