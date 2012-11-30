@@ -62,10 +62,11 @@ if (!$cm = get_coursemodule_from_instance('wiki', $wiki->id)) {
     print_error('invalidcoursemoduleid', 'wiki');
 }
 
+$modulecontext = context_module::instance($cm->id);
+$canaccessgroups = has_capability('moodle/site:accessallgroups', $modulecontext);
+
 $groups = new stdClass();
 if (groups_get_activity_groupmode($cm)) {
-    $modulecontext = context_module::instance($cm->id);
-    $canaccessgroups = has_capability('moodle/site:accessallgroups', $modulecontext);
     if ($canaccessgroups) {
         $groups->availablegroups = groups_get_all_groups($cm->course);
         $allpart = new stdClass();
@@ -111,14 +112,14 @@ case 'create':
     redirect($CFG->wwwroot . '/mod/wiki/edit.php?pageid='.$newpageid);
     break;
 case 'new':
-    if ((int)$wiki->forceformat == 1 && !empty($title)) {
+    // Teachers may want the option to specify which group they are creating the page for.
+    if ((int)$wiki->forceformat == 1 && $title != get_string('newpage', 'wiki') && !$canaccessgroups) {
         $newpageid = $wikipage->create_page($title);
         add_to_log($course->id, 'wiki', 'add page', "view.php?pageid=".$newpageid, $newpageid, $cm->id);
         redirect($CFG->wwwroot . '/mod/wiki/edit.php?pageid='.$newpageid);
     } else {
-        // create link from moodle navigation block without pagetitle
         $wikipage->print_header();
-        // new page without page title
+        // Create a new page.
         $wikipage->print_content($title);
     }
     $wikipage->print_footer();
