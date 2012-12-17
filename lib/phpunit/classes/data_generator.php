@@ -601,4 +601,65 @@ EOD;
 
         return true;
     }
+
+    /**
+     * Quick creation of messages sent from one user to another.
+     * Default settings will create random data for some fields.
+     *
+     * @param  array $record  A set of message data.
+     * @param  bool  $read  Create a message that is read or unread.
+     * @return stdClass The record that was inserted into the database.
+     */
+    public function send_message($record = null, $read = false) {
+        global $DB;
+
+        $record = (array)$record;
+
+        if (!isset($record['useridfrom'])) {
+            $record['useridfrom'] = rand(0, 20);
+        }
+
+        if (!isset($record['useridto'])) {
+            $record['useridto'] = rand(0, 20);
+        }
+
+        if (!isset($record['subject'])) {
+            $record['subject'] = 'Subject for the test.';
+        }
+
+        if (!isset($record['fullmessage'])) {
+            $record['fullmessage'] = $this->loremipsum;
+        }
+
+        if (!isset($record['fullmessageformat'])) {
+            $record['fullmessageformat'] = '1';
+        }
+
+        if (!isset($record['fullmessagehtml'])) {
+            $record['fullmessagehtml'] = '<p>' . $this->loremipsum . '</p>';
+        }
+
+        if (!isset($record['smallmessage'])) {
+            $record['smallmessage'] = '<p>' . $this->loremipsum . '</p>';
+        }
+
+        if (!isset($record['notification'])) {
+            $record['notification'] = '0';
+        }
+
+        if (!isset($record['timecreated'])) {
+            $record['timecreated'] = rand(631173600, 1325397600); // Between 01/01/1990 and 01/01/2012.
+        }
+
+        $id = null;
+        if ($read) {
+            $id = $DB->insert_record('message_read', $record);
+            $message = $DB->get_record('message_read', array('id' => $id));
+            return $message;
+        } else {
+            $id = $DB->insert_record('message', $record);
+            $message = $DB->get_record('message', array('id' => $id));
+            return $message;
+        }
+    }
 }
