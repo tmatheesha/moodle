@@ -185,6 +185,96 @@ class core_message_external extends external_api {
         );
     }
 
+    /**
+     * Returns description of method parameters.
+     *
+     * @return external_function_parameters
+     * @since  Moodle 2.5
+     */
+    public static function get_messages_parameters() {
+        return new external_function_parameters(
+            array(
+                // 'senderid' => new external_value(PARAM_INT, 'sender ID'),
+                'contactid' => new external_value(PARAM_INT, 'contact ID', VALUE_DEFAULT, 0),
+                'startdate' => new external_value(PARAM_INT, 'start date of the messages', VALUE_DEFAULT, 0),
+                'enddate' => new external_value(PARAM_INT, 'end date of the messages', VALUE_DEFAULT, 0),
+                'readmessage' => new external_value(PARAM_INT, 'fetch read, unread or all messages', VALUE_DEFAULT, MESSAGE_ALL),
+                'limitfrom' => new external_value(PARAM_INT, 'return a subset of records, starting at this point', VALUE_DEFAULT, 0),
+                'limitnum' => new external_value(PARAM_INT, 'return a subset comprising this many records in total', VALUE_DEFAULT, 0)
+            )
+        );
+    }
+
+    /**
+     * Get messages for the current user.
+     *
+     * @param  int $contactid  The recepient or sender of the message.
+     * @param  int $startdate  Start date of messages.
+     * @param  int $enddate    End date of messages.
+     * @param  int $limitfrom  Limit entries from this record.
+     * @param  int $limitnum   The amount of entries to show.
+     * @return array  Messages for the current user.
+     */
+    Public static function get_messages($contactid = 0, $startdate = 0, $enddate = 0, $readmessage = MESSAGE_ALL, $limitfrom = 0, $limitnum = 0) {
+        global $CFG, $USER, $DB;
+
+        require_once($CFG->dirroot . "/message/lib.php");
+        $params = self::validate_parameters(self::get_messages_parameters(), array(
+            'contactid' => $contactid, 'startdate' => $startdate, 'enddate' => $enddate,  'readmessage' => $readmessage, 'limitfrom' => $limitfrom, 'limitnum' => $limitnum));
+
+        $currentuser = $USER;
+        $contactid = $params['contactid'];
+        // Check to make sure that the user ID exists.
+        if ($contactid !== 0) {
+            $userto = $DB->get_record('user', array('id' => $contactid));
+            if (!($userto)) {
+                throw new moodle_exception(get_string('nomatchingusers', '', $contactid));
+            }
+        } else {
+            $userto = 0;
+        }
+
+        $startdate = $params['startdate'];
+        $enddate = $params['enddate'];
+        $readmessage = $params['readmessage'];
+        $limitfrom = $params['limitfrom'];
+        $limitnum = $params['limitnum'];
+
+        $messages    = array();
+        $messages = message_get_all_messages($currentuser, $userto, $startdate, $enddate, $readmessage, $limitfrom, $limitnum);
+
+        if (empty($messages['0'])) {
+            throw new moodle_exception(get_string('nomessagesfound', 'message'));
+        }
+        return $messages;
+    }
+
+     /**
+     * Returns description of method result value
+     *
+     * @return external_description
+     * @since Moodle 2.5
+     */
+    Public static function get_messages_returns() {
+        return new external_multiple_structure(
+            new external_single_structure(
+                array(
+                        'id' => new external_value(PARAM_INT, 'message ID'),
+                        'useridfrom' => new external_value(PARAM_INT, 'from user ID'),
+                        'useridto' => new external_value(PARAM_INT, 'to user ID'),
+                        'subject' => new external_value(PARAM_RAW, 'subject of the message'),
+                        'fullmessage' => new external_value(PARAM_RAW, 'The full message'),
+                        'fullmessageformat' => new external_value(PARAM_INT, 'code for the message format'),
+                        'fullmessagehtml' => new external_value(PARAM_RAW, 'html of the full message'),
+                        'smallmessage' => new external_value(PARAM_RAW, 'Small version of the message'),
+                        'notification' => new external_value(PARAM_INT, 'notification'),
+                        'contexturl' => new external_value(PARAM_URL, 'The context URL'),
+                        'contexturlname' => new external_value(PARAM_RAW, 'name of the context URL'),
+                        'timecreated' => new external_value(PARAM_INT, 'Time the message was created')
+                )
+            )
+        );
+    }
 }
 
 /**

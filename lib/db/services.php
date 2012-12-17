@@ -572,6 +572,14 @@ $functions = array(
         'capabilities'=> 'moodle/site:sendmessage',
     ),
 
+    'core_message_get_messages' => array(
+        'classname'   => 'core_message_external',
+        'methodname'  => 'get_messages',
+        'classpath'   => 'message/externallib.php',
+        'description' => 'Get messages',
+        'type'        => 'write',
+    ),
+
     // === notes related functions ===
 
     'moodle_notes_create_notes' => array(

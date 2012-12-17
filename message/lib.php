@@ -47,6 +47,11 @@ define('MESSAGE_SEARCH_MAX_RESULTS', 200);
 define('MESSAGE_CONTACTS_PER_PAGE',10);
 define('MESSAGE_MAX_COURSE_NAME_LENGTH', 30);
 
+// Used for displaying messages in the webservice.
+define('MESSAGE_ALL', 0);
+define('MESSAGE_READ', 1);
+define('MESSAGE_UNREAD', 2);
+
 /**
  * Define contants for messaging default settings population. For unambiguity of
  * plugin developer intentions we use 4-bit value (LSB numbering):
@@ -1792,6 +1797,85 @@ function message_get_history($user1, $user2, $limitnum=0, $viewingnewmessages=fa
     if ($limitnum > 0 && $messagecount > $limitnum) {
         $messages = array_slice($messages, $messagecount - $limitnum, $limitnum, true);
     }
+
+    return $messages;
+}
+
+/**
+ * Get all messages, read or unread for a specific user.
+ * This has been created for webservices.
+ *
+ * @param  object  $user1  The recepient or sender of the message.
+ * @param  object  $user2  The other recepient or send of the message.
+ * @param  int  $startdate Start date of messages.
+ * @param  int  $enddate   End date of messages.
+ * @param  int  $readmessage  Return read, unread or all.
+ * @param  int $limitfrom Limit entries from this record.
+ * @param  int $limitnum  The amount of entries to show.
+ * @return array  The messages.
+ */
+function message_get_all_messages($user1, $user2 = null, $startdate = null, $enddate = null, $readmessages = MESSAGE_ALL, $limitfrom = 0, $limitnum = 0) {
+    global $DB, $CFG;
+
+    $messages = array();
+
+    //we want messages sorted oldest to newest but if getting a subset of messages we need to sort
+    //desc to get the last $limitnum messages then flip the order in php
+    $sort = 'asc';
+    if ($limitnum > 0) {
+        $sort = 'desc';
+    }
+
+    $notificationswhere = null;
+    //we have just moved new messages to read. If theyre here to see new messages dont hide notifications
+    if ($CFG->messaginghidereadnotifications) {
+        $notificationswhere = 'AND notification = 0';
+    }
+
+    $usefromsql = null;
+    $params = null;
+    if ($user2) {
+        $usefromsql = "((useridto = ? AND useridfrom = ?) OR (useridto = ? AND useridfrom = ?))";
+        $params = array($user1->id, $user2->id, $user2->id, $user1->id);
+    } else {
+        $usefromsql = "(useridto = ? OR useridfrom = ?)";
+        $params = array($user1->id, $user1->id);
+    }
+
+    //prevent notifications of your own actions appearing in your own message history
+    $ownnotificationwhere = ' AND NOT (useridfrom = ? AND notification = 1)';
+    $params = array_merge($params, array($user1->id));
+
+    $datefromsql = null;
+    if ($startdate) {
+        $datefromsql = 'AND timecreated >= ?';
+        $params = array_merge($params, array($startdate));
+    }
+
+    $datetosql = null;
+    if ($enddate) {
+        $datetosql = 'AND timecreated <= ?';
+        $params = array_merge($params, array($enddate));
+    }
+    if ($readmessages != MESSAGE_UNREAD) {
+        if ($messages_read = $DB->get_records_select('message_read',
+                "$usefromsql $notificationswhere $ownnotificationwhere $datefromsql $datetosql",
+                $params, "timecreated $sort", '*', $limitfrom, $limitnum)) {
+            foreach ($messages_read as $message) {
+
+                $messages[] = (array)$message;
+            }
+        }
+    }
+    if ($readmessages != MESSAGE_READ) {
+        if ($messages_new =  $DB->get_records_select('message', "$usefromsql $ownnotificationwhere $datefromsql $datetosql",
+                                                        $params, "timecreated $sort", '*', $limitfrom, $limitnum)) {
+            foreach ($messages_new as $message) {
+                $messages[] = (array)$message;
+            }
+        }
+    }
+    $result = collatorlib::asort($messages, 'timecreated', collatorlib::SORT_NUMERIC);
 
     return $messages;
 }
