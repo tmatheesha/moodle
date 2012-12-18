@@ -203,4 +203,71 @@ class core_phpunit_generator_testcase extends advanced_testcase {
         $this->assertFalse($result);
 
     }
+
+    public function test_send_message() {
+        global $DB;
+
+        $this->resetAfterTest(true);
+
+        // Create some users.
+        for ($i = 0; $i < 20; $i++) {
+            $this->getDataGenerator()->create_user();
+        }
+
+        $message['useridto'] = 3;
+        $message['useridfrom'] = 5;
+        $message['subject'] = 'Test One';
+        $message['fullmessage'] = 'A simple small test.';
+        $message['fullmessageformat'] = 1;
+        $message['fullmessagehtml'] = '<p>A simple small test.</p>';
+        $message['smallmessage'] = '<p>A simple small test.</p>';
+        $message['notification'] = 0;
+        $message['timecreated'] = time();
+
+        // The first message created is unread.
+        $sentmessage = $this->getDataGenerator()->send_message($message);
+
+        $result = $DB->get_record('message', array('useridto'    => $message['useridto'],
+                                                   'useridfrom'  => $message['useridfrom'],
+                                                   'timecreated' => $message['timecreated']));
+        $this->assertEquals(count($sentmessage), count($result));
+
+        $message['useridto'] = 4;
+        $message['useridfrom'] = 9;
+        $message['subject'] = 'Test Two';
+        $message['fullmessage'] = 'A simple small second test.';
+        $message['fullmessageformat'] = 1;
+        $message['fullmessagehtml'] = '<p>A simple small second test.</p>';
+        $message['smallmessage'] = '<p>A simple small second test.</p>';
+        $message['notification'] = 0;
+        $message['timecreated'] = time();
+
+        // The second message created is read.
+        $sentmessage = $this->getDataGenerator()->send_message($message, true);
+
+        $result = $DB->get_record('message_read', array('useridto'    => $message['useridto'],
+                                                        'useridfrom'  => $message['useridfrom'],
+                                                        'timecreated' => $message['timecreated']));
+        $this->assertEquals(count($sentmessage), count($result));
+
+        // Create a few more unread entries with random data.
+        $messages = array();
+        for ($i = 0; $i < 25; $i++) {
+            $messages[] = $this->getDataGenerator()->send_message();
+        }
+
+        $result = $DB->get_records('message', array());
+        // +1 to $messages for the first record that we created.
+        $this->assertEquals((count($messages)) + 1, count($result));
+
+        // Create some read entries with random data.
+        $messages = array();
+        for ($i = 0; $i < 32; $i++) {
+            $messages[] = $this->getDataGenerator()->send_message(null, true);
+        }
+
+        $result = $DB->get_records('message_read', array());
+        // +1 to $messages for the second record that we created.
+        $this->assertEquals((count($messages)) + 1, count($result));
+    }
 }
