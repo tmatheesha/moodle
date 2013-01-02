@@ -156,8 +156,26 @@ if (!$formdata = $form->get_data()) {
                     // for now, only for "latlong" and "url" fields, but that should better be looked up from
                     // $CFG->dirroot . '/mod/data/field/' . $field->type . '/field.class.php'
                     // once there is stored how many contents the field can have.
-                    if (preg_match("/^(latlong|url)$/", $field->type)) {
-                        $values = explode(" ", $value, 2);
+                    if ($field->type == 'latlong') {
+                        $values = array();
+                        $latlongvalues = array();
+                        $pattern = '/-?\d{1,3}((\.|,)\d+)?/';
+                        $notused = preg_match_all($pattern, $value, $latlongvalues);
+                        foreach ($latlongvalues[0] as $lldata) {
+                            // Change figures to use a decimal point.
+                            $values[] = preg_replace('/,/', '.', $lldata);
+                        }
+                        // Check to see if the longitude and latitude figures are whole numbers.
+                        if (count($values) < 2) {
+                            $values = explode('.', $values[0]);
+                        }
+                        $content->content  = $values[0];
+                        $content->content1 = $values[1];
+
+                    } else if ($field->type == 'url') {
+                        $pattern = "/[\s\|]/"; // Seperate on white space, or the pipe symbol.
+                        $values = preg_split($pattern, $value, 2);
+
                         $content->content  = $values[0];
                         // The url field doesn't always have two values (unforced autolinking).
                         if (count($values) > 1) {
