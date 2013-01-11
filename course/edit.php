@@ -131,6 +131,13 @@ if ($editform->is_cancelled()) {
             }
         }
     } else {
+        // Do a check to see if we have edited the category field.
+        $coursecategory = $DB->get_field('course', 'category', array('id' => $data->id), MUST_EXIST);
+        if ($coursecategory != $data->category) {
+            if (!can_move_courses_to_category($course->id, $data->category)) {
+                print_error('cannotmovecoursetocategory');
+            }
+        }
         // Save any changes to the files used in the editor
         update_course($data, $editoroptions);
     }
