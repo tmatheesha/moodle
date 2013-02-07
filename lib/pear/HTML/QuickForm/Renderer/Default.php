@@ -169,6 +169,10 @@ class HTML_QuickForm_Renderer_Default extends HTML_QuickForm_Renderer
     function startForm(&$form)
     {
         $this->_html = '';
+        // Add a required note, if one is needed.
+        if (!empty($form->_required) && !$form->_freezeAll) {
+            $this->_html .= str_replace('{requiredNote}', $form->getRequiredNote(), $this->_requiredNoteTemplate);
+        }
         $this->_hiddenHtml = '';
     } // end func startForm
 
@@ -182,10 +186,6 @@ class HTML_QuickForm_Renderer_Default extends HTML_QuickForm_Renderer
     */
     function finishForm(&$form)
     {
-        // add a required note, if one is needed
-        if (!empty($form->_required) && !$form->_freezeAll) {
-            $this->_html .= str_replace('{requiredNote}', $form->getRequiredNote(), $this->_requiredNoteTemplate);
-        }
         // add form attributes and content
         $html = str_replace('{attributes}', $form->getAttributes(true), $this->_formTemplate);
         if (strpos($this->_formTemplate, '{hidden}')) {

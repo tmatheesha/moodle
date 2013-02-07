@@ -219,6 +219,15 @@ class HTML_QuickForm_Renderer_Tableless extends HTML_QuickForm_Renderer_Default
     function startForm(&$form)
     {
         $this->_fieldsetsOpen = 0;
+        // Add a required note, if one is needed.
+        if (!empty($form->_required) && !$form->_freezeAll) {
+            $requiredNote = $form->getRequiredNote();
+            // Replace default required note by DOM/XHTML optimized note.
+            if ($requiredNote == '<span style="font-size:80%; color:#ff0000;">*</span><span style="font-size:80%;"> denotes required field</span>') {
+                $requiredNote = '<span class="required">*</span> denotes required field';
+            }
+            $this->_html .= str_replace('{requiredNote}', $requiredNote, $this->_requiredNoteTemplate);
+        }
         parent::startForm($form);
     } // end func startForm
 
@@ -232,15 +241,6 @@ class HTML_QuickForm_Renderer_Tableless extends HTML_QuickForm_Renderer_Default
     */
     function finishForm(&$form)
     {
-        // add a required note, if one is needed
-        if (!empty($form->_required) && !$form->_freezeAll) {
-            $requiredNote = $form->getRequiredNote();
-            // replace default required note by DOM/XHTML optimized note
-            if ($requiredNote == '<span style="font-size:80%; color:#ff0000;">*</span><span style="font-size:80%;"> denotes required field</span>') {
-                $requiredNote = '<span class="required">*</span> denotes required field';
-            }
-            $this->_html .= str_replace('{requiredNote}', $requiredNote, $this->_requiredNoteTemplate);
-        }
         // close the open fieldset
         if ($this->_fieldsetsOpen > 0) {
             $this->_html .= $this->_closeFieldsetTemplate;
