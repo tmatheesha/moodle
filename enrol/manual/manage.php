@@ -85,7 +85,7 @@ if ($extendperiod) {
 // Build the list of options for the starting from dropdown.
 $timeformat = get_string('strftimedatefullshort');
 $today = time();
-$today = make_timestamp(date('Y', $today), date('m', $today), date('d', $today), 0, 0, 0);
+$today = make_timestamp(date('Y', $today), date('m', $today), date('d', $today), date('H', $today), date('i', $today), date('s', $today));
 
 // Enrolment start.
 $basemenu = array();

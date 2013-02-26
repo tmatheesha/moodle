@@ -81,7 +81,7 @@ $returnurl = new moodle_url('/admin/tool/uploaduser/index.php');
 $bulknurl  = new moodle_url('/admin/user/user_bulk.php');
 
 $today = time();
-$today = make_timestamp(date('Y', $today), date('m', $today), date('d', $today), 0, 0, 0);
+$today = make_timestamp(date('Y', $today), date('m', $today), date('d', $today), date('H', $today), date('i', $today), date('s', $today));
 
 // array of all valid fields for validation
 $STD_FIELDS = array('id', 'firstname', 'lastname', 'username', 'email',
