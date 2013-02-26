@@ -105,7 +105,7 @@ switch ($action) {
             case 3:
             default:
                 $today = time();
-                $today = make_timestamp(date('Y', $today), date('m', $today), date('d', $today), 0, 0, 0);
+                $today = make_timestamp(date('Y', $today), date('m', $today), date('d', $today), date('H', $today), date('i', $today), date('s', $today));
                 $timestart = $today;
                 break;
         }
