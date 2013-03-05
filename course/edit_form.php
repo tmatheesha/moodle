@@ -279,6 +279,13 @@ class course_edit_form extends moodleform {
             }
         }
 
+/// customizable fullname format
+//-------------------------------------------------------------------------------
+        $mform->addElement('header', 'nameformatting', get_string('nameformatting'));
+
+        $mform->addElement('text', 'fullnameformat', get_string('fullnameformat', 'admin'), 'size = 50');
+        $mform->setType('fullnameformat', PARAM_RAW);
+
 //--------------------------------------------------------------------------------
         $this->add_action_buttons();
 //--------------------------------------------------------------------------------

@@ -622,6 +622,13 @@ abstract class moodleform_mod extends moodleform {
             $mform->setDefault('showavailability', CONDITION_STUDENTVIEW_SHOW);
         }
 
+        // full name formatting.
+        // $mform->addElement('header', 'nameformatting', get_string('nameformatting'));
+
+        $mform->addElement('text', 'fullnameformat', get_string('fullnameformat', 'admin'), 'size = 50');
+        $mform->setType('fullnameformat', PARAM_RAW);
+        $mform->setAdvanced('fullnameformat');
+
         // Conditional activities: completion tracking section
         if(!isset($completion)) {
             $completion = new completion_info($COURSE);
