@@ -1990,6 +1990,7 @@ class core_renderer extends renderer_base {
     }
 
     /**
+     * Returns HTML for displaying a user's name.
      *
      * @param object $user A {@link $USER} object to get full name of
      * @param bool $override If true then the name will be first name followed by last name rather than adhering to fullnamedisplay setting.
@@ -2003,32 +2004,17 @@ class core_renderer extends renderer_base {
         return $this->render_displayname($displayname, $context, $link);
     }
 
+    /**
+     * Rederer for creating the HTML for displaying a users name.
+     *
+     * @param string $displayname  Name being displayed.
+     * @param context $context  Current context object.
+     * @param moodle_url $link  Link to a profile page or something similar.
+     */
     function render_displayname($displayname, $context = null, moodle_url $link = null) {
         global $DB;
 
-        $showlink = true;
-        if (isset($context)) {
-            if ($context->contextlevel == CONTEXT_MODULE) {
-                $cache = cache::make('core', 'fullname');
-                $showlink = $cache->get('moduleshowlink' . $context->instanceid);
-                if ($showlink === false) {
-                    $showlink = $DB->get_field('course_modules',
-                            'displaynamelink', array('id' => $context->instanceid));
-                    $cache->set('moduleshowlink' . $context->instanceid, $showlink);
-                }
-            }
-            if ($context->contextlevel == CONTEXT_COURSE) {
-                $cache = cache::make('core', 'fullname');
-                $showlink = $cache->get('courseshowlink' . $context->instanceid);
-                if ($showlink === false) {
-                    $showlink = $DB->get_field('course',
-                            'displaynamelink', array('id' => $context->instanceid));
-                    $cache->set('courseshowlink' . $context->instanceid, $showlink);
-                }
-            }
-        }
-
-        if ($link && $showlink) {
+        if ($link && can_link_to_user_profile_page($context)) {
             $displayname = html_writer::link($link, $displayname);
         }
         return $displayname;
@@ -2080,7 +2066,7 @@ class core_renderer extends renderer_base {
      * @return string
      */
     protected function render_user_picture(user_picture $userpicture) {
-        global $CFG, $DB;
+        global $CFG, $DB, $PAGE;
 
         $user = $userpicture->user;
 
@@ -2088,7 +2074,7 @@ class core_renderer extends renderer_base {
             if (!empty($user->imagealt)) {
                 $alt = $user->imagealt;
             } else {
-                $alt = get_string('pictureof', '', fullname($user));
+                $alt = get_string('pictureof', '', $this->displayname($user, $PAGE->context));
             }
         } else {
             $alt = '';
@@ -2116,7 +2102,7 @@ class core_renderer extends renderer_base {
         $output = html_writer::empty_tag('img', $attributes);
 
         // then wrap it in link if needed
-        if (!$userpicture->link) {
+        if (!$userpicture->link || !can_link_to_user_profile_page($PAGE->context)) {
             return $output;
         }
 
