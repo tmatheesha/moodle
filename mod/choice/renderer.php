@@ -121,7 +121,7 @@ class mod_choice_renderer extends plugin_renderer_base {
      * @return string
      */
     public function display_publish_name_vertical($choices) {
-        global $PAGE;
+        global $PAGE, $OUTPUT;
         $html ='';
         $html .= html_writer::tag('h2',format_string(get_string("responses", "choice")), array('class'=>'main'));
 
@@ -213,7 +213,8 @@ class mod_choice_renderer extends plugin_renderer_base {
                             $user->imagealt = '';
                         }
 
-                        $userfullname = fullname($user, $choices->fullnamecapability);
+                        $userfullname = $OUTPUT->displayname($user, $PAGE->context);
+                        // $userfullname = fullname($user, $choices->fullnamecapability);
                         if ($choices->viewresponsecapability && $choices->deleterepsonsecapability  && $optionid > 0) {
                             $attemptaction = html_writer::label($userfullname, 'attempt-user'.$user->id, false, array('class' => 'accesshide'));
                             $attemptaction .= html_writer::checkbox('attemptid[]', $user->id,'', null, array('id' => 'attempt-user'.$user->id));
@@ -223,7 +224,7 @@ class mod_choice_renderer extends plugin_renderer_base {
                         $data .= html_writer::tag('div', $userimage, array('class'=>'image'));
 
                         $userlink = new moodle_url('/user/view.php', array('id'=>$user->id,'course'=>$choices->courseid));
-                        $name = html_writer::tag('a', $userfullname, array('href'=>$userlink, 'class'=>'username'));
+                        $name = html_writer::tag('a', $OUTPUT->displayname($user, $PAGE->context, $userlink));
                         $data .= html_writer::tag('div', $name, array('class'=>'fullname'));
                         $data .= html_writer::tag('div','', array('class'=>'clearfloat'));
                         $optionusers .= html_writer::tag('div', $data, array('class'=>'user'));

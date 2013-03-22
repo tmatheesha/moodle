@@ -433,7 +433,8 @@ function prepare_choice_show_results($choice, $course, $cm, $allresponses, $forc
                         echo $OUTPUT->user_picture($user, array('courseid'=>$course->id));
                         echo "</td><td class=\"fullname\">";
                         echo "<a href=\"$CFG->wwwroot/user/view.php?id=$user->id&amp;course=$course->id\">";
-                        echo fullname($user, $hascapfullnames);
+                        echo $OUTPUT->displayname($user, $context);
+                        // echo fullname($user, $hascapfullnames);
                         echo "</a>";
                         echo "</td></tr>";
                     }
@@ -459,7 +460,8 @@ function prepare_choice_show_results($choice, $course, $cm, $allresponses, $forc
                             echo $OUTPUT->user_picture($user, array('courseid'=>$course->id));
                             echo '</td><td class="fullname">';
                             echo "<a href=\"$CFG->wwwroot/user/view.php?id=$user->id&amp;course=$course->id\">";
-                            echo fullname($user, $hascapfullnames);
+                            echo $OUTPUT->displayname($user, $context);
+                            // echo fullname($user, $hascapfullnames);
                             echo '</a>';
                             echo '</td></tr>';
                        }
