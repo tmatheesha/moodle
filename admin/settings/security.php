@@ -43,14 +43,13 @@ if ($hassiteconfig) { // speedup for non-admins, add all caps used on this page
                        1800 => new lang_string('numminutes', '', 30),
                        2700 => new lang_string('numminutes', '', 45),
                        3600 => new lang_string('numminutes', '', 60))));
-    $temp->add(new admin_setting_configselect('fullnamedisplay', new lang_string('fullnamedisplay', 'admin'), new lang_string('configfullnamedisplay', 'admin'),
-                  'language', array('language' => new lang_string('language'),
-                                              'firstname lastname' => new lang_string('firstname').' + '.new lang_string('lastname'),
-                                              'lastname firstname' => new lang_string('lastname').' + '.new lang_string('firstname'),
-                                              'firstname' => new lang_string('firstname'))));
+    // $temp->add(new admin_setting_configselect('fullnamedisplay', new lang_string('fullnamedisplay', 'admin'), new lang_string('configfullnamedisplay', 'admin'),
+    //               'language', array('language' => new lang_string('language'),
+    //                                           'firstname lastname' => new lang_string('firstname').' + '.new lang_string('lastname'),
+    //                                           'lastname firstname' => new lang_string('lastname').' + '.new lang_string('firstname'),
+    //                                           'firstname' => new lang_string('firstname'))));
 
-    // Just throwing this here for the moment.
-    $temp->add(new admin_setting_configtext('sitefullnameformat', new lang_string('fullnameformat', 'admin'), new lang_string('fullnameformatdisplay', 'admin'), '{$a->lastname} {$a->firstname}', PARAM_RAW, 50));
+    $temp->add(new admin_setting_configtext('sitefullnameformat', new lang_string('fullnameformat', 'admin'), new lang_string('fullnameformatdisplay', 'admin'), '', PARAM_RAW, 50));
 
     $temp->add(new admin_setting_configcheckbox('extendedusernamechars', new lang_string('extendedusernamechars', 'admin'), new lang_string('configextendedusernamechars', 'admin'), 0));
     $temp->add(new admin_setting_configtext('sitepolicy', new lang_string('sitepolicy', 'admin'), new lang_string('sitepolicy_help', 'admin'), '', PARAM_RAW));

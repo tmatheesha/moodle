@@ -335,6 +335,7 @@ $string['site:accessallgroups'] = 'Access all groups';
 $string['siteadministrators'] = 'Site administrators';
 $string['site:approvecourse'] = 'Approve course creation';
 $string['site:backup'] = 'Backup courses';
+$string['site:canoverridenameformat'] = 'Can override name format';
 $string['site:config'] = 'Change site configuration';
 $string['site:doanything'] = 'Allowed to do everything';
 $string['site:doclinks'] = 'Show links to offsite docs';

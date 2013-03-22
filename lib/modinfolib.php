@@ -1118,7 +1118,8 @@ class cm_info extends stdClass {
         $this->conditionsfield = isset($mod->conditionsfield)
                 ? $mod->conditionsfield : array();
 
-        // Added by Adrian to see if this works, if you are reading this then go fetch Adrian and get him to fix me.
+        // Note: fullnameformat was not present in cm_info in Moodle
+        // prior to 2.5.
         $this->fullnameformat = isset($mod->fullnameformat)
                 ? $mod->fullnameformat : null;
 
