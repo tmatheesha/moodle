@@ -611,7 +611,7 @@
                     $row->cells[1] = new html_table_cell();
                     $row->cells[1]->attributes['class'] = 'content';
 
-                    $row->cells[1]->text = $OUTPUT->container(fullname($user, has_capability('moodle/site:viewfullnames', $context)), 'username');
+                    $row->cells[1]->text = $OUTPUT->container($OUTPUT->displayname($user, $context), 'username');
                     $row->cells[1]->text .= $OUTPUT->container_start('info');
 
                     if (!empty($user->role)) {
@@ -731,11 +731,11 @@
 
                 $usercontext = context_user::instance($user->id);
 
+                $link = null;
                 if ($piclink = ($USER->id == $user->id || has_capability('moodle/user:viewdetails', $context) || has_capability('moodle/user:viewdetails', $usercontext))) {
-                    $profilelink = '<strong><a href="'.$CFG->wwwroot.'/user/view.php?id='.$user->id.'&amp;course='.$course->id.'">'.fullname($user, false, $context).'</a></strong>';
-                } else {
-                    $profilelink = '<strong>'.fullname($user).'</strong>';
+                    $link = new moodle_url('/user/view.php', array('id' => $user->id, 'course' => $course->id));
                 }
+                $profilelink = '<strong>' . $OUTPUT->displayname($user, $context, $link) . '</strong>';
 
                 $data = array();
                 if ($bulkoperations) {

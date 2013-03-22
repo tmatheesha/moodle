@@ -59,7 +59,7 @@
             redirect($returnurl);
         } else {
             echo $OUTPUT->header();
-            redirect($returnurl, get_string('usernotconfirmed', '', fullname($user, true)));
+            redirect($returnurl, get_string('usernotconfirmed', '', $OUTPUT->displayname($user, $sitecontext)));
         }
 
     } else if ($delete and confirm_sesskey()) {              // Delete a selected user, after confirmation
@@ -73,7 +73,7 @@
 
         if ($confirm != md5($delete)) {
             echo $OUTPUT->header();
-            $fullname = fullname($user, true);
+            $fullname = $OUTPUT->displayname($user, $sitecontext);
             echo $OUTPUT->heading(get_string('deleteuser', 'admin'));
             $optionsyes = array('delete'=>$delete, 'confirm'=>md5($delete), 'sesskey'=>sesskey());
             echo $OUTPUT->confirm(get_string('deletecheckfull', '', "'$fullname'"), new moodle_url($returnurl, $optionsyes), $returnurl);
@@ -86,7 +86,7 @@
             } else {
                 session_gc(); // remove stale sessions
                 echo $OUTPUT->header();
-                echo $OUTPUT->notification($returnurl, get_string('deletednot', '', fullname($user, true)));
+                echo $OUTPUT->notification($returnurl, get_string('deletednot', '', $OUTPUT->displayname($user, $sitecontext)));
             }
         }
     } else if ($acl and confirm_sesskey()) {
@@ -349,10 +349,10 @@
             } else {
                 $strlastaccess = get_string('never');
             }
-            $fullname = fullname($user, true);
+            $link = new moodle_url('/user/view.php', array('id' => $user->id, 'course' => $site->id));
 
             $row = array ();
-            $row[] = "<a href=\"../user/view.php?id=$user->id&amp;course=$site->id\">$fullname</a>";
+            $row[] = $OUTPUT->displayname($user, $sitecontext, $link);
             foreach ($extracolumns as $field) {
                 $row[] = $user->{$field};
             }
