@@ -460,6 +460,10 @@ function update_moduleinfo($cm, $moduleinfo, $course, $mform = null) {
     $cm->displaynameformat = $moduleinfo->displaynameformat;
 
     $DB->update_record('course_modules', $cm);
+    // Changes may have been made to the fullname format and showing the profile page.
+    // Invalidate the cache.
+    cache_helper::invalidate_by_definition('core', 'fullname', array(),
+            array('modulefullnameformat' . $cm->id, 'moduleshowlink' . $cm->id));
 
     $modcontext = context_module::instance($moduleinfo->coursemodule);
 

@@ -139,6 +139,9 @@ if ($editform->is_cancelled()) {
     } else {
         // Save any changes to the files used in the editor
         update_course($data, $editoroptions);
+        // Changes may have been made to the fullname format and showing the profile page. Invalidate the cache.
+        cache_helper::invalidate_by_definition('core', 'fullname', array(), array('coursefullnameformat' . $course->id));
+        cache_helper::invalidate_by_definition('core', 'fullname', array(), array('courseshowlink' . $course->id));
     }
 
     // Redirect user to newly created/updated course.

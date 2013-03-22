@@ -3625,8 +3625,12 @@ function fullname_format($context = null) {
 	}
 
 	if ($context->contextlevel == CONTEXT_MODULE) {
-		$fullnameformat = $DB->get_field('course_modules',
-				'displaynameformat', array('id' => $context->instanceid));
+		$cache = cache::make('core', 'fullname');
+		if (!$fullnameformat = $cache->get('modulefullnameformat' . $context->instanceid)) {
+			$fullnameformat = $DB->get_field('course_modules',
+					'displaynameformat', array('id' => $context->instanceid));
+			$cache->set('modulefullnameformat' . $context->instanceid, $fullnameformat);
+		}
 		if (!empty($fullnameformat)) {
 			return $fullnameformat;
 		} else {
@@ -3635,8 +3639,12 @@ function fullname_format($context = null) {
 	}
 
 	if ($context->contextlevel == CONTEXT_COURSE) {
-		$fullnameformat = $DB->get_field('course',
-				'displaynameformat', array('id' => $context->instanceid));
+		$coursecache = cache::make('core', 'fullname');
+		if (!$fullnameformat = $coursecache->get('coursefullnameformat' . $context->instanceid)) {
+			$fullnameformat = $DB->get_field('course',
+					'displaynameformat', array('id' => $context->instanceid));
+			$coursecache->set('coursefullnameformat' . $context->instanceid, $fullnameformat);
+		}
 		if (!empty($fullnameformat)) {
 			return $fullnameformat;
 		} else {
