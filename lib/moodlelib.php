@@ -3625,8 +3625,12 @@ function fullname_format($context = null) {
 	}
 
 	if ($context->contextlevel == CONTEXT_MODULE) {
-		$fullnameformat = $DB->get_field('course_modules',
-				'fullnameformat', array('id' => $context->instanceid));
+		// $cache = cache::make('modulefullnameformat', 'string');
+		// if (!$fullnameformat = $cache->get('fullnameformat')) {
+			$fullnameformat = $DB->get_field('course_modules',
+					'fullnameformat', array('id' => $context->instanceid));
+		// 	$cache->set($fullnameformat);
+		// }
 		if (!empty($fullnameformat)) {
 			return $fullnameformat;
 		} else {
@@ -3635,8 +3639,12 @@ function fullname_format($context = null) {
 	}
 
 	if ($context->contextlevel == CONTEXT_COURSE) {
-		$fullnameformat = $DB->get_field('course',
-				'fullnameformat', array('id' => $context->instanceid));
+		// $coursecache = cache::make('coursefullnameformat', 'string');
+		// if (!$fullnameformat = $coursecache->get('fullnameformat')) {
+			$fullnameformat = $DB->get_field('course',
+					'fullnameformat', array('id' => $context->instanceid));
+		// 	$coursecache->set($fullnameformat);
+		// }
 		if (!empty($fullnameformat)) {
 			return $fullnameformat;
 		} else {
@@ -3658,6 +3666,56 @@ function fullname_format($context = null) {
 		}
 	}
 	return get_string('fullnamedisplay');
+}
+
+/**
+ * Not to be used in normal circumstances. Use $OUTPUT->displayname() instead.
+ *
+ * @param object $user A {@link $USER} object to get full name of
+ * @param bool $override If true then the name will be first name followed by last name rather than adhering to fullnamedisplay setting.
+ * @param context $context Current context object.
+ * @param moodle_url $link  Link to a profile page of something similar.
+ */
+function display_name($user, $context = null) {
+	global $DB;
+
+    // Add fields to this array to show them with the correct token.
+    $allnames = array('lastname',
+            'firstname',
+            'firstnamephonetic',
+            'lastnamephonetic',
+            'alternatename',
+            'aliasname',
+            'idnumber');
+
+    // Someone hasn't sent a user object, but something else.
+    if (isset($user->userid)) {
+        $user->id = $user->userid;
+    }
+    $displayname = fullname_format($context);
+    $requirednames = array();
+    $requirelookup = false;
+
+    // Do we have all the data we need or do we require a look up for the extra fields?
+    foreach ($allnames as $tempname) {
+        $pattern = '/' . $tempname. '/';
+        if (preg_match($pattern, $displayname)) {
+            $requirednames[] = $tempname;
+            if (!isset($user->$tempname)) {
+                $requirelookup = true;
+            }
+        }
+    }
+
+    if ($requirelookup) {
+        $user = $DB->get_record('user', array('id' => $user->id));
+    }
+
+    foreach ($requirednames as $altname) {
+        $displayname = str_replace('{$a->' . $altname . '}',
+                $user->$altname, $displayname);
+    }
+    return $displayname;
 }
 
 /**
