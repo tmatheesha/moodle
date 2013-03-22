@@ -3669,12 +3669,12 @@ function fullname_format($context = null) {
 }
 
 /**
+ * Returns a user's name for displaying.
  * Not to be used in normal circumstances. Use $OUTPUT->displayname() instead.
  *
  * @param object $user A {@link $USER} object to get full name of
- * @param bool $override If true then the name will be first name followed by last name rather than adhering to fullnamedisplay setting.
  * @param context $context Current context object.
- * @param moodle_url $link  Link to a profile page of something similar.
+ * @return string  The users name in the appropriate format.
  */
 function display_name($user, $context = null) {
 	global $DB;
@@ -3716,6 +3716,66 @@ function display_name($user, $context = null) {
                 $user->$altname, $displayname);
     }
     return $displayname;
+}
+
+function can_link_to_user_profile_page($context) {
+	global $DB;
+
+	$showlink = true;
+    if (isset($context)) {
+        if ($context->contextlevel == CONTEXT_MODULE) {
+            $cache = cache::make('core', 'fullname');
+            $showlink = $cache->get('moduleshowlink' . $context->instanceid);
+            if ($showlink === false) {
+                $showlink = $DB->get_field('course_modules',
+                        'displaynamelink', array('id' => $context->instanceid));
+                $cache->set('moduleshowlink' . $context->instanceid, $showlink);
+            }
+        }
+        if ($context->contextlevel == CONTEXT_COURSE) {
+            $cache = cache::make('core', 'fullname');
+            $showlink = $cache->get('courseshowlink' . $context->instanceid);
+            if ($showlink === false) {
+                $showlink = $DB->get_field('course',
+                        'displaynamelink', array('id' => $context->instanceid));
+                $cache->set('courseshowlink' . $context->instanceid, $showlink);
+            }
+        }
+    }
+    return $showlink;
+}
+
+/**
+ * Check to see if the user's name should be linked to a profile page.
+ *
+ * @param context $context  The current context.
+ * @return bool  True or false depending on the link profile setting.
+ */
+function can_link_to_user_profile_page($context) {
+	global $DB;
+
+	$showlink = true;
+    if (isset($context)) {
+        if ($context->contextlevel == CONTEXT_MODULE) {
+            $cache = cache::make('core', 'fullname');
+            $showlink = $cache->get('moduleshowlink' . $context->instanceid);
+            if ($showlink === false) {
+                $showlink = $DB->get_field('course_modules',
+                        'displaynamelink', array('id' => $context->instanceid));
+                $cache->set('moduleshowlink' . $context->instanceid, $showlink);
+            }
+        }
+        if ($context->contextlevel == CONTEXT_COURSE) {
+            $cache = cache::make('core', 'fullname');
+            $showlink = $cache->get('courseshowlink' . $context->instanceid);
+            if ($showlink === false) {
+                $showlink = $DB->get_field('course',
+                        'displaynamelink', array('id' => $context->instanceid));
+                $cache->set('courseshowlink' . $context->instanceid, $showlink);
+            }
+        }
+    }
+    return $showlink;
 }
 
 /**
