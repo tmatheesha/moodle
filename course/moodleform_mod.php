@@ -623,11 +623,11 @@ abstract class moodleform_mod extends moodleform {
         }
 
         // full name formatting.
-        // $mform->addElement('header', 'nameformatting', get_string('nameformatting'));
-
-        $mform->addElement('text', 'fullnameformat', get_string('fullnameformat', 'admin'), 'size = 50');
-        $mform->setType('fullnameformat', PARAM_RAW);
-        $mform->setAdvanced('fullnameformat');
+        if (has_capability('moodle/site:canoverridenameformat', $this->context)) {
+            $mform->addElement('text', 'fullnameformat', get_string('fullnameformatmodule'), 'size = 50');
+            $mform->setType('fullnameformat', PARAM_RAW);
+            $mform->setAdvanced('fullnameformat');
+        }
 
         // Conditional activities: completion tracking section
         if(!isset($completion)) {

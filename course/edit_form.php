@@ -244,6 +244,14 @@ class course_edit_form extends moodleform {
         $mform->addElement('select', 'lang', get_string('forcelanguage'), $languages);
         $mform->setDefault('lang', $courseconfig->lang);
 
+/// customizable fullname format
+//-------------------------------------------------------------------------------
+        if (has_capability('moodle/site:canoverridenameformat', $context)) {
+            $mform->addElement('text', 'fullnameformat', get_string('fullnameformatcourse'), 'size = 50');
+            $mform->setType('fullnameformat', PARAM_RAW);
+            $mform->setAdvanced('fullnameformat');
+        }
+
 //--------------------------------------------------------------------------------
         if (completion_info::is_enabled_for_site()) {
             $mform->addElement('header','progress', get_string('progress','completion'));
@@ -278,12 +286,6 @@ class course_edit_form extends moodleform {
             }
         }
 
-/// customizable fullname format
-//-------------------------------------------------------------------------------
-        $mform->addElement('header', 'nameformatting', get_string('nameformatting'));
-
-        $mform->addElement('text', 'fullnameformat', get_string('fullnameformat', 'admin'), 'size = 50');
-        $mform->setType('fullnameformat', PARAM_RAW);
 
 //--------------------------------------------------------------------------------
         $this->add_action_buttons();
