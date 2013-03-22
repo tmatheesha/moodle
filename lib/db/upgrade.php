@@ -1756,7 +1756,7 @@ function xmldb_main_upgrade($oldversion) {
         // No savepoint needed for this change.
     }
 
-    if ($oldversion < 2013022800.01) {
+    if ($oldversion < 2013030800.01) {
 
         // Define field fullnameformat to be added to course.
         $table = new xmldb_table('course');
@@ -1846,7 +1846,7 @@ function xmldb_main_upgrade($oldversion) {
         }
 
         // Main savepoint reached.
-        upgrade_main_savepoint(true, 2013022800.01);
+        upgrade_main_savepoint(true, 2013030800.01);
     }
 
     return true;
