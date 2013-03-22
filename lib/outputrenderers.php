@@ -565,7 +565,7 @@ class core_renderer extends renderer_base {
             if ($withlinks) {
                 $link = new moodle_url('/course/loginas.php', array('id' => $course->id, 'sesskey' => sesskey()));
             }
-            $realuserinfo = '[' . $this->displayname($realuser, null, null, $link) . '] ';
+            $realuserinfo = '[' . $this->displayname($realuser, null, $link) . '] ';
         } else {
             $realuserinfo = '';
         }
@@ -581,9 +581,9 @@ class core_renderer extends renderer_base {
             // Since Moodle 2.0 this link always goes to the public profile page (not the course profile page)
             $link = null;
             if ($withlinks) {
-                $link = new moodle_url('user/profile.php', array('id' => $USER->id));
+                $link = new moodle_url('/user/profile.php', array('id' => $USER->id));
             }
-            $username = $this->displayname($USER, null, null, $link);
+            $username = $this->displayname($USER, null, $link);
             if (is_mnet_remote_user($USER) and $idprovider = $DB->get_record('mnet_host', array('id'=>$USER->mnethostid))) {
                 if ($withlinks) {
                     $username .= " from <a href=\"{$idprovider->wwwroot}\">{$idprovider->name}</a>";
@@ -1995,60 +1995,41 @@ class core_renderer extends renderer_base {
      * @param bool $override If true then the name will be first name followed by last name rather than adhering to fullnamedisplay setting.
      * @param context $context Current context object.
      * @param string $nameformat Name format to avoid searching for it if already known.
+     * @param moodle_url $link  Link to a profile page of something similar.
      * @return string the users display name.
      */
-    function displayname($user, $context = null, $nameformat = null, moodle_url $redirect = null) {
+    function displayname($user, $context = null, moodle_url $link = null) {
+        $displayname = display_name($user, $context);
+        return $this->render_displayname($displayname, $context, $link);
+    }
+
+    function render_displayname($displayname, $context = null, moodle_url $link = null) {
         global $DB;
 
-        // Add fields to this array to show them with the correct token.
-        $allnames = array('lastname',
-                'firstname',
-                'firstnamephonetic',
-                'lastnamephonetic',
-                'alternatename',
-                'aliasname',
-                'idnumber');
-
-        // Someone hasn't sent a user object, but something else.
-        if (isset($user->userid)) {
-            $user->id = $user->userid;
-        }
-
-        if (!isset($nameformat)) {
-            $displayname = fullname_format($context);
-        } else {
-            $displayname = $nameformat;
-        }
-
-        $requirednames = array();
-        $requirelookup = false;
-        // Do we have all the data we need or do we require a look up for the extra fields?
-        foreach ($allnames as $tempname) {
-            $pattern = '/' . $tempname. '/';
-            if (preg_match($pattern, $displayname)) {
-                $requirednames[] = $tempname;
-                if (!isset($user->$tempname)) {
-                    $requirelookup = true;
+        $showlink = true;
+        if (isset($context)) {
+            if ($context->contextlevel == CONTEXT_MODULE) {
+                $cache = cache::make('core', 'fullname');
+                $showlink = $cache->get('moduleshowlink' . $context->instanceid);
+                if ($showlink === false) {
+                    $showlink = $DB->get_field('course_modules',
+                            'displaynamelink', array('id' => $context->instanceid));
+                    $cache->set('moduleshowlink' . $context->instanceid, $showlink);
+                }
+            }
+            if ($context->contextlevel == CONTEXT_COURSE) {
+                $cache = cache::make('core', 'fullname');
+                $showlink = $cache->get('courseshowlink' . $context->instanceid);
+                if ($showlink === false) {
+                    $showlink = $DB->get_field('course',
+                            'displaynamelink', array('id' => $context->instanceid));
+                    $cache->set('courseshowlink' . $context->instanceid, $showlink);
                 }
             }
         }
 
-        if ($requirelookup) {
-            $user = $DB->get_record('user', array('id' => $user->id));
-        }
-
-        foreach ($requirednames as $altname) {
-            $displayname = str_replace('{$a->' . $altname . '}',
-                    $user->$altname, $displayname);
-        }
-
-        return $this->render_displayname($displayname, $redirect);
-    }
-
-    function render_displayname($displayname, moodle_url $redirect = null) {
-        if ($redirect) {
-            // echo 'displayname: ' . $displayname . '<br />';
-            $displayname = html_writer::link($redirect, $displayname);
+        if ($link && $showlink) {
+            $displayname = html_writer::link($link, $displayname);
         }
         return $displayname;
     }

@@ -3684,6 +3684,7 @@ function display_name($user, $context = null) {
             'firstname',
             'firstnamephonetic',
             'lastnamephonetic',
+            'middlename',
             'alternatename',
             'aliasname',
             'idnumber');
