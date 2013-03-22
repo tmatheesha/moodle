@@ -3575,6 +3575,7 @@ function ismoving($courseid) {
 function fullname($user, $override=false) {
     global $CFG, $SESSION;
 
+
     if (!isset($user->firstname) and !isset($user->lastname)) {
         return '';
     }
@@ -3607,6 +3608,56 @@ function fullname($user, $override=false) {
     }
 
     return get_string('fullnamedisplay', '', $user);
+}
+
+/**
+ * Returns the format to display full names depending on the context.
+ * If no formating has been set then it defaults to the language string.
+ *
+ * @param context $context  A context object for determining which format to display full name with.
+ * @return string  A format for displaying full name eg({$a->firstname} {$a->lastname})
+ */
+function fullname_format($context = null) {
+	global $CFG, $DB;
+
+	if (!isset($context)) {
+		$context = context_system::instance();
+	}
+
+	if ($context->contextlevel == CONTEXT_MODULE) {
+		$fullnameformat = $DB->get_field('course_modules',
+				'fullnameformat', array('id' => $context->instanceid));
+		if (!empty($fullnameformat)) {
+			return $fullnameformat;
+		} else {
+			$context = $context->get_parent_context();
+		}
+	}
+
+	if ($context->contextlevel == CONTEXT_COURSE) {
+		$fullnameformat = $DB->get_field('course',
+				'fullnameformat', array('id' => $context->instanceid));
+		if (!empty($fullnameformat)) {
+			return $fullnameformat;
+		} else {
+			$context = $context->get_parent_context();
+		}
+	}
+
+	if ($context->contextlevel == CONTEXT_COURSECAT) {
+		// Enter code her for altering the format on a category level.
+		$context = $context->get_parent_context();
+	}
+
+	if ($context->contextlevel == CONTEXT_SYSTEM) {
+		if (isset($CFG->sitefullnameformat)) {
+			$fullnameformat = $CFG->sitefullnameformat;
+			if (!empty($fullnameformat)) {
+				return $fullnameformat;
+			}
+		}
+	}
+	return get_string('fullnamedisplay');
 }
 
 /**
