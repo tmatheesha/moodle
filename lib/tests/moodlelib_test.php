@@ -2442,4 +2442,60 @@ class moodlelib_testcase extends advanced_testcase {
             $this->assertFalse(password_is_legacy_hash($user->password));
         }
     }
+
+    public function test_fullname_format() {
+        global $CFG, $DB;
+
+        $this->resetAfterTest();
+
+        // Set up course and activity
+        $course = $this->getDataGenerator()->create_course();
+        $course->fullnameformat = '{$a->idnumber} {$a->alternatename}';
+        $DB->update_record('course', $course);
+
+        $record =  array();
+        $record['course'] = $course->id;
+        $record['name'] = 'test database activity';
+        $record['intro'] = 'This is to test the fullname_format function';
+        $record['introformat'] = 1;
+
+        $databaseactivity = $this->getDataGenerator()->create_module('data', $record);
+
+        // Test for activity name format being set.
+        // Change the format setting in the activity.
+        $modinfo = get_fast_modinfo($course);
+        $cm = $modinfo->get_cm($databaseactivity->id);
+        $activitynameformat = '{$a->alias}';
+        $DB->set_field('course_modules', 'fullnameformat', $activitynameformat, array('id' => $cm->id));
+
+        $coursecontext = context_course::instance($course->id);
+        $fullnameformat = fullname_format($coursecontext);
+
+        $this->assertEquals($course->fullnameformat, $fullnameformat);
+
+        // Test for site name format being set.
+        $sitecontext = context_system::instance();
+
+        // back up config settings for restore later.
+        $originalcfg = new stdClass();
+        $originalcfg->sitefullnameformat = $CFG->sitefullnameformat;
+
+        // Change the format setting for the system.
+        $CFG->sitefullnameformat = '{$a->lastname} {$a->lastnamephonetic} {$a->firstname} {$a->firstnamephonetic}';
+        if (!isset($CFG->sitefullnameformat)) {
+            $CFG->sitefullnameformat = '{$a->lastname} {$a->lastnamephonetic} {$a->firstname} {$a->firstnamephonetic}';
+        }
+        $sitenameformat = $CFG->sitefullnameformat;
+        $fullnameformat = fullname_format($sitecontext);
+        $this->assertEquals($sitenameformat, $fullnameformat);
+
+        // Test for using the default setting (which is the language string).
+        $CFG->sitefullnameformat = '';
+        $fullnameformat = fullname_format();
+        $expectedformat = '{$a->firstname} {$a->lastname}';
+        $this->assertEquals($fullnameformat, $expectedformat);
+
+        // tidy up after we finish testing.
+        $CFG->sitefullnameformat = $originalcfg->sitefullnameformat;
+    }
 }
