@@ -2007,6 +2007,7 @@ class core_renderer extends renderer_base {
     }
 
     /**
+     * Returns HTML for displaying a user's name.
      *
      * @param object $user A {@link $USER} object to get full name of
      * @param context $context Current context object.
@@ -2076,7 +2077,7 @@ class core_renderer extends renderer_base {
      * @return string
      */
     protected function render_user_picture(user_picture $userpicture) {
-        global $CFG, $DB;
+        global $CFG, $DB, $PAGE;
 
         $user = $userpicture->user;
 
@@ -2084,7 +2085,7 @@ class core_renderer extends renderer_base {
             if (!empty($user->imagealt)) {
                 $alt = $user->imagealt;
             } else {
-                $alt = get_string('pictureof', '', fullname($user));
+                $alt = get_string('pictureof', '', $this->displayname($user, $PAGE->context));
             }
         } else {
             $alt = '';
@@ -2112,7 +2113,7 @@ class core_renderer extends renderer_base {
         $output = html_writer::empty_tag('img', $attributes);
 
         // then wrap it in link if needed
-        if (!$userpicture->link) {
+        if (!$userpicture->link || !can_link_to_user_profile_page($PAGE->context)) {
             return $output;
         }
 
