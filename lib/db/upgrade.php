@@ -1756,5 +1756,98 @@ function xmldb_main_upgrade($oldversion) {
         // No savepoint needed for this change.
     }
 
+    if ($oldversion < 2013022800.01) {
+
+        // Define field fullnameformat to be added to course.
+        $table = new xmldb_table('course');
+        $field = new xmldb_field('fullnameformat', XMLDB_TYPE_CHAR, '256', null, null, null, null, 'completionnotify');
+
+        // Conditionally launch add field fullnameformat.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+         // Define field displaynamelink to be added to course.
+        $table = new xmldb_table('course');
+        $field = new xmldb_field('displaynamelink', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '1', 'fullnameformat');
+
+        // Conditionally launch add field displaynamelink.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Define field fullnameformat to be added to course_modules.
+        $table = new xmldb_table('course_modules');
+        $field = new xmldb_field('fullnameformat', XMLDB_TYPE_CHAR, '256', null, null, null, null, 'showdescription');
+
+        // Conditionally launch add field fullnameformat.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+         // Define field displaynamelink to be added to course_modules.
+        $table = new xmldb_table('course_modules');
+        $field = new xmldb_field('displaynamelink', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '1', 'fullnameformat');
+
+        // Conditionally launch add field displaynamelink.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+         // Define field lastnamephonetic to be added to user.
+        $table = new xmldb_table('user');
+        $field = new xmldb_field('lastnamephonetic', XMLDB_TYPE_CHAR, '255', null, null, null, null, 'imagealt');
+
+        // Conditionally launch add field lastnamephonetic.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+         // Define field firstnamephonetic to be added to user.
+        $table = new xmldb_table('user');
+        $field = new xmldb_field('firstnamephonetic', XMLDB_TYPE_CHAR, '255', null, null, null, null, 'lastnamephonetic');
+
+        // Conditionally launch add field firstnamephonetic.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Define field alternatename to be added to user.
+        $table = new xmldb_table('user');
+        $field = new xmldb_field('alternatename', XMLDB_TYPE_CHAR, '255', null, null, null, null, 'firstnamephonetic');
+
+        // Conditionally launch add field alternatename.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+         // Define field aliasname to be added to user.
+        $table = new xmldb_table('user');
+        $field = new xmldb_field('aliasname', XMLDB_TYPE_CHAR, '255', null, null, null, null, 'alternatename');
+
+        // Conditionally launch add field aliasname.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Update sitefullnameformat to default to the old fullnamedisplay setting.
+        if (isset($CFG->fullnamedisplay)) {
+            if ($CFG->fullnamedisplay != 'language') {
+                if ($CFG->fullnamedisplay == 'firstname lastname') {
+                    set_config('sitefullnameformat', '{$a->firstname} {$a->lastname}');
+                }
+                if ($CFG->fullnamedisplay == 'lastname firstname') {
+                    set_config('sitefullnameformat', '{$a->lastname} {$a->firstname}');
+                }
+                if ($CFG->fullnamedisplay == 'firstname') {
+                    set_config('sitefullnameformat', '{$a->firstname}');
+                }
+            }
+        }
+
+        // Main savepoint reached.
+        upgrade_main_savepoint(true, 2013022800.01);
+    }
+
     return true;
 }
