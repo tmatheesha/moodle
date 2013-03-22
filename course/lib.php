@@ -1790,9 +1790,8 @@ function print_course($course, $highlightterms = '') {
             $role->coursealias = $ra->rolecoursealias;
             $rolename = role_get_name($role, $context, ROLENAME_ALIAS);
 
-            $fullname = fullname($ra, $canviewfullnames);
-            $namesarray[$ra->id] = $rolename.': '.
-                html_writer::link(new moodle_url('/user/view.php', array('id'=>$ra->id, 'course'=>SITEID)), $fullname);
+            $link = new moodle_url('/user/view.php', array('id'=>$ra->id, 'course'=>SITEID));
+            $namesarray[$ra->id] = $rolename . ': ' . $OUTPUT->displayname($ra, $context, $link);
         }
 
         if (!empty($namesarray)) {

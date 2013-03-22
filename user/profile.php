@@ -129,8 +129,8 @@ $strpublicprofile = get_string('publicprofile');
 
 $PAGE->blocks->add_region('content');
 $PAGE->set_subpage($currentpage->id);
-$PAGE->set_title(fullname($user).": $strpublicprofile");
-$PAGE->set_heading(fullname($user).": $strpublicprofile");
+$PAGE->set_title(display_name($user, $context).": $strpublicprofile");
+$PAGE->set_heading($OUTPUT->displayname($user, $context).": $strpublicprofile");
 
 if (!$currentuser) {
     $PAGE->navigation->extend_for_user($user);
@@ -205,7 +205,7 @@ echo '<div class="userprofile">';
 
 // Print the standard content of this page, the basic profile info
 
-echo $OUTPUT->heading(fullname($user));
+echo $OUTPUT->heading($OUTPUT->displayname($user, $context));
 
 if (is_mnet_remote_user($user)) {
     $sql = "SELECT h.id, h.name, h.wwwroot,
