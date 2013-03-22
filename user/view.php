@@ -93,14 +93,17 @@ $strpersonalprofile = get_string('personalprofile');
 $strparticipants = get_string("participants");
 $struser = get_string("user");
 
-$fullname = fullname($user, has_capability('moodle/site:viewfullnames', $coursecontext));
+// $fullname = fullname($user, has_capability('moodle/site:viewfullnames', $coursecontext));
+
+// $displayname = $OUTPUT->displayname($user, $coursecontext);
 
 /// Now test the actual capabilities and enrolment in course
 if ($currentuser) {
     // me
     if (!is_viewing($coursecontext) && !is_enrolled($coursecontext)) { // Need to have full access to a course to see the rest of own info
         echo $OUTPUT->header();
-        echo $OUTPUT->heading(get_string('notenrolled', '', $fullname));
+        echo $OUTPUT->heading(get_string('notenrolled', '', $OUTPUT->displayname($user, $coursecontext)));
+        // echo $OUTPUT->heading(get_string('notenrolled', '', $fullname));
         if (!empty($_SERVER['HTTP_REFERER'])) {
             echo $OUTPUT->continue_button($_SERVER['HTTP_REFERER']);
         }
@@ -124,9 +127,9 @@ if ($currentuser) {
         //       to profile would not work - maybe a new capability - moodle/user:freely_acessile_profile_for_anybody
         //       or test for course:inspect capability
         if (has_capability('moodle/role:assign', $coursecontext)) {
-            $PAGE->navbar->add($fullname);
+            $PAGE->navbar->add($OUTPUT->displayname($user, $coursecontext));
             echo $OUTPUT->header();
-            echo $OUTPUT->heading(get_string('notenrolled', '', $fullname));
+            echo $OUTPUT->heading(get_string('notenrolled', '', $OUTPUT->displayname($user, $coursecontext)));
         } else {
             echo $OUTPUT->header();
             $PAGE->navbar->add($struser);
@@ -154,6 +157,8 @@ if ($currentuser) {
     }
 }
 
+// display_name() called direct here as using a renderer will break the page format.
+$fullname = display_name($user, $coursecontext);
 $PAGE->set_title("$course->fullname: $strpersonalprofile: $fullname");
 $PAGE->set_heading($course->fullname);
 $PAGE->set_pagelayout('standard');
@@ -176,7 +181,7 @@ echo $OUTPUT->header();
 
 echo '<div class="userprofile">';
 
-echo $OUTPUT->heading(fullname($user).' ('.format_string($course->shortname, true, array('context' => $coursecontext)).')');
+echo $OUTPUT->heading($OUTPUT->displayname($user, $coursecontext) . ' ('.format_string($course->shortname, true, array('context' => $coursecontext)).')');
 
 if ($user->deleted) {
     echo $OUTPUT->heading(get_string('userdeleted'));
