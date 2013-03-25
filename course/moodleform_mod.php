@@ -625,7 +625,8 @@ abstract class moodleform_mod extends moodleform {
         // full name formatting.
         if (has_capability('moodle/site:canoverridenameformat', $this->context)) {
             $mform->addElement('text', 'fullnameformat', get_string('fullnameformatmodule'), 'size = 50');
-            $mform->setType('fullnameformat', PARAM_RAW);
+            $mform->addHelpButton('fullnameformat', 'fullnameformatmodule');
+            $mform->setType('fullnameformat', PARAM_TEXT);
             $mform->setAdvanced('fullnameformat');
         }
 

@@ -1812,9 +1812,18 @@ function xmldb_main_upgrade($oldversion) {
             $dbman->add_field($table, $field);
         }
 
+        // Define field middlename to be added to user.
+        $table = new xmldb_table('user');
+        $field = new xmldb_field('middlename', XMLDB_TYPE_CHAR, '255', null, null, null, null, 'firstnamephonetic');
+
+        // Conditionally launch add field middlename.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
         // Define field alternatename to be added to user.
         $table = new xmldb_table('user');
-        $field = new xmldb_field('alternatename', XMLDB_TYPE_CHAR, '255', null, null, null, null, 'firstnamephonetic');
+        $field = new xmldb_field('alternatename', XMLDB_TYPE_CHAR, '255', null, null, null, null, 'middlename');
 
         // Conditionally launch add field alternatename.
         if (!$dbman->field_exists($table, $field)) {

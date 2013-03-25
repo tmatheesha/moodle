@@ -64,6 +64,7 @@ function add_moduleinfo($moduleinfo, $course, $mform = null) {
     $newcm->groupmode        = $moduleinfo->groupmode;
     $newcm->groupingid       = $moduleinfo->groupingid;
     $newcm->groupmembersonly = $moduleinfo->groupmembersonly;
+    $newcm->fullnameformat   = $moduleinfo->fullnameformat;
     $completion = new completion_info($course);
     if ($completion->is_enabled()) {
         $newcm->completion                = $moduleinfo->completion;
@@ -456,6 +457,7 @@ function update_moduleinfo($cm, $moduleinfo, $course, $mform = null) {
     } else {
         $cm->showdescription = 0;
     }
+    $cm->fullnameformat = $moduleinfo->fullnameformat;
 
     $DB->update_record('course_modules', $cm);
 

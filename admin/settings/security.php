@@ -43,11 +43,6 @@ if ($hassiteconfig) { // speedup for non-admins, add all caps used on this page
                        1800 => new lang_string('numminutes', '', 30),
                        2700 => new lang_string('numminutes', '', 45),
                        3600 => new lang_string('numminutes', '', 60))));
-    // $temp->add(new admin_setting_configselect('fullnamedisplay', new lang_string('fullnamedisplay', 'admin'), new lang_string('configfullnamedisplay', 'admin'),
-    //               'language', array('language' => new lang_string('language'),
-    //                                           'firstname lastname' => new lang_string('firstname').' + '.new lang_string('lastname'),
-    //                                           'lastname firstname' => new lang_string('lastname').' + '.new lang_string('firstname'),
-    //                                           'firstname' => new lang_string('firstname'))));
 
     $temp->add(new admin_setting_configtext('sitefullnameformat', new lang_string('fullnameformat', 'admin'), new lang_string('fullnameformatdisplay', 'admin'), '', PARAM_RAW, 50));
 
