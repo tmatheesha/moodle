@@ -456,6 +456,7 @@ function update_moduleinfo($cm, $moduleinfo, $course, $mform = null) {
     } else {
         $cm->showdescription = 0;
     }
+    $cm->fullnameformat = $moduleinfo->fullnameformat;
 
     $DB->update_record('course_modules', $cm);
 

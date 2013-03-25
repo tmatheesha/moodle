@@ -249,8 +249,12 @@ class course_edit_form extends moodleform {
 //-------------------------------------------------------------------------------
         if (has_capability('moodle/site:canoverridenameformat', $context)) {
             $mform->addElement('text', 'fullnameformat', get_string('fullnameformatcourse'), 'size = 50');
-            $mform->setType('fullnameformat', PARAM_RAW);
+            $mform->setType('fullnameformat', PARAM_TEXT);
             $mform->setAdvanced('fullnameformat');
+
+            $mform->addElement('advcheckbox', 'displaynamelink', 'Allow link to the profile page');
+            $mform->setType('displaynamelink', PARAM_INT);
+            $mform->setAdvanced('displaynamelink');
         }
 
 //--------------------------------------------------------------------------------
@@ -286,7 +290,6 @@ class course_edit_form extends moodleform {
                 $mform->setType('role_'.$role->id, PARAM_TEXT);
             }
         }
-
 
 //--------------------------------------------------------------------------------
         $this->add_action_buttons();
