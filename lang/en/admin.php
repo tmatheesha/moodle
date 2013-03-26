@@ -437,6 +437,18 @@ $string['devicetype'] = 'Device type';
 $string['disableuserimages'] = 'Disable user profile images';
 $string['displayerrorswarning'] = 'Enabling the PHP setting <em>display_errors</em> is not recommended on production sites because some error messages may reveal sensitive information about your server.';
 $string['displayloginfailures'] = 'Display login failures to';
+$string['displaynameformat'] = 'Display name format';
+$string['displaynameformat_desc'] = 'How the format of the names is to be displayed. The default for this setting is the language string. The following tokens may be used: 
+
+* {$a->firstname}
+* {$a->lastname}
+* {$a->firstnamephonetic}
+* {$a->lastnamephonetic}
+* {$a->alternatename}
+* {$a->aliasname}
+* {$a->idnumber}
+
+This setting can be overridden by the format setting in each course and then again in each activity.';
 $string['dndallowtextandlinks'] = 'Drag and drop upload of text/links';
 $string['docroot'] = 'Moodle Docs document root';
 $string['doctonewwindow'] = 'Open in new window';
@@ -544,8 +556,6 @@ $string['frontpagerestore'] = 'Front page restore';
 $string['frontpageroles'] = 'Front page roles';
 $string['frontpagesettings'] = 'Front page settings';
 $string['fullnamedisplay'] = 'Full name format';
-$string['fullnameformat'] = 'Full name format';
-$string['fullnameformatdisplay'] = 'How the format of the names is to be displayed. The following tokens may be used: <pre>{$a->firstname}<br />{$a->lastname}<br />{$a->firstnamephonetic}<br />{$a->lastnamephonetic}<br />{$a->alternatename}<br />{$a->aliasname}<br />{$a->idnumber}<br /></pre>This setting can be overridden by the format setting in each course.';
 $string['gdrecommended'] = 'GD extension is used for conversion of images, some features such as user profile images will not be available if missing.';
 $string['gdrequired'] = 'The GD extension is now required by Moodle for image conversion.';
 $string['generalsettings'] = 'General settings';

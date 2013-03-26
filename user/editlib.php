@@ -150,6 +150,8 @@ function useredit_shared_definition(&$mform, $editoroptions = null, $filemanager
     $mform->setType('firstnamephonetic', PARAM_NOTAGS);
     $mform->addElement('text', 'lastnamephonetic',  get_string('lastnamephonetic'),  'maxlength="100" size="30"');
     $mform->setType('lastnamephonetic', PARAM_NOTAGS);
+    $mform->addElement('text', 'middlename',  get_string('middlename'),  'maxlength="100" size="30"');
+    $mform->setType('middlename', PARAM_NOTAGS);
     $mform->addElement('text', 'alternatename',  get_string('alternatename'),  'maxlength="100" size="30"');
     $mform->setType('alternatename', PARAM_NOTAGS);
     $mform->addElement('text', 'aliasname',  get_string('aliasname'),  'maxlength="100" size="30"');

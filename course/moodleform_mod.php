@@ -622,11 +622,11 @@ abstract class moodleform_mod extends moodleform {
             $mform->setDefault('showavailability', CONDITION_STUDENTVIEW_SHOW);
         }
 
-        // full name formatting.
-        if (has_capability('moodle/site:canoverridenameformat', $this->context)) {
-            $mform->addElement('text', 'fullnameformat', get_string('fullnameformatmodule'), 'size = 50');
-            $mform->setType('fullnameformat', PARAM_RAW);
-            $mform->setAdvanced('fullnameformat');
+        // Display name formatting.
+        if (has_capability('moodle/site:canoverridedisplaynameformat', $this->context)) {
+            $mform->addElement('text', 'displaynameformat', get_string('displaynameformatmodule'), 'size = 50');
+            $mform->addHelpButton('displaynameformat', 'displaynameformatmodule');
+            $mform->setType('displaynameformat', PARAM_TEXT);
         }
 
         // Conditional activities: completion tracking section

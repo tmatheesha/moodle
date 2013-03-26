@@ -388,10 +388,12 @@ $capabilities = array(
         )
     ),
 
-    'moodle/site:canoverridenameformat' => array(
+    'moodle/site:canoverridedisplaynameformat' => array(
+
+        'riskbitmask' => RISK_PERSONAL,
 
         'captype' => 'read',
-        'contextlevel' => CONTEXT_SYSTEM,
+        'contextlevel' => CONTEXT_MODULE,
         'archetypes' => array(
             'manager' => CAP_ALLOW
         )
