@@ -561,12 +561,11 @@ class core_renderer extends renderer_base {
         $course = $this->page->course;
         if (session_is_loggedinas()) {
             $realuser = session_get_realuser();
-            $fullname = fullname($realuser, true);
+            $link = null;
             if ($withlinks) {
-                $realuserinfo = " [<a href=\"$CFG->wwwroot/course/loginas.php?id=$course->id&amp;sesskey=".sesskey()."\">$fullname</a>] ";
-            } else {
-                $realuserinfo = " [$fullname] ";
+                $link = new moodle_url('/course/loginas.php', array('id' => $course->id, 'sesskey' => sesskey()));
             }
+            $realuserinfo = '[' . $this->displayname($realuser, null, null, $link) . '] ';
         } else {
             $realuserinfo = '';
         }
@@ -579,13 +578,12 @@ class core_renderer extends renderer_base {
         } else if (isloggedin()) {
             $context = context_course::instance($course->id);
 
-            $fullname = fullname($USER, true);
             // Since Moodle 2.0 this link always goes to the public profile page (not the course profile page)
+            $link = null;
             if ($withlinks) {
-                $username = "<a href=\"$CFG->wwwroot/user/profile.php?id=$USER->id\">$fullname</a>";
-            } else {
-                $username = $fullname;
+                $link = new moodle_url('user/profile.php', array('id' => $USER->id));
             }
+            $username = $this->displayname($USER, null, null, $link);
             if (is_mnet_remote_user($USER) and $idprovider = $DB->get_record('mnet_host', array('id'=>$USER->mnethostid))) {
                 if ($withlinks) {
                     $username .= " from <a href=\"{$idprovider->wwwroot}\">{$idprovider->name}</a>";
@@ -2006,6 +2004,70 @@ class core_renderer extends renderer_base {
         }
 
         return $output;
+    }
+
+    /**
+     *
+     * @param object $user A {@link $USER} object to get full name of
+     * @param bool $override If true then the name will be first name followed by last name rather than adhering to fullnamedisplay setting.
+     * @param context $context Current context object.
+     * @param string $nameformat Name format to avoid searching for it if already known.
+     * @return string the users display name.
+     */
+    function displayname($user, $context = null, $nameformat = null, moodle_url $redirect = null) {
+        global $DB;
+
+        // Add fields to this array to show them with the correct token.
+        $allnames = array('lastname',
+                'firstname',
+                'firstnamephonetic',
+                'lastnamephonetic',
+                'alternatename',
+                'aliasname',
+                'idnumber');
+
+        // Someone hasn't sent a user object, but something else.
+        if (isset($user->userid)) {
+            $user->id = $user->userid;
+        }
+
+        if (!isset($nameformat)) {
+            $displayname = fullname_format($context);
+        } else {
+            $displayname = $nameformat;
+        }
+
+        $requirednames = array();
+        $requirelookup = false;
+        // Do we have all the data we need or do we require a look up for the extra fields?
+        foreach ($allnames as $tempname) {
+            $pattern = '/' . $tempname. '/';
+            if (preg_match($pattern, $displayname)) {
+                $requirednames[] = $tempname;
+                if (!isset($user->$tempname)) {
+                    $requirelookup = true;
+                }
+            }
+        }
+
+        if ($requirelookup) {
+            $user = $DB->get_record('user', array('id' => $user->id));
+        }
+
+        foreach ($requirednames as $altname) {
+            $displayname = str_replace('{$a->' . $altname . '}',
+                    $user->$altname, $displayname);
+        }
+
+        return $this->render_displayname($displayname, $redirect);
+    }
+
+    function render_displayname($displayname, moodle_url $redirect = null) {
+        if ($redirect) {
+            // echo 'displayname: ' . $displayname . '<br />';
+            $displayname = html_writer::link($redirect, $displayname);
+        }
+        return $displayname;
     }
 
     /**
