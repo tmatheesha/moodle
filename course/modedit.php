@@ -150,7 +150,7 @@ if (!empty($add)) {
     $data->completionexpected = $cm->completionexpected;
     $data->completionusegrade = is_null($cm->completiongradeitemnumber) ? 0 : 1;
     $data->showdescription    = $cm->showdescription;
-    $data->fullnameformat     = $cm->fullnameformat;
+    $data->displaynameformat     = $cm->displaynameformat;
     if (!empty($CFG->enableavailability)) {
         $data->availablefrom      = $cm->availablefrom;
         $data->availableuntil     = $cm->availableuntil;

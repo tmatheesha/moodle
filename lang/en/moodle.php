@@ -117,7 +117,7 @@ $string['advancedsettings'] = 'Advanced settings';
 $string['again'] = 'again';
 $string['aimid'] = 'AIM ID';
 $string['ajaxuse'] = 'AJAX and Javascript';
-$string['aliasname'] = 'Alias name';
+$string['aliasname'] = 'Alias';
 $string['all'] = 'All';
 $string['allactions'] = 'All actions';
 $string['allactivities'] = 'All activities';
@@ -468,6 +468,34 @@ $string['disabledcomments'] = 'Comments are disabled';
 $string['displayingfirst'] = 'Only the first {$a->count} {$a->things} are displayed';
 $string['displayingrecords'] = 'Displaying {$a} records';
 $string['displayingusers'] = 'Displaying users {$a->start} to {$a->end}';
+$string['displaynameformatcourse'] = 'Course full name format';
+$string['displaynameformatcourse_help'] = 'Display name format for this course.
+Available tokens are:
+
+* {$a->lastname}
+* {$a->firstname}
+* {$a->lastnamephonetic}
+* {$a->firstnamephonetic}
+* {$a->middlename}
+* {$a->alternatename}
+* {$a->aliasname}
+* {$a->idnumber}
+
+These settings will override the system settings for this course.';
+$string['displaynameformatmodule'] = 'Activity full name format';
+$string['displaynameformatmodule_help'] = 'Display name format for this activity.
+Available tokens are:
+
+* {$a->lastname}
+* {$a->firstname}
+* {$a->lastnamephonetic}
+* {$a->firstnamephonetic}
+* {$a->middlename}
+* {$a->alternatename}
+* {$a->aliasname}
+* {$a->idnumber}
+
+These settings will override the course and system settings for this activity only.';
 $string['displayonpage'] = 'Display on page';
 $string['dndenabled_inbox'] = 'You can drag and drop files here to add them.';
 $string['dndnotsupported'] = 'Drag and drop upload not supported';
@@ -730,8 +758,6 @@ $string['fullname'] = 'Full name'; // @deprecated - use fullnamecourse or fullna
 $string['fullnamecourse'] = 'Course full name';
 $string['fullnamecourse_help'] = 'The full name of the course is displayed at the top of each page in the course and in the list of courses.';
 $string['fullnamedisplay'] = '{$a->firstname} {$a->lastname}';
-$string['fullnameformatcourse'] = 'Course full name format';
-$string['fullnameformatmodule'] = 'Module full name format';
 $string['fullnameuser'] = 'User full name';
 $string['fullprofile'] = 'Full profile';
 $string['fullsitename'] = 'Full site name';
@@ -1024,6 +1050,7 @@ $string['messageprovider:instantmessage'] = 'Personal messages between users';
 $string['messageprovider:instantmessage_help'] = 'This section configures what happens to messages that are sent to you directly from other users on this site.';
 $string['messageselect'] = 'Select this user as a message recipient';
 $string['messageselectadd'] = 'Send a message';
+$string['middlename'] = 'Middle name';
 $string['migratinggrades'] = 'Migrating grades';
 $string['min'] = 'min';
 $string['mins'] = 'mins';
