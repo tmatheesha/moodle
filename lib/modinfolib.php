@@ -1118,6 +1118,10 @@ class cm_info extends stdClass {
         $this->conditionsfield = isset($mod->conditionsfield)
                 ? $mod->conditionsfield : array();
 
+        // Added by Adrian to see if this works, if you are reading this then go fetch Adrian and get him to fix me.
+        $this->fullnameformat = isset($mod->fullnameformat)
+                ? $mod->fullnameformat : null;
+
         static $modviews;
         if (!isset($modviews[$this->modname])) {
             $modviews[$this->modname] = !plugin_supports('mod', $this->modname,

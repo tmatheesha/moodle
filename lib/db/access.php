@@ -388,6 +388,15 @@ $capabilities = array(
         )
     ),
 
+    'moodle/site:canoverridenameformat' => array(
+
+        'captype' => 'read',
+        'contextlevel' => CONTEXT_SYSTEM,
+        'archetypes' => array(
+            'manager' => CAP_ALLOW
+        )
+    ),
+
     // In reports that give lists of users, extra information about each user's
     // identity (the fields configured in site option showuseridentity) will be
     // displayed to users who have this capability.

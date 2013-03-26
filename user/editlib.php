@@ -146,6 +146,15 @@ function useredit_shared_definition(&$mform, $editoroptions = null, $filemanager
     $mform->addRule('lastname', $strrequired, 'required', null, 'client');
     $mform->setType('lastname', PARAM_NOTAGS);
 
+    $mform->addElement('text', 'firstnamephonetic', get_string('firstnamephonetic'), 'maxlength="100" size="30"');
+    $mform->setType('firstnamephonetic', PARAM_NOTAGS);
+    $mform->addElement('text', 'lastnamephonetic',  get_string('lastnamephonetic'),  'maxlength="100" size="30"');
+    $mform->setType('lastnamephonetic', PARAM_NOTAGS);
+    $mform->addElement('text', 'alternatename',  get_string('alternatename'),  'maxlength="100" size="30"');
+    $mform->setType('alternatename', PARAM_NOTAGS);
+    $mform->addElement('text', 'aliasname',  get_string('aliasname'),  'maxlength="100" size="30"');
+    $mform->setType('aliasname', PARAM_NOTAGS);
+
     // Do not show email field if change confirmation is pending
     if (!empty($CFG->emailchangeconfirmation) and !empty($user->preference_newemail)) {
         $notice = get_string('emailchangepending', 'auth', $user);
