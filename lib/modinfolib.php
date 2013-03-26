@@ -1118,10 +1118,12 @@ class cm_info extends stdClass {
         $this->conditionsfield = isset($mod->conditionsfield)
                 ? $mod->conditionsfield : array();
 
-        // Note: displaynameformat was not present in cm_info in Moodle
+        // Note: displaynameformat and displaynamelink were not present in cm_info in Moodle
         // prior to 2.5.
         $this->displaynameformat = isset($mod->displaynameformat)
                 ? $mod->displaynameformat : null;
+        $this->displaynamelink = isset($mod->displaynamelink)
+                ? $mod->displaynamelink : 1;
 
         static $modviews;
         if (!isset($modviews[$this->modname])) {
