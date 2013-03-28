@@ -2857,3 +2857,39 @@ class custom_menu extends custom_menu_item {
         return ($itema > $itemb) ? +1 : -1;
     }
 }
+
+/**
+ * Data structure representing a user name.
+ *
+ * @copyright 2013 Adrian Greeve
+ * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @since Modle 2.5
+ * @package core
+ * @category output
+ */
+class user_name implements renderable {
+    /**
+     * @var context $context  Context that the user name is being displayed.
+     */
+    public $context;
+    /**
+     * @var moodle_url $url  url to link to if supplied.
+     */
+    public $url;
+    /**
+     * @var string $displayname  The name to be displayed.
+     */
+    public $displayname;
+
+    /**
+     * User_name constructor
+     * @param stdClass $user  A user object.
+     * @param context $context  Context that the username is being viewed.
+     * @param moodle_url $url  A url to link to if supplied.
+     */
+    public function __construct(stdClass $user, $context = null, moodle_url $url = null) {
+        $this->context = $context;
+        $this->url = $url;
+        $this->displayname = display_name($user, $context);
+    }
+}
