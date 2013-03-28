@@ -381,8 +381,20 @@
             'id', 'username', 'firstname', 'lastname', 'email', 'city', 'country',
             'picture', 'lang', 'timezone', 'maildisplay', 'imagealt', 'lastaccess'));
 
+    $extafields = array('email', 'city', 'country', 'lang', 'timezone', 'maildisplay');
+    $mainuserfields = user_picture::fields('', $extafields);
+    $tempfields = explode(',', $mainuserfields);
+    $fieldstring = '';
+    foreach ($tempfields as $value) {
+        $fieldstring .= ', u.' . $value;
+    }
+    $fieldstring = substr($fieldstring, 1);
+    // echo $mainuserfields;
+
     if ($isfrontpage) {
         $select = "SELECT u.id, u.username, u.firstname, u.lastname,
+                          u.firstnamephonetic, u.lastnamephonetic, u.middlename,
+                          u.alternatename, u.aliasname,
                           u.email, u.city, u.country, u.picture,
                           u.lang, u.timezone, u.maildisplay, u.imagealt,
                           u.lastaccess$extrasql";
@@ -392,10 +404,7 @@
         }
 
     } else {
-        $select = "SELECT u.id, u.username, u.firstname, u.lastname,
-                          u.email, u.city, u.country, u.picture,
-                          u.lang, u.timezone, u.maildisplay, u.imagealt,
-                          COALESCE(ul.timeaccess, 0) AS lastaccess$extrasql";
+        $select = "SELECT $fieldstring, COALESCE(ul.timeaccess, 0) AS lastaccess$extrasql";
         $joins[] = "JOIN ($esql) e ON e.id = u.id"; // course enrolled users only
         $joins[] = "LEFT JOIN {user_lastaccess} ul ON (ul.userid = u.id AND ul.courseid = :courseid)"; // not everybody accessed course yet
         $params['courseid'] = $course->id;

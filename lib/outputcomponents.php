@@ -131,7 +131,8 @@ class user_picture implements renderable {
      * @var array List of mandatory fields in user record here. (do not include
      * TEXT columns because it would break SELECT DISTINCT in MSSQL and ORACLE)
      */
-    protected static $fields = array('id', 'picture', 'firstname', 'lastname', 'imagealt', 'email');
+    protected static $fields = array('id', 'picture', 'firstname', 'lastname', 'firstnamephonetic',
+            'lastnamephonetic', 'middlename', 'alternatename', 'aliasname', 'imagealt', 'email');
 
     /**
      * @var stdClass A user object with at least fields all columns specified
