@@ -3676,6 +3676,7 @@ function display_name($user, $context = null) {
             'firstname',
             'firstnamephonetic',
             'lastnamephonetic',
+            'middlename',
             'alternatename',
             'aliasname',
             'idnumber');
@@ -3693,13 +3694,14 @@ function display_name($user, $context = null) {
         $pattern = '/' . $tempname. '/';
         if (preg_match($pattern, $displayname)) {
             $requirednames[] = $tempname;
-            if (!isset($user->$tempname)) {
+            if (!array_key_exists($tempname, $user)) {
                 $requirelookup = true;
             }
         }
     }
 
     if ($requirelookup) {
+		// Enter developer message to fix up the code that isn't supplying the proper fields.
         $user = $DB->get_record('user', array('id' => $user->id));
     }
 
