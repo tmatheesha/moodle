@@ -146,6 +146,12 @@ function useredit_shared_definition(&$mform, $editoroptions = null, $filemanager
     $mform->addRule('lastname', $strrequired, 'required', null, 'client');
     $mform->setType('lastname', PARAM_NOTAGS);
 
+    $morenames = get_enabled_additional_names();
+    foreach ($morenames as $addname) {
+        $mform->addElement('text', $addname,  get_string($addname), 'maxlength="100" size="30"');
+        $mform->setType($addname, PARAM_NOTAGS);
+    }
+
     // Do not show email field if change confirmation is pending
     if (!empty($CFG->emailchangeconfirmation) and !empty($user->preference_newemail)) {
         $notice = get_string('emailchangepending', 'auth', $user);
@@ -275,6 +281,19 @@ function useredit_shared_definition(&$mform, $editoroptions = null, $filemanager
 
         $mform->addElement('text', 'imagealt', get_string('imagealt'), 'maxlength="100" size="30"');
         $mform->setType('imagealt', PARAM_TEXT);
+
+    }
+
+    $allnames = get_additional_name_fields();
+    $alternatenames = get_enabled_additional_names();
+    if (count($alternatenames) < count($allnames)) {
+        $mform->addElement('header', 'moodle_additional_names', get_string('additionalnames'));
+        foreach ($allnames as $allname) {
+            if (!in_array($allname, $alternatenames)) {
+                $mform->addElement('text', $allname, get_string($allname), 'maxlength="100" size="30"');
+                $mform->setType($allname, PARAM_NOTAGS);
+            }
+        }
 
     }
 
