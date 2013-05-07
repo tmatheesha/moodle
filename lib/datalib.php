@@ -507,6 +507,8 @@ function get_users_listing($sort='lastaccess', $dir='ASC', $page=0, $recordsperp
                 array('id', 'username', 'email', 'firstname', 'lastname', 'city', 'country',
                 'lastaccess', 'confirmed', 'mnethostid'));
     }
+    $namefields = get_additional_name_fields(true);
+    $extrafields = "$extrafields, $namefields";
 
     // warning: will return UNCONFIRMED USERS
     return $DB->get_records_sql("SELECT id, username, email, firstname, lastname, city, country,
