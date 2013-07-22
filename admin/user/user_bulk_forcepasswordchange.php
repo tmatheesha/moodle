@@ -53,9 +53,7 @@ if ($confirm and confirm_sesskey()) {
     echo $OUTPUT->continue_button($return);
 
 } else {
-    list($in, $params) = $DB->get_in_or_equal($SESSION->bulk_users);
-    $userlist = $DB->get_records_select_menu('user', "id $in", $params, 'fullname', 'id,'.$DB->sql_fullname().' AS fullname', 0, MAX_BULK_USERS);
-    $usernames = implode(', ', $userlist);
+    $usernames = get_usernames($SESSION->bulk_users);
     if (count($SESSION->bulk_users) > MAX_BULK_USERS) {
         $usernames .= ', ...';
     }

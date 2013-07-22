@@ -2,6 +2,7 @@
 require_once('../../config.php');
 require_once($CFG->libdir.'/adminlib.php');
 require_once($CFG->dirroot.'/message/lib.php');
+require_once($CFG->dirroot.'/'.$CFG->admin.'/user/lib.php');
 require_once('user_message_form.php');
 
 $msg     = optional_param('msg', '', PARAM_CLEANHTML);
@@ -49,9 +50,10 @@ if ($msgform->is_cancelled()) {
 
     $msg = format_text($formdata->messagebody['text'], $formdata->messagebody['format'], $options);
 
-    list($in, $params) = $DB->get_in_or_equal($SESSION->bulk_users);
-    $userlist = $DB->get_records_select_menu('user', "id $in", $params, 'fullname', 'id,'.$DB->sql_fullname().' AS fullname');
-    $usernames = implode(', ', $userlist);
+    $usernames = get_usernames($SESSION->bulk_users);
+    if (count($SESSION->bulk_users) > MAX_BULK_USERS) {
+        $usernames .= ', ...';
+    }
     echo $OUTPUT->header();
     echo $OUTPUT->heading(get_string('confirmation', 'admin'));
     echo $OUTPUT->box($msg, 'boxwidthnarrow boxaligncenter generalbox', 'preview'); //TODO: clean once we start using proper text formats here

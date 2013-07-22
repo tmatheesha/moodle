@@ -5,6 +5,7 @@
 
 require_once('../../config.php');
 require_once($CFG->libdir.'/adminlib.php');
+require_once($CFG->dirroot.'/'.$CFG->admin.'/user/lib.php');
 
 $confirm = optional_param('confirm', 0, PARAM_BOOL);
 
@@ -47,9 +48,10 @@ if ($confirm and confirm_sesskey()) {
     echo $OUTPUT->render($continue);
     echo $OUTPUT->box_end();
 } else {
-    list($in, $params) = $DB->get_in_or_equal($SESSION->bulk_users);
-    $userlist = $DB->get_records_select_menu('user', "id $in", $params, 'fullname', 'id,'.$DB->sql_fullname().' AS fullname');
-    $usernames = implode(', ', $userlist);
+    $usernames = get_usernames($SESSION->bulk_users);
+    if (count($SESSION->bulk_users) > MAX_BULK_USERS) {
+        $usernames .= ', ...';
+    }
     echo $OUTPUT->heading(get_string('confirmation', 'admin'));
     $formcontinue = new single_button(new moodle_url('user_bulk_confirm.php', array('confirm' => 1)), get_string('yes'));
     $formcancel = new single_button(new moodle_url('user_bulk.php'), get_string('no'), 'get');

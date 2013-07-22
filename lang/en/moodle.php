@@ -205,6 +205,7 @@ $string['blockseditoff'] = 'Blocks editing off';
 $string['blocksediton'] = 'Blocks editing on';
 $string['blocksetup'] = 'Setting up block tables';
 $string['blocksuccess'] = '{$a} tables have been set up correctly';
+$string['bulkupdate'] = 'Multiple users updated by the following user ID: {$a}';
 $string['brief'] = 'Brief';
 $string['bycourseorder'] = 'By course order';
 $string['byname'] = 'by {$a}';

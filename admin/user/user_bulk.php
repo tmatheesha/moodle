@@ -19,14 +19,16 @@ $action_form = new user_bulk_action_form();
 if ($data = $action_form->get_data()) {
     // check if an action should be performed and do so
     switch ($data->action) {
-        case 1: redirect($CFG->wwwroot.'/'.$CFG->admin.'/user/user_bulk_confirm.php');
-        case 2: redirect($CFG->wwwroot.'/'.$CFG->admin.'/user/user_bulk_message.php');
-        case 3: redirect($CFG->wwwroot.'/'.$CFG->admin.'/user/user_bulk_delete.php');
-        case 4: redirect($CFG->wwwroot.'/'.$CFG->admin.'/user/user_bulk_display.php');
-        case 5: redirect($CFG->wwwroot.'/'.$CFG->admin.'/user/user_bulk_download.php');
-        //case 6: redirect($CFG->wwwroot.'/'.$CFG->admin.'/user/user_bulk_enrol.php'); //TODO: MDL-24064
-        case 7: redirect($CFG->wwwroot.'/'.$CFG->admin.'/user/user_bulk_forcepasswordchange.php');
-        case 8: redirect($CFG->wwwroot.'/'.$CFG->admin.'/user/user_bulk_cohortadd.php');
+        case BULK_CONFIRM: redirect($CFG->wwwroot.'/'.$CFG->admin.'/user/user_bulk_confirm.php');
+        case BULK_MESSAGE: redirect($CFG->wwwroot.'/'.$CFG->admin.'/user/user_bulk_message.php');
+        case BULK_DELETE: redirect($CFG->wwwroot.'/'.$CFG->admin.'/user/user_bulk_delete.php');
+        case BULK_DISPLAY: redirect($CFG->wwwroot.'/'.$CFG->admin.'/user/user_bulk_display.php');
+        case BULK_DOWNLOAD: redirect($CFG->wwwroot.'/'.$CFG->admin.'/user/user_bulk_download.php');
+        //case BULK_ENROL: redirect($CFG->wwwroot.'/'.$CFG->admin.'/user/user_bulk_enrol.php'); //TODO: MDL-24064
+        case BULK_FORCE_PASSWORD_CHANGE: redirect($CFG->wwwroot.'/'.$CFG->admin.'/user/user_bulk_forcepasswordchange.php');
+        case BULK_COHORT_ADD: redirect($CFG->wwwroot.'/'.$CFG->admin.'/user/user_bulk_cohortadd.php');
+        case BULK_SUSPEND: redirect($CFG->wwwroot.'/'.$CFG->admin.'/user/user_bulk_suspend.php');
+        case BULK_ACTIVATE: redirect($CFG->wwwroot.'/'.$CFG->admin.'/user/user_bulk_activate.php');
     }
 }
 

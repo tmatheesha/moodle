@@ -2,6 +2,7 @@
 
 require_once($CFG->libdir.'/formslib.php');
 require_once($CFG->libdir.'/datalib.php');
+require_once($CFG->dirroot.'/'.$CFG->admin.'/user/lib.php');
 
 class user_bulk_action_form extends moodleform {
     function definition() {
@@ -10,29 +11,35 @@ class user_bulk_action_form extends moodleform {
         $mform =& $this->_form;
 
         $syscontext = context_system::instance();
-        $actions = array(0=>get_string('choose').'...');
+        $actions = array('choose'=>get_string('choose').'...');
         if (has_capability('moodle/user:update', $syscontext)) {
-            $actions[1] = get_string('confirm');
+            $actions[BULK_CONFIRM] = get_string('confirm');
         }
         if (has_capability('moodle/site:readallmessages', $syscontext) && !empty($CFG->messaging)) {
-            $actions[2] = get_string('messageselectadd');
+            $actions[BULK_MESSAGE] = get_string('messageselectadd');
         }
         if (has_capability('moodle/user:delete', $syscontext)) {
-            $actions[3] = get_string('delete');
+            $actions[BULK_DELETE] = get_string('delete');
         }
-        $actions[4] = get_string('displayonpage');
+        $actions[BULK_DISPLAY] = get_string('displayonpage');
         if (has_capability('moodle/user:update', $syscontext)) {
-            $actions[5] = get_string('download', 'admin');
+            $actions[BULK_DOWNLOAD] = get_string('download', 'admin');
         }
         if (has_capability('moodle/role:assign', $syscontext)){
              //TODO: MDL-24064
-            //$actions[6] = get_string('enrolmultipleusers', 'admin');
+            //$actions[BULK_ENROL] = get_string('enrolmultipleusers', 'admin');
         }
         if (has_capability('moodle/user:update', $syscontext)) {
-            $actions[7] = get_string('forcepasswordchange');
+            $actions[BULK_FORCE_PASSWORD_CHANGE] = get_string('forcepasswordchange');
         }
         if (has_capability('moodle/cohort:assign', $syscontext)) {
-            $actions[8] = get_string('bulkadd', 'core_cohort');
+            $actions[BULK_COHORT_ADD] = get_string('bulkadd', 'core_cohort');
+        }
+        if (has_capability('moodle/user:update', $syscontext)) {
+            $actions[BULK_SUSPEND] = get_string('suspendusers', 'admin');
+        }
+        if (has_capability('moodle/user:update', $syscontext)) {
+            $actions[BULK_ACTIVATE] = get_string('activateusers', 'admin');
         }
         $objs = array();
         $objs[] =& $mform->createElement('select', 'action', null, $actions);

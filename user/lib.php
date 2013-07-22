@@ -145,6 +145,42 @@ function user_update_user($user) {
 }
 
 /**
+ * Bulk updates fields in the user table.
+ * This has been kept intentionally simple and capability checks need to be done before calling this function.
+ *
+ * @param array $userids
+ * @param array $fields
+ * @return bool True on success, false on failure.
+ */
+function user_update_users($userids, array $fields) {
+    global $DB, $USER;
+
+    list($in, $params) = $DB->get_in_or_equal($userids);
+    $setsql = 'SET ';
+
+    foreach ($fields as $field => $data) {
+        $setsql .= $field . ' = ' . $data . ',';
+    }
+
+    $setsql .= ' timemodified = ' . time();
+    $sql = 'UPDATE {user} ' . $setsql . ' WHERE id ' . $in;
+    if (!$DB->execute($sql, $params)) {
+        return false;
+    }
+
+    // Add updates as a general comment in the log tables. This would save a large amount of additional insertions into the database.
+    add_to_log(SITEID, 'user', get_string('update'), '', get_string('bulkupdate', '', $USER->id));
+
+    $rs = $DB->get_recordset_select('user', "id $in", $params);
+    // This needs to be done one user at a time. Not ideal, but it doesn't slow down the system too much.
+    foreach ($rs as $user) {
+        events_trigger('user_updated', $user);
+    }
+    $rs->close();
+    return true;
+}
+
+/**
  * Marks user deleted in internal user database and notifies the auth plugin.
  * Also unenrols user from all roles and does other cleanup.
  *
