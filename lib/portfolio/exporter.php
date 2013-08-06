@@ -436,7 +436,12 @@ class portfolio_exporter {
     public function process_stage_queueorwait() {
         $wait = $this->instance->get_export_config('wait');
         if (empty($wait)) {
-            events_trigger('portfolio_send', $this->id);
+            $context = context_user::instance($this->user->id);
+            $event = \core\event\portfolio_upload_deffered::create(array('context' => $context,
+                                                        'other' => array('callercomponent' => $this->callercomponent),
+                                                        'objectid' => $this->id)
+                                                        );
+            $event->trigger();
             $this->queued = true;
             return $this->process_stage_finished(true);
         }

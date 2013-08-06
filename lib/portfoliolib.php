@@ -920,25 +920,6 @@ function portfolio_report_insane($insane, $instances=false, $return=false) {
     echo $output;
 }
 
-
-/**
- * Event handler for the portfolio_send event
- *
- * @param int $eventdata event id
- * @return bool
- */
-function portfolio_handle_event($eventdata) {
-    global $CFG;
-
-    require_once($CFG->libdir . '/portfolio/exporter.php');
-    $exporter = portfolio_exporter::rewaken_object($eventdata);
-    $exporter->process_stage_package();
-    $exporter->process_stage_send();
-    $exporter->save();
-    $exporter->process_stage_cleanup();
-    return true;
-}
-
 /**
  * Main portfolio cronjob.
  * Currently just cleans up expired transfer records.

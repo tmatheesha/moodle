@@ -165,6 +165,7 @@ $string['plugin'] = 'Portfolio plugin';
 $string['plugincouldnotpackage'] = 'Failed to package up your data for export: original error was {$a}';
 $string['pluginismisconfigured'] = 'Portfolio plugin is misconfigured, skipping. Error was: {$a}';
 $string['portfolio'] = 'Portfolio';
+$string['porfoliouploaddeffered'] = 'Portfolio upload deffered';
 $string['portfolios'] = 'Portfolios';
 $string['queuesummary'] = 'Currently queued transfers';
 $string['returntowhereyouwere'] = 'Return to where you were';
