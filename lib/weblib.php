@@ -2305,7 +2305,10 @@ function print_recent_activity_note($time, $user, $text, $link, $return=false, $
 
     $output .= '<div class="head">';
     $output .= '<div class="date">'.userdate($time, $strftimerecent).'</div>';
-    $output .= '<div class="name">'.fullname($user, $viewfullnames).'</div>';
+    // Sometimes $user is null due to viewing permissions. Fullname function doesn't like null values for the $user variable.
+    if (isset($user)) {
+        $output .= '<div class="name">'.fullname($user, $viewfullnames).'</div>';
+    }
     $output .= '</div>';
     $output .= '<div class="info"><a href="'.$link.'">'.format_string($text, true).'</a></div>';
 

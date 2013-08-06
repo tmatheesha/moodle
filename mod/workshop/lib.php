@@ -364,11 +364,18 @@ function workshop_user_complete($course, $user, $mod, $workshop) {
 function workshop_print_recent_activity($course, $viewfullnames, $timestart) {
     global $CFG, $USER, $DB, $OUTPUT;
 
+    $authoramefields = get_all_user_name_fields();
+    $reviewerfields = array();
+    foreach ($authoramefields as $key => $value) {
+        $authoramefields[$key] = "author.$value AS author$value";
+        $reviewerfields[$key] = "reviewer.$value AS reviewer$value";
+    }
+    $authoramefields = implode(',', $authoramefields);
+    $reviewerfields = implode(',', $reviewerfields);
+
     $sql = "SELECT s.id AS submissionid, s.title AS submissiontitle, s.timemodified AS submissionmodified,
-                   author.id AS authorid, author.lastname AS authorlastname, author.firstname AS authorfirstname,
-                   a.id AS assessmentid, a.timemodified AS assessmentmodified,
-                   reviewer.id AS reviewerid, reviewer.lastname AS reviewerlastname, reviewer.firstname AS reviewerfirstname,
-                   cm.id AS cmid
+                   author.id AS authorid, $authoramefields, a.id AS assessmentid, a.timemodified AS assessmentmodified,
+                   reviewer.id AS reviewerid, $reviewerfields, cm.id AS cmid
               FROM {workshop} w
         INNER JOIN {course_modules} cm ON cm.instance = w.id
         INNER JOIN {modules} md ON md.id = cm.module
@@ -404,14 +411,18 @@ function workshop_print_recent_activity($course, $viewfullnames, $timestart) {
             // remember all user names we can use later
             if (empty($users[$activity->authorid])) {
                 $u = new stdclass();
-                $u->lastname = $activity->authorlastname;
-                $u->firstname = $activity->authorfirstname;
+                foreach (get_all_user_name_fields() as $authornamefield) {
+                    $suffixedfieldname = "author$authornamefield";
+                    $u->$authornamefield = $activity->$suffixedfieldname;
+                }
                 $users[$activity->authorid] = $u;
             }
             if ($activity->reviewerid and empty($users[$activity->reviewerid])) {
                 $u = new stdclass();
-                $u->lastname = $activity->reviewerlastname;
-                $u->firstname = $activity->reviewerfirstname;
+                foreach (get_all_user_name_fields() as $reviewernamefield) {
+                    $suffixedfieldname = "reviewer$reviewernamefield";
+                    $u->$reviewernamefield = $activity->$suffixedfieldname;
+                }
                 $users[$activity->reviewerid] = $u;
             }
         }
@@ -620,11 +631,17 @@ function workshop_get_recent_mod_activity(&$activities, &$index, $timestart, $co
     $params['submissionmodified'] = $timestart;
     $params['assessmentmodified'] = $timestart;
 
+    $authornamefields = explode(',', user_picture::fields());
+    $reviewerfields = array();
+    foreach ($authornamefields as $key => $value) {
+        $authornamefields[$key] = "author.$value AS author$value";
+        $reviewerfields[$key] = "reviewer.$value AS reviewer$value";
+    }
+    $authornamefields = implode(',', $authornamefields);
+    $reviewerfields = implode(',', $reviewerfields);
+
     $sql = "SELECT s.id AS submissionid, s.title AS submissiontitle, s.timemodified AS submissionmodified,
-                   author.id AS authorid, author.lastname AS authorlastname, author.firstname AS authorfirstname,
-                   author.picture AS authorpicture, author.imagealt AS authorimagealt, author.email AS authoremail,
-                   a.id AS assessmentid, a.timemodified AS assessmentmodified,
-                   reviewer.id AS reviewerid, reviewer.lastname AS reviewerlastname, reviewer.firstname AS reviewerfirstname,
+                   $authornamefields, a.id AS assessmentid, a.timemodified AS assessmentmodified, $reviewerfields,
                    reviewer.picture AS reviewerpicture, reviewer.imagealt AS reviewerimagealt, reviewer.email AS revieweremail
               FROM {workshop_submissions} s
         INNER JOIN {workshop} w ON s.workshopid = w.id
@@ -660,24 +677,21 @@ function workshop_get_recent_mod_activity(&$activities, &$index, $timestart, $co
 
         if ($viewfullnames) {
             // remember all user names we can use later
+            $usernamefields = explode(',', user_picture::fields());
             if (empty($users[$activity->authorid])) {
                 $u = new stdclass();
-                $u->id = $activity->authorid;
-                $u->lastname = $activity->authorlastname;
-                $u->firstname = $activity->authorfirstname;
-                $u->picture = $activity->authorpicture;
-                $u->imagealt = $activity->authorimagealt;
-                $u->email = $activity->authoremail;
+                foreach ($usernamefields as $namefield) {
+                    $suffixedfieldname = "author$namefield";
+                    $u->$namefield = $activity->$suffixedfieldname;
+                }
                 $users[$activity->authorid] = $u;
             }
             if ($activity->reviewerid and empty($users[$activity->reviewerid])) {
                 $u = new stdclass();
-                $u->id = $activity->reviewerid;
-                $u->lastname = $activity->reviewerlastname;
-                $u->firstname = $activity->reviewerfirstname;
-                $u->picture = $activity->reviewerpicture;
-                $u->imagealt = $activity->reviewerimagealt;
-                $u->email = $activity->revieweremail;
+                foreach ($usernamefields as $namefield) {
+                    $suffixedfieldname = "reviewer$namefield";
+                    $u->$namefield = $activity->$suffixedfieldname;
+                }
                 $users[$activity->reviewerid] = $u;
             }
         }
