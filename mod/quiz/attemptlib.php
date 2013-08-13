@@ -1422,7 +1422,10 @@ class quiz_attempt {
             quiz_save_best_grade($this->get_quiz(), $this->attempt->userid);
 
             // Trigger event.
-            $this->fire_state_transition_event('quiz_attempt_submitted', $timestamp);
+            $eventdata = $this->prepare_event_data('attempt_submitted', $timestamp);
+
+            $event = \mod_quiz\event\attempt_submitted::create($eventdata);
+            $event->trigger();
 
             // Tell any access rules that care that the attempt is over.
             $this->get_access_manager($timestamp)->current_attempt_finished();
@@ -1459,7 +1462,10 @@ class quiz_attempt {
         $this->attempt->timecheckstate = $timestamp;
         $DB->update_record('quiz_attempts', $this->attempt);
 
-        $this->fire_state_transition_event('quiz_attempt_overdue', $timestamp);
+        $eventdata = $this->prepare_event_data('attempt_timelimit_exceeded', $timestamp);
+
+        $event = \mod_quiz\event\attempt_timelimit_exceeded::create($eventdata);
+        $event->trigger();
 
         $transaction->allow_commit();
     }
@@ -1478,18 +1484,24 @@ class quiz_attempt {
         $this->attempt->timecheckstate = null;
         $DB->update_record('quiz_attempts', $this->attempt);
 
-        $this->fire_state_transition_event('quiz_attempt_abandoned', $timestamp);
+        $eventdata = $this->prepare_event_data('attempt_abandoned', $timestamp);
+
+        $event = \mod_quiz\event\attempt_abandoned::create($eventdata);
+        $event->trigger();
 
         $transaction->allow_commit();
     }
 
     /**
      * Fire a state transition event.
+     * @deprecated since Moodle 2.6 MDL-41039 - please do not use this function any more. Use prepare_event_data if you are using
+     * the same event information.
      * @param string $event the type of event. Should be listed in db/events.php.
      * @param int $timestamp the timestamp to include in the event.
      */
     protected function fire_state_transition_event($event, $timestamp) {
         global $USER;
+        debugging('fire_state_transition_event() is deprecated, please use prepare_event_data() and the appropriate event class.', DEBUG_DEVELOPER);
 
         // Trigger event.
         $eventdata = new stdClass();
@@ -1517,6 +1529,31 @@ class quiz_attempt {
         }
 
         events_trigger($event, $eventdata);
+    }
+
+    /**
+     * Prepare data to be sent to various similar events.
+     * @param string $event the type of event. Should be listed in mod/quiz/classes/event/.
+     * @param int $timestamp the timestamp to include in the event.
+     * @return array Event data.
+     */
+    protected function prepare_event_data($event, $timestamp) {
+        global $USER;
+
+        $eventdata = array();
+        $eventdata['objectid']             = $this->attempt->id;
+        $eventdata['relateduserid']        = $this->attempt->userid;
+        $eventdata['other']['quizid']      = $this->get_quizid();
+        $eventdata['courseid']             = $this->get_courseid();
+        $eventdata['context']              = $this->quizobj->get_context();
+        $eventdata['other']['submitterid'] = $USER->id;
+
+        if ($event == 'attempt_submitted') {
+            // Backwards compatibility for this event type. $eventdata->timestamp is now preferred.
+            $eventdata['other']['timefinish'] = $timestamp;
+        }
+
+        return $eventdata;
     }
 
     /**

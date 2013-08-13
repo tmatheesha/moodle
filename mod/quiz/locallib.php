@@ -285,16 +285,16 @@ function quiz_attempt_save_started($quizobj, $quba, $attempt) {
  */
 function quiz_fire_attempt_started_event($attempt, $quizobj) {
     // Trigger event.
-    $eventdata = new stdClass();
-    $eventdata->component = 'mod_quiz';
-    $eventdata->attemptid = $attempt->id;
-    $eventdata->timestart = $attempt->timestart;
-    $eventdata->timestamp = $attempt->timestart;
-    $eventdata->userid = $attempt->userid;
-    $eventdata->quizid = $quizobj->get_quizid();
-    $eventdata->cmid = $quizobj->get_cmid();
-    $eventdata->courseid = $quizobj->get_courseid();
-    events_trigger('quiz_attempt_started', $eventdata);
+    $eventdata = array();
+    $eventdata['other'] = array();
+    $eventdata['other']['quizid'] = $quizobj->get_quizid();
+    $eventdata['context'] = $quizobj->get_context();
+    $eventdata['courseid'] = $quizobj->get_courseid();
+    $eventdata['relateduserid'] = $attempt->userid;
+    $eventdata['objectid'] = $attempt->id;
+
+    $event = \mod_quiz\event\attempt_started::create($eventdata);
+    $event->trigger();
 }
 
 /**
@@ -1726,57 +1726,6 @@ function quiz_send_overdue_message($course, $quiz, $attempt, $context, $cm) {
 
     // Send the message.
     return message_send($eventdata);
-}
-
-/**
- * Handle the quiz_attempt_submitted event.
- *
- * This sends the confirmation and notification messages, if required.
- *
- * @param object $event the event object.
- */
-function quiz_attempt_submitted_handler($event) {
-    global $DB;
-
-    $course  = $DB->get_record('course', array('id' => $event->courseid));
-    $quiz    = $DB->get_record('quiz', array('id' => $event->quizid));
-    $cm      = get_coursemodule_from_id('quiz', $event->cmid, $event->courseid);
-    $attempt = $DB->get_record('quiz_attempts', array('id' => $event->attemptid));
-
-    if (!($course && $quiz && $cm && $attempt)) {
-        // Something has been deleted since the event was raised. Therefore, the
-        // event is no longer relevant.
-        return true;
-    }
-
-    return quiz_send_notification_messages($course, $quiz, $attempt,
-            context_module::instance($cm->id), $cm);
-}
-
-/**
- * Handle the quiz_attempt_overdue event.
- *
- * For quizzes with applicable settings, this sends a message to the user, reminding
- * them that they forgot to submit, and that they have another chance to do so.
- *
- * @param object $event the event object.
- */
-function quiz_attempt_overdue_handler($event) {
-    global $DB;
-
-    $course  = $DB->get_record('course', array('id' => $event->courseid));
-    $quiz    = $DB->get_record('quiz', array('id' => $event->quizid));
-    $cm      = get_coursemodule_from_id('quiz', $event->cmid, $event->courseid);
-    $attempt = $DB->get_record('quiz_attempts', array('id' => $event->attemptid));
-
-    if (!($course && $quiz && $cm && $attempt)) {
-        // Something has been deleted since the event was raised. Therefore, the
-        // event is no longer relevant.
-        return true;
-    }
-
-    return quiz_send_overdue_message($course, $quiz, $attempt,
-            context_module::instance($cm->id), $cm);
 }
 
 /**
