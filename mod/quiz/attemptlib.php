@@ -1425,6 +1425,8 @@ class quiz_attempt {
             $eventdata = $this->prepare_event_data('attempt_submitted', $timestamp);
 
             $event = \mod_quiz\event\attempt_submitted::create($eventdata);
+            $event->add_record_snapshot('quiz_attempt', $this);
+            $event->add_record_snapshot('quiz', $this->quizobj);
             $event->trigger();
 
             // Tell any access rules that care that the attempt is over.
@@ -1465,6 +1467,8 @@ class quiz_attempt {
         $eventdata = $this->prepare_event_data('attempt_timelimit_exceeded', $timestamp);
 
         $event = \mod_quiz\event\attempt_timelimit_exceeded::create($eventdata);
+        $event->add_record_snapshot('quiz_attempt', $this);
+        $event->add_record_snapshot('quiz', $this->quizobj);
         $event->trigger();
 
         $transaction->allow_commit();
@@ -1487,6 +1491,8 @@ class quiz_attempt {
         $eventdata = $this->prepare_event_data('attempt_abandoned', $timestamp);
 
         $event = \mod_quiz\event\attempt_abandoned::create($eventdata);
+        $event->add_record_snapshot('quiz_attempts', $this);
+        $event->add_record_snapshot('quiz', $this->quizobj);
         $event->trigger();
 
         $transaction->allow_commit();

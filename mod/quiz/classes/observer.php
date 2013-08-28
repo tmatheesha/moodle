@@ -46,9 +46,9 @@ class mod_quiz_observer {
 
         $context = $event->get_context();
         $course  = get_course($event->courseid);
-        $quiz    = $DB->get_record('quiz', array('id' => $event->other['quizid']));
+        $quiz    = $event->get_record_snapshot('quiz', $event->objectid);
         $cm      = get_coursemodule_from_id('quiz', $context->instanceid, $event->courseid);
-        $attempt = $DB->get_record('quiz_attempts', array('id' => $event->objectid));
+        $attempt = $event->get_record_snapshot('quiz_attempts', $event->objectid);
 
         if (!($course && $quiz && $cm && $attempt)) {
             // Something has been deleted since the event was raised. Therefore, the
