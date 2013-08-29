@@ -52,7 +52,7 @@ class backup_resource_activity_task extends backup_activity_task {
      * order to get transportable (encoded) links
      */
     static public function encode_content_links($content) {
-        global $CFG;
+        global $CFG, $DB;
 
         $base = preg_quote($CFG->wwwroot,"/");
 
@@ -62,8 +62,41 @@ class backup_resource_activity_task extends backup_activity_task {
 
         // Link to resource view by moduleid
         $search="/(".$base."\/mod\/resource\/view.php\?id\=)([0-9]+)/";
-        $content= preg_replace($search, '$@RESOURCEVIEWBYID*$2@$', $content);
 
+        static $resource_old_exists = null;
+
+        // Check whether there are contents in the resource old table
+        if ($resource_old_exists === null) {
+            $resource_old_exists = $DB->record_exists('resource_old', array());
+        }
+
+        // If there are links to items in the resource_old table, rewrite them to be links to the correct URL
+        // for their new module
+        if ($resource_old_exists) {
+            $result = preg_match_all($search, $content, $matches, PREG_PATTERN_ORDER);
+
+            // No resource links
+            if (!$result) {
+                return $content;
+            }
+
+            list($insql, $params) = $DB->get_in_or_equal($matches[2]);
+            $oldrecs = $DB->get_records_select('resource_old', "cmid $insql", $params, '', 'cmid, newmodule');
+
+            for ($i = 0; $i < count($matches[0]); $i++) {
+                $cmid = $matches[2][$i];
+                if (isset($oldrecs[$cmid])) {
+                    // Resource_old item, rewrite it
+                    $replace = '$@' . strtoupper($oldrecs[$cmid]->newmodule) . 'VIEWBYID*' . $cmid . '@$';
+                } else {
+                    // Not in the resource old table, don't rewrite
+                    $replace = '$@RESOURCEVIEWBYID*'.$cmid.'@$';
+                }
+                $content = str_replace($matches[0][$i], $replace, $content);
+            }
+        } else {
+            $content= preg_replace($search, '$@RESOURCEVIEWBYID*$2@$', $content);
+        }
         return $content;
     }
 }
