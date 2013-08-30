@@ -1422,12 +1422,7 @@ class quiz_attempt {
             quiz_save_best_grade($this->get_quiz(), $this->attempt->userid);
 
             // Trigger event.
-            $eventdata = $this->prepare_event_data('attempt_submitted', $timestamp);
-
-            $event = \mod_quiz\event\attempt_submitted::create($eventdata);
-            $event->add_record_snapshot('quiz_attempt', $this);
-            $event->add_record_snapshot('quiz', $this->quizobj);
-            $event->trigger();
+            $this->fire_state_transition_event('attempt_submitted', $timestamp, true);
 
             // Tell any access rules that care that the attempt is over.
             $this->get_access_manager($timestamp)->current_attempt_finished();
@@ -1464,12 +1459,7 @@ class quiz_attempt {
         $this->attempt->timecheckstate = $timestamp;
         $DB->update_record('quiz_attempts', $this->attempt);
 
-        $eventdata = $this->prepare_event_data('attempt_timelimit_exceeded', $timestamp);
-
-        $event = \mod_quiz\event\attempt_timelimit_exceeded::create($eventdata);
-        $event->add_record_snapshot('quiz_attempt', $this);
-        $event->add_record_snapshot('quiz', $this->quizobj);
-        $event->trigger();
+        $this->fire_state_transition_event('attempt_timelimit_exceeded', $timestamp, true);
 
         $transaction->allow_commit();
     }
@@ -1488,53 +1478,70 @@ class quiz_attempt {
         $this->attempt->timecheckstate = null;
         $DB->update_record('quiz_attempts', $this->attempt);
 
-        $eventdata = $this->prepare_event_data('attempt_abandoned', $timestamp);
-
-        $event = \mod_quiz\event\attempt_abandoned::create($eventdata);
-        $event->add_record_snapshot('quiz_attempts', $this);
-        $event->add_record_snapshot('quiz', $this->quizobj);
-        $event->trigger();
+        $this->fire_state_transition_event('attempt_abandoned', $timestamp, true);
 
         $transaction->allow_commit();
     }
 
     /**
      * Fire a state transition event.
-     * @deprecated since Moodle 2.6 MDL-41039 - please do not use this function any more. Use prepare_event_data if you are using
      * the same event information.
      * @param string $event the type of event. Should be listed in db/events.php.
      * @param int $timestamp the timestamp to include in the event.
+     * @param int $usenewevent Fire a new event type.
      */
-    protected function fire_state_transition_event($event, $timestamp) {
+    protected function fire_state_transition_event($event, $timestamp, $usenewevent = false) {
         global $USER;
-        debugging('fire_state_transition_event() is deprecated, please use prepare_event_data() and the appropriate event class.', DEBUG_DEVELOPER);
 
-        // Trigger event.
-        $eventdata = new stdClass();
-        $eventdata->component   = 'mod_quiz';
-        $eventdata->attemptid   = $this->attempt->id;
-        $eventdata->timestamp   = $timestamp;
-        $eventdata->userid      = $this->attempt->userid;
-        $eventdata->quizid      = $this->get_quizid();
-        $eventdata->cmid        = $this->get_cmid();
-        $eventdata->courseid    = $this->get_courseid();
+        if ($usenewevent) {
+            $eventdata = array();
+            $eventdata['objectid']             = $this->attempt->id;
+            $eventdata['relateduserid']        = $this->attempt->userid;
+            $eventdata['other']['quizid']      = $this->get_quizid();
+            $eventdata['courseid']             = $this->get_courseid();
+            $eventdata['context']              = $this->quizobj->get_context();
+            $eventdata['other']['submitterid'] = $USER->id;
 
-        // I don't think if (CLI_SCRIPT) is really the right logic here. The
-        // question is really 'is $USER currently set to a real user', but I cannot
-        // see standard Moodle function to answer that question. For example,
-        // cron fakes $USER.
-        if (CLI_SCRIPT) {
-            $eventdata->submitterid = null;
+            if ($event == 'attempt_submitted') {
+                // Backwards compatibility for this event type. $eventdata->timestamp is now preferred.
+                $eventdata['other']['timefinish'] = $timestamp;
+            }
+
+            $eventname = '\mod_quiz\event\\' . $event;
+            $eventobject = $eventname::create($eventdata);
+            $quizobject = $this->get_quizobj();
+            $eventobject->add_record_snapshot('quiz_attempts', $this->get_attempt());
+            $eventobject->add_record_snapshot('quiz', $quizobject->get_quiz());
+            $eventobject->trigger();
+
         } else {
-            $eventdata->submitterid = $USER->id;
-        }
+            // Trigger event.
+            $eventdata = new stdClass();
+            $eventdata->component   = 'mod_quiz';
+            $eventdata->attemptid   = $this->attempt->id;
+            $eventdata->timestamp   = $timestamp;
+            $eventdata->userid      = $this->attempt->userid;
+            $eventdata->quizid      = $this->get_quizid();
+            $eventdata->cmid        = $this->get_cmid();
+            $eventdata->courseid    = $this->get_courseid();
 
-        if ($event == 'quiz_attempt_submitted') {
-            // Backwards compatibility for this event type. $eventdata->timestamp is now preferred.
-            $eventdata->timefinish = $timestamp;
-        }
+            // I don't think if (CLI_SCRIPT) is really the right logic here. The
+            // question is really 'is $USER currently set to a real user', but I cannot
+            // see standard Moodle function to answer that question. For example,
+            // cron fakes $USER.
+            if (CLI_SCRIPT) {
+                $eventdata->submitterid = null;
+            } else {
+                $eventdata->submitterid = $USER->id;
+            }
 
-        events_trigger($event, $eventdata);
+            if ($event == 'quiz_attempt_submitted') {
+                // Backwards compatibility for this event type. $eventdata->timestamp is now preferred.
+                $eventdata->timefinish = $timestamp;
+            }
+
+            events_trigger($event, $eventdata);                
+        }
     }
 
     /**

@@ -39,7 +39,7 @@ class attempt_timelimit_exceeded extends \core\event\base {
     protected function init() {
         $this->data['objecttable'] = 'quiz_attempts';
         $this->data['crud'] = 'u';
-        $this->data['level'] = 50; // TODO MDL-41040.
+        $this->data['level'] = self::LEVEL_PARTICIPATING;
     }
 
     /**
