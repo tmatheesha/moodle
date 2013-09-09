@@ -50,7 +50,7 @@ class structure extends type_base {
      *
      * @return array the days
      */
-    public function get_days() {
+    protected function get_days() {
         $days = array();
 
         for ($i = 1; $i <= 31; $i++) {
@@ -65,7 +65,7 @@ class structure extends type_base {
      *
      * @return array the month names
      */
-    public function get_months() {
+    protected function get_months() {
         $months = array();
 
         for ($i = 1; $i <= 12; $i++) {
@@ -76,21 +76,18 @@ class structure extends type_base {
     }
 
     /**
-     * Returns the minimum year of the calendar.
+     * Returns a list of all of the years being used.
      *
-     * @return int the minumum year
+     * @return array the years.
      */
-    public function get_min_year() {
-        return 1900;
-    }
+    public function get_years() {
+        $years = array();
 
-    /**
-     * Returns the maximum year of the calendar.
-     *
-     * @return int the max year
-     */
-    public function get_max_year() {
-        return 2050;
+        for ($i = $this->minyear; $i <= $this->maxyear; $i++) {
+            $years[$i] = $i;
+        }
+
+        return $years;
     }
 
     /**
