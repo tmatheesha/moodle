@@ -29,6 +29,12 @@ use \core_calendar\type_base;
  */
 class structure extends type_base {
 
+    /** string $minyear Minimum year we are using. */
+    private $minyear = 1970;
+
+    /** string $maxyear Maximum year we are using. */
+    private $maxyear = 2050;
+
     /**
      * Returns a list of all the possible days for all months.
      *
@@ -67,21 +73,29 @@ class structure extends type_base {
     }
 
     /**
-     * Returns the minimum year of the calendar.
+     * Returns a list of all of the years being used.
+     * Can reduce the number of entries returned by using the $minyear
+     * and $maxyear parameters.
      *
-     * @return int the minumum year
+     * @param int $minyear Start year for the array.
+     * @param int $maxyear Finish year for the array.
+     * @return array the years.
      */
-    public function get_min_year() {
-        return 1970;
-    }
+    public function get_years($minyear = 0, $maxyear = 0) {
+        $years = array();
 
-    /**
-     * Returns the maximum year of the calendar.
-     *
-     * @return int the max year
-     */
-    public function get_max_year() {
-        return 2050;
+        if (!empty($minyear)) {
+            $this->minyear = $minyear;
+        }
+        if (!empty($maxyear)) {
+            $this->maxyear = $maxyear;
+        }
+
+        for ($i = $this->minyear; $i <= $this->maxyear; $i++) {
+            $years[$i] = $i;
+        }
+
+        return $years;
     }
 
     /**

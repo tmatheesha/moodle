@@ -49,18 +49,15 @@ abstract class type_base {
     public abstract function get_months();
 
     /**
-     * Returns the minimum year of the calendar.
+     * Returns a list of all of the years being used.
+     * Can reduce the number of entries returned by using the $minyear
+     * and $maxyear parameters.
      *
-     * @return int the minumum year
+     * @param int $minyear Start year for the array.
+     * @param int $maxyear Finish year for the array.
+     * @return array the years.
      */
-    public abstract function get_min_year();
-
-    /**
-     * Returns the maximum year of the calendar.
-     *
-     * @return int the max year
-     */
-    public abstract function get_max_year();
+    public abstract function get_years($minyear = 0, $maxyear = 0);
 
     /**
      * Returns a formatted string that represents a date in user time.

@@ -79,9 +79,8 @@ class MoodleQuickForm_date_selector extends MoodleQuickForm_group {
     function MoodleQuickForm_date_selector($elementName = null, $elementLabel = null, $options = array(), $attributes = null) {
         // Get the calendar type used - see MDL-18375.
         $calendartype = \core_calendar\type_factory::get_calendar_instance();
-        $this->_options = array('startyear' => $calendartype->get_min_year(), 'stopyear' => $calendartype->get_max_year(),
-            'defaulttime' => 0, 'timezone' => 99, 'step' => 5, 'optional' => false);
-
+        $this->_options = array('startyear' => 0, 'stopyear' => 0, 'defaulttime' => 0,
+            'timezone' => 99, 'step' => 5, 'optional' => false);
         $this->HTML_QuickForm_element($elementName, $elementLabel, $attributes);
         $this->_persistantFreeze = true;
         $this->_appendName = true;
@@ -116,9 +115,7 @@ class MoodleQuickForm_date_selector extends MoodleQuickForm_group {
         $calendartype = \core_calendar\type_factory::get_calendar_instance();
         $days = $calendartype->get_days();
         $months = $calendartype->get_months();
-        for ($i = $this->_options['startyear']; $i <= $this->_options['stopyear']; $i++) {
-            $years[$i] = $i;
-        }
+        $years = $calendartype->get_years($this->_options['startyear'], $this->_options['stopyear']);
 
         $this->_elements = array();
         // E_STRICT creating elements without forms is nasty because it internally uses $this
