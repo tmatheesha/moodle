@@ -27,6 +27,12 @@ namespace core_calendar;
  */
 abstract class type_base {
 
+    /** string $minyear Minimum year we are using. */
+    protected $minyear = 1900;
+
+    /** string $maxyear Maximum year we are using. */
+    protected $maxyear = 2050;
+
     /**
      * Returns a list of all the possible days for all months.
      *
@@ -39,25 +45,47 @@ abstract class type_base {
      *
      * @return array the days
      */
-    public abstract function get_days();
+    protected abstract function get_days();
 
     /**
      * Returns a list of all the names of the months.
      *
      * @return array the month names
      */
-    public abstract function get_months();
+    protected abstract function get_months();
 
     /**
      * Returns a list of all of the years being used.
-     * Can reduce the number of entries returned by using the $minyear
-     * and $maxyear parameters.
      *
-     * @param int $minyear Start year for the array.
-     * @param int $maxyear Finish year for the array.
      * @return array the years.
      */
-    public abstract function get_years($minyear = 0, $maxyear = 0);
+    public abstract function get_years();
+
+    /**
+     * Returns a multidimensional array with information for day, month, year
+     * and the order they are displayed when selecting a date.
+     * The order in the array will be the order displayed when selecting a date.
+     * Override this function to change the date selector order.
+     *
+     * @param int $minyear The year to start with.
+     * @param int $maxyear The year to finish with.
+     * @return array Full date information.
+     */
+    public function date_order($minyear = 0, $maxyear = 0) {
+
+        if (!empty($minyear)) {
+            $this->minyear = $minyear;
+        }
+        if (!empty($maxyear)) {
+            $this->maxyear = $maxyear;
+        }
+        $dateinfo = array();
+        $dateinfo['day'] = $this->get_days();
+        $dateinfo['month'] = $this->get_months();
+        $dateinfo['year'] = $this->get_years();
+
+        return $dateinfo;
+    }
 
     /**
      * Returns a formatted string that represents a date in user time.

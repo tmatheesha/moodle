@@ -30,10 +30,7 @@ use \core_calendar\type_base;
 class structure extends type_base {
 
     /** string $minyear Minimum year we are using. */
-    private $minyear = 1970;
-
-    /** string $maxyear Maximum year we are using. */
-    private $maxyear = 2050;
+    protected $minyear = 1970;
 
     /**
      * Returns a list of all the possible days for all months.
@@ -47,7 +44,7 @@ class structure extends type_base {
      *
      * @return array the days
      */
-    public function get_days() {
+    protected function get_days() {
         $days = array();
 
         for ($i = 1; $i <= 31; $i++) {
@@ -62,7 +59,7 @@ class structure extends type_base {
      *
      * @return array the month names
      */
-    public function get_months() {
+    protected function get_months() {
         $months = array();
 
         for ($i = 1; $i <= 12; $i++) {
@@ -74,22 +71,11 @@ class structure extends type_base {
 
     /**
      * Returns a list of all of the years being used.
-     * Can reduce the number of entries returned by using the $minyear
-     * and $maxyear parameters.
      *
-     * @param int $minyear Start year for the array.
-     * @param int $maxyear Finish year for the array.
      * @return array the years.
      */
-    public function get_years($minyear = 0, $maxyear = 0) {
+    public function get_years() {
         $years = array();
-
-        if (!empty($minyear)) {
-            $this->minyear = $minyear;
-        }
-        if (!empty($maxyear)) {
-            $this->maxyear = $maxyear;
-        }
 
         for ($i = $this->minyear; $i <= $this->maxyear; $i++) {
             $years[$i] = $i;
