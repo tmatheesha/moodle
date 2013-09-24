@@ -69,10 +69,10 @@ class mod_choice_generator extends testing_module_generator {
         }
         if (!isset($choices)) {
             $record->option = array();
-            $record->option[] = 'Soft Drink'; 
-            $record->option[] = 'Beer'; 
-            $record->option[] = 'Wine'; 
-            $record->option[] = 'Spirits'; 
+            $record->option[] = 'Soft Drink';
+            $record->option[] = 'Beer';
+            $record->option[] = 'Wine';
+            $record->option[] = 'Spirits';
         } else {
             // fill this in.
         }
