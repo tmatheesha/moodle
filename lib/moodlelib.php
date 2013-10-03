@@ -3642,13 +3642,22 @@ function fullname($user, $override=false) {
  * @param string $alias table alias to use in front of each field.
  * @return array|string All name fields.
  */
-function get_all_user_name_fields($returnsql = false, $alias = null) {
-    $alternatenames = array('firstnamephonetic',
-                            'lastnamephonetic',
-                            'middlename',
-                            'alternatename',
-                            'firstname',
-                            'lastname');
+function get_all_user_name_fields($returnsql = false, $alias = null, $prefix = null) {
+    $alternatenames = array('firstnamephonetic' => 'firstnamephonetic',
+                            'lastnamephonetic' => 'lastnamephonetic',
+                            'middlename' => 'middlename',
+                            'alternatename' => 'alternatename',
+                            'firstname' => 'firstname',
+                            'lastname' => 'lastname');
+
+    // Let's add a prefix to the array of user name fields if provided.
+    if ($prefix) {
+        foreach ($alternatenames as $key => $altname) {
+            $alternatenames[$key] = $prefix . $altname;
+        }
+    }
+
+    // Create an sql field snippet if requested.
     if ($returnsql) {
         if ($alias) {
             foreach ($alternatenames as $key => $altname) {
@@ -3658,6 +3667,24 @@ function get_all_user_name_fields($returnsql = false, $alias = null) {
         $alternatenames = implode(',', $alternatenames);
     }
     return $alternatenames;
+}
+
+/**
+ * Reduces lines of duplicated code for getting user name fields.
+ *
+ * @param object $addtoobject Object to add user name fields to.
+ * @param object $objectthing Object that contains user name field information.
+ * @param string $prefix
+ * @return object User name fields.
+ */
+function object_reduce_lines_thing($addtoobject, $secondobject, $prefix) {
+    $fields = get_all_user_name_fields(false, null, $prefix);
+    foreach ($fields as $key => $field) {
+        if (isset($secondobject->$field)) {
+            $addtoobject->$key = $secondobject->$field;
+        }
+    }
+    return $addtoobject;
 }
 
 /**
