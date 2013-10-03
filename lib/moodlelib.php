@@ -3642,7 +3642,7 @@ function fullname($user, $override=false) {
  * @param string $alias table alias to use in front of each field.
  * @return array|string All name fields.
  */
-function get_all_user_name_fields($returnsql = false, $alias = null, $prefix = null) {
+function get_all_user_name_fields($returnsql = false, $alias = null, $prefix = null, $blah = null) {
     $alternatenames = array('firstnamephonetic' => 'firstnamephonetic',
                             'lastnamephonetic' => 'lastnamephonetic',
                             'middlename' => 'middlename',
@@ -3660,8 +3660,14 @@ function get_all_user_name_fields($returnsql = false, $alias = null, $prefix = n
     // Create an sql field snippet if requested.
     if ($returnsql) {
         if ($alias) {
-            foreach ($alternatenames as $key => $altname) {
-                $alternatenames[$key] = "$alias.$altname";
+            if ($blah) {
+                foreach ($alternatenames as $key => $altname) {
+                    $alternatenames[$key] = "$alias.$altname AS $blah$altname";
+                }
+            } else {
+                foreach ($alternatenames as $key => $altname) {
+                    $alternatenames[$key] = "$alias.$altname";
+                }
             }
         }
         $alternatenames = implode(',', $alternatenames);
@@ -3677,9 +3683,11 @@ function get_all_user_name_fields($returnsql = false, $alias = null, $prefix = n
  * @param string $prefix
  * @return object User name fields.
  */
-function object_reduce_lines_thing($addtoobject, $secondobject, $prefix) {
+function object_reduce_lines_thing($addtoobject, $secondobject, $prefix = null) {
     $fields = get_all_user_name_fields(false, null, $prefix);
     foreach ($fields as $key => $field) {
+        // Important that we have all of the user name fields present in the object that we are sending back.
+        $addtoobject->$key = '';
         if (isset($secondobject->$field)) {
             $addtoobject->$key = $secondobject->$field;
         }

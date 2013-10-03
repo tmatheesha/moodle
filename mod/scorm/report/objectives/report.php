@@ -424,9 +424,7 @@ class scorm_objectives_report extends scorm_default_report {
                                     'picture'=>$scouser->picture,
                                     'imagealt'=>$scouser->imagealt,
                                     'email'=>$scouser->email);
-                        foreach (get_all_user_name_fields() as $addname) {
-                            $user->$addname = $scouser->$addname;
-                        }
+                        $user = object_reduce_lines_thing($user, $scouser);
                         $row[] = $OUTPUT->user_picture($user, array('courseid'=>$course->id));
                     }
                     if (!$download) {

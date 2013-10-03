@@ -125,9 +125,7 @@ abstract class quiz_attempts_report_table extends table_sql {
         $user->imagealt = $attempt->imagealt;
         $user->picture = $attempt->picture;
         $user->email = $attempt->email;
-        foreach (get_all_user_name_fields() as $addname) {
-            $user->$addname = $attempt->$addname;
-        }
+        $user = object_reduce_lines_thing($user, $attempt);
         return $OUTPUT->user_picture($user);
     }
 

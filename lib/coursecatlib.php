@@ -2177,9 +2177,7 @@ class course_in_list implements IteratorAggregate {
                 $user = new stdClass();
                 $user->id = $ruser->id;
                 $user->username = $ruser->username;
-                foreach (get_all_user_name_fields() as $addname) {
-                    $user->$addname = $ruser->$addname;
-                }
+                $user = object_reduce_lines_thing($user, $ruser);
                 $role = new stdClass();
                 $role->id = $ruser->roleid;
                 $role->name = $ruser->rolename;
