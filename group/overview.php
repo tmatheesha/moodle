@@ -102,10 +102,7 @@ $sql = "SELECT g.id AS groupid, gg.groupingid, u.id AS userid, $allnames, u.idnu
 $rs = $DB->get_recordset_sql($sql, array_merge($params, $sortparams));
 foreach ($rs as $row) {
     $user = new stdClass();
-    $user->id        = $row->userid;
-    $user->username  = $row->username;
-    $user->idnumber  = $row->idnumber;
-    $user = object_reduce_lines_thing($user, $row);
+    $user = object_reduce_lines_thing($user, $row, null, array('id' => 'userid', 'username', 'idnumber'));
     if (!$row->groupingid) {
         $row->groupingid = -1;
     }

@@ -2686,13 +2686,13 @@ function forum_get_discussions($cm, $forumsort="d.timemodified DESC", $fullpost=
         $umfields = "";
         $umtable  = "";
     } else {
-        $umfields = get_all_user_name_fields(true, 'um', null, 'um');
+        $umfields = ', ' . get_all_user_name_fields(true, 'um', null, 'um');
         $umtable  = " LEFT JOIN {user} um ON (d.usermodified = um.id)";
     }
 
     $allnames = get_all_user_name_fields(true, 'u');
     $sql = "SELECT $postdata, d.name, d.timemodified, d.usermodified, d.groupid, d.timestart, d.timeend, $allnames,
-                   u.email, u.picture, u.imagealt, $umfields
+                   u.email, u.picture, u.imagealt $umfields
               FROM {forum_discussions} d
                    JOIN {forum_posts} p ON p.discussion = d.id
                    JOIN {user} u ON p.userid = u.id
@@ -3308,12 +3308,8 @@ function forum_print_post($post, $discussion, $forum, &$cm, $course, $ownpost=fa
 
     // Build an object that represents the posting user
     $postuser = new stdClass;
-    $postuser->id        = $post->userid;
-    $postuser = object_reduce_lines_thing($postuser, $post);
-    $postuser->imagealt  = $post->imagealt;
-    $postuser->picture   = $post->picture;
-    $postuser->email     = $post->email;
-    // Some handy things for later on
+    $postuserfields = array('id' => 'userid', 'imagealt', 'picture', 'email');
+    $postuser = object_reduce_lines_thing($postuser, $post, null, $postuserfields);
     $postuser->fullname    = fullname($postuser, $cm->cache->caps['moodle/site:viewfullnames']);
     $postuser->profilelink = new moodle_url('/user/view.php', array('id'=>$post->userid, 'course'=>$course->id));
 
@@ -3739,11 +3735,8 @@ function forum_print_discussion_header(&$post, $forum, $group=-1, $datestring=""
 
     // Picture
     $postuser = new stdClass();
-    $postuser->id = $post->userid;
-    $postuser = object_reduce_lines_thing($postuser, $post);
-    $postuser->imagealt = $post->imagealt;
-    $postuser->picture = $post->picture;
-    $postuser->email = $post->email;
+    $postuserfields = array('id' => 'userid', 'imagealt', 'picture', 'email');
+    $postuser = object_reduce_lines_thing($postuser, $post, null, $postuserfields);
     echo '<td class="picture">';
     echo $OUTPUT->user_picture($postuser, array('courseid'=>$forum->course));
     echo "</td>\n";

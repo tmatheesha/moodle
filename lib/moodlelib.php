@@ -3681,10 +3681,20 @@ function get_all_user_name_fields($returnsql = false, $alias = null, $prefix = n
  * @param object $addtoobject Object to add user name fields to.
  * @param object $objectthing Object that contains user name field information.
  * @param string $prefix
+ * @param array $additionalfields Additional fields to be matched with data in the second object.
  * @return object User name fields.
  */
-function object_reduce_lines_thing($addtoobject, $secondobject, $prefix = null) {
+function object_reduce_lines_thing($addtoobject, $secondobject, $prefix = null, $additionalfields = null) {
     $fields = get_all_user_name_fields(false, null, $prefix);
+    if ($additionalfields) {
+        foreach ($additionalfields as $key => $value) {
+            if (is_numeric($key)) {
+                $additionalfields[$value] = $value;
+                unset($additionalfields[$key]);
+            }
+        }
+        $fields = array_merge($fields, $additionalfields);
+    }
     foreach ($fields as $key => $field) {
         // Important that we have all of the user name fields present in the object that we are sending back.
         $addtoobject->$key = '';
