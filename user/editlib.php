@@ -129,37 +129,47 @@ function useredit_shared_definition(&$mform, $editoroptions = null, $filemanager
 
     $strrequired = get_string('required');
 
+    // Get the name display format.
     $nameformat = $CFG->fullnamedisplay;
-    if ($nameformat == 'language') {
-        $nameformat = get_string('fullnamedisplay');
+
+    // Names that are required fields on this form.
+    $necessarynames = array('firstname', 'lastname');
+    $languageformat = get_string('fullnamedisplay');
+    // Check that the language string and the $nameformat contain the necessary names.
+    foreach ($necessarynames as $necessaryname) {
+        $pattern = "/$necessaryname/";
+        if (!preg_match($pattern, $languageformat)) {
+            // If the language string has been altered then fall back on the below order.
+            $languageformat = 'firstname lastname';
+        }
+        if (!preg_match($pattern, $nameformat)) {
+            // If the nameformat doesn't contain the necessary name fields then use the languageformat.
+            $nameformat = $languageformat;
+        }
     }
 
-    $necessarynames = array('firstname', 'lastname');
+    // Get all of the other name fields which are not ranked as necessary.
     $enablednames = array_diff(get_all_user_name_fields(), $necessarynames);
-    // Get a list of all of the enabled names.
+    // Find out which additional name fields are actually being used from the fullnamedisplay setting.
     $enabledadditionalusernames = array();
     foreach ($enablednames as $enabledname) {
         if (strpos($CFG->fullnamedisplay, $enabledname) !== false) {
             $enabledadditionalusernames[] = $enabledname;
         }
     }
+    // Order all of the name fields in the postion they are written in the fullnamedisplay setting.
+    $necessarynames = order_in_string($necessarynames, $nameformat);
 
-    $combinednames = array_merge($necessarynames, $enabledadditionalusernames);
-    $requirednames = order_in_string($combinednames, $nameformat);
-    foreach ($necessarynames as $necessaryname) {
-        if (!in_array($necessaryname, $requirednames)) {
-            $requirednames = order_in_string($combinednames, get_string('fullnamedisplay'));
-        }
-    }
-    foreach ($requirednames as $fullname) {
+    // Add the necessary names.
+    foreach ($necessarynames as $fullname) {
         $mform->addElement('text', $fullname,  get_string($fullname),  'maxlength="100" size="30"');
+        $mform->addRule($fullname, $strrequired, 'required', null, 'client');
         $mform->setType($fullname, PARAM_NOTAGS);
     }
 
-    $mform->addRule('firstname', $strrequired, 'required', null, 'client');
-    $mform->addRule('lastname', $strrequired, 'required', null, 'client');
-
-    $morenames = array_diff($enabledadditionalusernames, $requirednames);
+    // Add the enabled additional name fields.
+    $morenames = array_diff($enabledadditionalusernames, $necessarynames);
+    $morenames = order_in_string($morenames, $CFG->fullnamedisplay);
     foreach ($morenames as $addname) {
         $mform->addElement('text', $addname,  get_string($addname), 'maxlength="100" size="30"');
         $mform->setType($addname, PARAM_NOTAGS);
