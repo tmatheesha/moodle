@@ -8618,3 +8618,60 @@ class admin_setting_php_extension_enabled extends admin_setting {
         return $o;
     }
 }
+
+/**
+ * Fullnameformat language token translation.
+ * This allows the place-holders or tokens to be defined in each
+ * locations language pack (lang/en/admin.php - for English).
+ *
+ * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+class admin_setting_configfullname extends admin_setting_configtext {
+
+    /**
+     * Retrieve the config setting and switch the English terms (place-holders) to the
+     * current location definitions.
+     *
+     * @return string The current locations fullnamedisplay setting.
+     */
+    public function get_setting() {
+        // Retrieve the setting.
+        $data = $this->config_read($this->name);
+        // All of the system place-holders that we will process.
+        $allusernamefields = get_all_user_name_fields();
+
+        foreach ($allusernamefields as $key => $value) {
+            $pattern = "/$value\b/u";
+            $replacement = get_string($value, 'admin');
+            // Using preg_replace as strpos() may match values that are similar e.g. firstname and firstnamephonetic.
+            $data = preg_replace($pattern, $replacement, $data);
+        }
+        return $data;
+    }
+
+    /**
+     * Takes the user entered place-holders and changes them into the user table
+     * field names for use in general user name functions.
+     *
+     * @param string $data fullnamedisplay setting.
+     * @return bool|string true on success, error on a problem.
+     */
+    public function write_setting($data) {
+        // Change local language place-holders into system place-holders.
+        $validated = $this->validate($data);
+        if ($validated !== true) {
+            return $validated;
+        }
+
+        // All of the system place-holders that we will process.
+        $allusernamefields = get_all_user_name_fields();
+
+        foreach ($allusernamefields as $key => $value) {
+            $placeholder = get_string($value, 'admin');
+            $pattern = "/$placeholder\b/u";
+            // Using preg_replace as strpos() may match values that are similar e.g. firstname and firstnamephonetic.
+            $data = preg_replace($pattern, $value, $data);
+        }
+        return ($this->config_write($this->name, $data) ? '' : get_string('errorsetting', 'admin'));
+    }
+}
