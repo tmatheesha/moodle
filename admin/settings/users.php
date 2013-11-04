@@ -150,7 +150,13 @@ if ($hassiteconfig
                     'department'  => new lang_string('department'),
                     'institution' => new lang_string('institution'),
                 )));
-        $temp->add(new admin_setting_configfullname('fullnamedisplay', new lang_string('fullnamedisplay', 'admin'), new lang_string('configfullnamedisplay', 'admin'), '', PARAM_TEXT, 50));
+
+        // Place-holders for the fullnamedisplay setting.
+        $placeholders = new stdClass();
+        foreach (get_all_user_name_fields() as $key => $value) {
+            $placeholders->{$value} = get_string($value, 'admin');
+        }
+        $temp->add(new admin_setting_configfullname('fullnamedisplay', new lang_string('fullnamedisplay', 'admin'), new lang_string('configfullnamedisplay', 'admin', $placeholders), '', PARAM_TEXT, 50));
         $temp->add(new admin_setting_configtext('maxusersperpage', new lang_string('maxusersperpage','admin'), new lang_string('configmaxusersperpage','admin'), 100, PARAM_INT));
         $temp->add(new admin_setting_configcheckbox('enablegravatar', new lang_string('enablegravatar', 'admin'), new lang_string('enablegravatar_help', 'admin'), 0));
         $temp->add(new admin_setting_configtext('gravatardefaulturl', new lang_string('gravatardefaulturl', 'admin'), new lang_string('gravatardefaulturl_help', 'admin'), 'mm'));
