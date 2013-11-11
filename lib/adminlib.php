@@ -8641,8 +8641,9 @@ class admin_setting_configfullname extends admin_setting_configtext {
         $allusernamefields = get_all_user_name_fields();
 
         foreach ($allusernamefields as $key => $value) {
-            $pattern = "/$value\b/u";
-            $replacement = get_string($value, 'admin');
+            $pregsafevalue = preg_quote($value);
+            $pattern = "/\b$pregsafevalue\b/u";
+            $replacement = get_string('fullnameplaceholder_' . $value, 'admin');
             // Using preg_replace as strpos() may match values that are similar e.g. firstname and firstnamephonetic.
             $data = preg_replace($pattern, $replacement, $data);
         }
@@ -8667,8 +8668,8 @@ class admin_setting_configfullname extends admin_setting_configtext {
         $allusernamefields = get_all_user_name_fields();
 
         foreach ($allusernamefields as $key => $value) {
-            $placeholder = get_string($value, 'admin');
-            $pattern = "/$placeholder\b/u";
+            $placeholder = preg_quote(get_string('fullnameplaceholder_' . $value, 'admin'));
+            $pattern = "/\b$placeholder\b/u";
             // Using preg_replace as strpos() may match values that are similar e.g. firstname and firstnamephonetic.
             $data = preg_replace($pattern, $value, $data);
         }

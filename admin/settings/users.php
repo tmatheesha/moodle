@@ -154,7 +154,7 @@ if ($hassiteconfig
         // Place-holders for the fullnamedisplay setting.
         $placeholders = new stdClass();
         foreach (get_all_user_name_fields() as $key => $value) {
-            $placeholders->{$value} = get_string($value, 'admin');
+            $placeholders->{$value} = get_string('fullnameplaceholder_' . $value, 'admin');
         }
         $temp->add(new admin_setting_configfullname('fullnamedisplay', new lang_string('fullnamedisplay', 'admin'), new lang_string('configfullnamedisplay', 'admin', $placeholders), '', PARAM_TEXT, 50));
         $temp->add(new admin_setting_configtext('maxusersperpage', new lang_string('maxusersperpage','admin'), new lang_string('configmaxusersperpage','admin'), 100, PARAM_INT));
