@@ -88,17 +88,16 @@
     case GLOSSARY_AUTHOR_VIEW:
 
         $where = '';
-        $params['hookup'] = textlib::strtoupper($hook);
 
         if ( $sqlsortkey == 'firstname' ) {
             $usernamefield = $DB->sql_fullname('u.firstname' , 'u.lastname');
         } else {
             $usernamefield = $DB->sql_fullname('u.lastname' , 'u.firstname');
         }
-        $where = "AND " . $DB->sql_substr("upper($usernamefield)", 1, textlib::strlen($hook)) . " = :hookup";
 
-        if ( $hook == 'ALL' ) {
-            $where = '';
+        if (!empty($hook) && $hook != GLOSSARY_VIEW_ALL) {
+            $where = "AND " . $DB->sql_substr("upper($usernamefield)", 1, textlib::strlen($hook)) . " = :hookup";
+            $params['hookup'] = textlib::strtoupper($hook);
         }
 
         $sqlselect  = "SELECT ge.*, $usernamefield AS glossarypivot, 1 AS userispivot ";
@@ -114,10 +113,10 @@
         $printpivot = 0;
 
         $where = '';
-        $params['hookup'] = textlib::strtoupper($hook);
 
-        if ($hook != 'ALL' and $hook != 'SPECIAL') {
+        if (!empty($hook) && $hook != 'ALL' && $hook != GLOSSARY_VIEW_SPECIAL) {
             $where = "AND " . $DB->sql_substr("upper(concept)", 1, textlib::strlen($hook)) . " = :hookup";
+            $params['hookup'] = textlib::strtoupper($hook);
         }
 
         $sqlselect  = "SELECT ge.*, ge.concept AS glossarypivot";
@@ -156,10 +155,10 @@
 
             if (empty($fullsearch)) {
                 // With fullsearch disabled, look only within concepts and aliases.
-                $concat = $DB->sql_concat('ge.concept', "' '", "COALESCE(al.alias, '')");
+                $concat = $DB->sql_concat('ge.concept', "' '", "COALESCE(al.alias, " . $DB->sql_concat() . ")");
             } else {
                 // With fullsearch enabled, look also within definitions.
-                $concat = $DB->sql_concat('ge.concept', "' '", 'ge.definition', "' '", "COALESCE(al.alias, '')");
+                $concat = $DB->sql_concat('ge.concept', "' '", 'ge.definition', "' '", "COALESCE(al.alias, " . $DB->sql_concat() . ")");
             }
 
             $searchterms = explode(" ",$hook);
@@ -239,11 +238,11 @@
         break;
 
         case 'letter':
-            if ($hook != 'ALL' and $hook != 'SPECIAL') {
+            if (!empty($hook) && $hook != GLOSSARY_VIEW_ALL && $hook != GLOSSARY_VIEW_SPECIAL) {
                 $params['hookup'] = textlib::strtoupper($hook);
                 $where = "AND " . $DB->sql_substr("upper(concept)", 1, textlib::strlen($hook)) . " = :hookup";
             }
-            if ($hook == 'SPECIAL') {
+            if ($hook == GLOSSARY_VIEW_SPECIAL) {
                 //Create appropiate IN contents
                 $alphabet = explode(",", get_string('alphabet', 'langconfig'));
                 list($nia, $aparams) = $DB->get_in_or_equal($alphabet, SQL_PARAMS_NAMED, $start='a', false);

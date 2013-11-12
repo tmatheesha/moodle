@@ -38,6 +38,9 @@ define("GLOSSARY_IMPORT_VIEW", 5);
 define("GLOSSARY_EXPORT_VIEW", 6);
 define("GLOSSARY_APPROVAL_VIEW", 7);
 
+define("GLOSSARY_VIEW_ALL", 'ALL');
+define("GLOSSARY_VIEW_SPECIAL", 'SPECIAL');
+
 /// STANDARD FUNCTIONS ///////////////////////////////////////////////////////////
 /**
  * @global object
