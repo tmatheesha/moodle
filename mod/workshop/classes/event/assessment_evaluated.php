@@ -15,10 +15,11 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * This file contains an event for when a workshop activity is viewed.
+ * mod_workshop assessment evaluated event.
  *
  * @package    mod_workshop
- * @copyright  2013 Adrian Greeve <adrian@moodle.com>
+ * @category   event
+ * @copyright  2013 Adrian Greeve
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -26,44 +27,57 @@ namespace mod_workshop\event;
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Event for when a workshop activity is viewed.
+ * mod_workshop assessment evaluated event class.
+ *
+ * @property-read array $other {
+ *     Extra information about the event.
+ *
+ *     @type string currentgrade current saved grade.
+ *     @type string finalgrade final grade.
+ * }
  *
  * @package    mod_workshop
+ * @category   event
  * @copyright  2013 Adrian Greeve
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class course_module_viewed extends \core\event\course_module_viewed {
+class assessment_evaluated extends \core\event\base {
 
     /**
      * Init method.
+     *
+     * @return void
      */
     protected function init() {
-        $this->data['crud'] = 'r';
+        $this->data['crud'] = 'c';
         $this->data['edulevel'] = self::LEVEL_PARTICIPATING;
-        $this->data['objecttable'] = 'workshop';
+        $this->data['objecttable'] = 'workshop_aggregations';
     }
 
     /**
-     * Does this event replace a legacy event?
+     * Returns description of what happened.
      *
-     * @return string legacy event name
+     * @return string
      */
-    public static function get_legacy_eventname() {
-        return 'workshop_viewed';
+    public function get_description() {
+        return 'An assessment has been evaluated ' . $this->objectid . '.';
     }
 
     /**
-     * Legacy event data if get_legacy_eventname() is not empty.
+     * Return localised event name.
      *
-     * @return mixed
+     * @return string
      */
-    protected function get_legacy_eventdata() {
-        global $USER;
+    public static function get_name() {
+        return get_string('eventassessmentevaluated', 'mod_workshop');
+    }
 
-        $workshop = $this->get_record_snapshot('workshop', $this->objectid);
-        $course   = $this->get_record_snapshot('course', $this->courseid);
-        $cm       = $this->get_record_snapshot('course_modules', $this->contextinstanceid);
-        $workshop = new \workshop($workshop, $cm, $course);
-        return (object)array('workshop' => $workshop, 'user' => $USER);
+    /**
+     * Get URL related to the action.
+     *
+     * @return \moodle_url
+     */
+    public function get_url() {
+        return new \moodle_url('/mod/workshop/view.php', array('id' => $this->contextinstanceid));
     }
 }
