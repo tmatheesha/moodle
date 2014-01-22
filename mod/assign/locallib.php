@@ -5495,8 +5495,10 @@ class assign {
         }
 
         $pluginerror = false;
+        $submissionpluginnames = array();
         foreach ($this->submissionplugins as $plugin) {
             if ($plugin->is_enabled() && $plugin->is_visible()) {
+                $submissionpluginnames[] = $plugin->get_name();
                 if (!$plugin->save($submission, $data)) {
                     $notices[] = $plugin->get_error();
                     $pluginerror = true;
@@ -5514,25 +5516,33 @@ class assign {
         $this->update_submission($submission, $userid, true, $instance->teamsubmission);
 
         // Logging.
+        $params = array(
+            'context' => $this->context,
+            'objectid' => $submission->id,
+            'courseid' => $this->get_course()->id
+        );
         if (isset($data->submissionstatement) && ($userid == $USER->id)) {
             $logmessage = get_string('submissionstatementacceptedlog',
                                      'mod_assign',
                                      fullname($USER));
             $this->add_to_log('submission statement accepted', $logmessage);
             $addtolog = $this->add_to_log('submission statement accepted', $logmessage, '', true);
-            $params = array(
-                'context' => $this->context,
-                'objectid' => $submission->id
-            );
             $event = \mod_assign\event\statement_accepted::create($params);
             $event->set_legacy_logdata($addtolog);
             $event->trigger();
         }
-        $addtolog = $this->add_to_log('submit', $this->format_submission_for_log($submission), '', true);
-        $params = array(
-            'context' => $this->context,
-            'objectid' => $submission->id
+        $params['relateduserid'] = $submission->userid;
+        $params['other'] = array(
+            'attemptnumber' => $submission->attemptnumber,
+            'submissionstatus' => $submission->status,
+            'submissiontype' => $submissionpluginnames
         );
+        if ($instance->teamsubmission) {
+            $params['other']['teamsubmission'] = $instance->teamsubmission;
+            $params['other']['groupid'] = $instance->teamsubmission;
+        }
+
+        $addtolog = $this->add_to_log('submit', $this->format_submission_for_log($submission), '', true);
         $event = \mod_assign\event\submission_updated::create($params);
         $event->set_legacy_logdata($addtolog);
         $event->trigger();

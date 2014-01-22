@@ -29,6 +29,16 @@ defined('MOODLE_INTERNAL') || die();
 /**
  * mod_assign submission updated event class.
  *
+ * @property-read array $other {
+ *     Extra information about the event.
+ *
+ *     @type int attemptnumber Number of attempts made on this submission.
+ *     @type int submissionstatus Status of the submission.
+ *     @type array submissiontype The submission types used in this assignment.
+ *     @type bool teamsubmission Is this a team submission (optional)?
+ *     @type int groupid The group ID if this is a team submission (optional).
+ * }
+ *
  * @package    mod_assign
  * @copyright  2013 Frédéric Massart
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -48,7 +58,11 @@ class submission_updated extends \core\event\base {
      * @return string
      */
     public function get_description() {
-        return "The user {$this->userid} has updated the submission {$this->objectid}.";
+        if (isset($this->other['teamsubmission'])) {
+            return "The user {$this->userid} has updated the submission {$this->objectid} for group {$this->other['groupid']}.";
+        } else {
+            return "The user {$this->userid} has updated the submission {$this->objectid}.";
+        }
     }
 
     /**
@@ -75,7 +89,7 @@ class submission_updated extends \core\event\base {
      * @return \moodle_url
      */
     public function get_url() {
-        return new \moodle_url('/mod/assign/view.php', array('id' => $this->context->instanceid));
+        return new \moodle_url('/mod/assign/view.php', array('id' => $this->contextinstanceid));
     }
 
     /**
@@ -85,7 +99,7 @@ class submission_updated extends \core\event\base {
      */
     protected function init() {
         $this->data['crud'] = 'u';
-        $this->data['level'] = self::LEVEL_PARTICIPATING;
+        $this->data['edulevel'] = self::LEVEL_PARTICIPATING;
         $this->data['objecttable'] = 'assign_submission';
     }
 
@@ -99,4 +113,21 @@ class submission_updated extends \core\event\base {
         $this->legacylogdata = $legacylogdata;
     }
 
+    /**
+     * Custom validation.
+     *
+     * @throws \coding_exception
+     * @return void
+     */
+    protected function validate_data() {
+        if (!isset($this->other['attemptnumber'])) {
+            throw new \coding_exception('Other must contain the key attemptnumber.');
+        }
+        if (!isset($this->other['submissionstatus'])) {
+            throw new \coding_exception('Other must contain the key submissionstatus.');
+        }
+        if (!isset($this->other['submissiontype'])) {
+            throw new \coding_exception('Other must contain the key submissiontype.');
+        }
+    }
 }
