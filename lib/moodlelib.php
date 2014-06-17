@@ -3640,7 +3640,7 @@ function fullname($user, $override=false) {
         // people in general feel is a good setting to fall back on.
         $displayname = $user->firstname;
     }
-    return $displayname;
+    return clean_param($displayname, PARAM_NOTAGS);
 }
 
 /**
