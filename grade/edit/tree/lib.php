@@ -53,20 +53,43 @@ class grade_edit_tree {
      * Constructor
      */
     public function __construct($gtree, $moving=false, $gpr) {
-        global $USER, $OUTPUT, $COURSE;
+        global $USER, $OUTPUT, $COURSE, $CFG, $DB;
+
+        $gtree->sumofgradesonly = grade_helper::get_sum_of_grades_only($COURSE->id);
+
+        if ($gtree->sumofgradesonly) {
+            $gtree->emptycats = array();
+            $gtree->cats = array();
+            $gtree->fill_cats();
+
+            $gtree->parents = array();
+            $gtree->parents[$gtree->top_element['object']->grade_item->id] = new stdClass();
+            $gtree->fill_parents($gtree->top_element, $gtree->top_element['object']->grade_item->id, $gtree->showtotalsifcontainhidden, array());
+
+            //TODO: we should probably epxlain why this is renaming to a column that already exists
+            $gtree->grades = $DB->get_records_sql('SELECT id, grademax as finalgrade, grademax as rawgrademax FROM {grade_items} WHERE courseid = ?', array($COURSE->id));
+
+            $gtree->calc_weights_recursive2($gtree->top_element, $gtree->grades, false, true);
+        }
 
         $this->gtree = $gtree;
         $this->moving = $moving;
         $this->gpr = $gpr;
         $this->deepest_level = $this->get_deepest_level($this->gtree->top_element);
 
-        $this->columns = array(grade_edit_tree_column::factory('name', array('deepest_level' => $this->deepest_level)),
-                               grade_edit_tree_column::factory('aggregation', array('flag' => true)));
-
-        if ($this->uses_weight) {
-            $this->columns[] = grade_edit_tree_column::factory('weight', array('adv' => 'aggregationcoef'));
+        if (!$gtree->sumofgradesonly || $gtree->sumofgradesonly == 'optional') {
+            $this->columns = array(grade_edit_tree_column::factory('name', array('deepest_level' => $this->deepest_level)),
+                                   grade_edit_tree_column::factory('aggregation', array('flag' => true)));
+        } else {
+            $this->columns = array(grade_edit_tree_column::factory('name', array('deepest_level' => $this->deepest_level)));
         }
-        if ($this->uses_extra_credit) {
+
+        if ($gtree->sumofgradesonly) {
+            $this->columns[] = grade_edit_tree_column::factory('weight', array('adv' => 'aggregationcoef'));
+            $this->columns[] = grade_edit_tree_column::factory('extracredit', array('adv' => 'aggregationcoef'));
+        } else if ($this->uses_weight) {
+            $this->columns[] = grade_edit_tree_column::factory('weight', array('adv' => 'aggregationcoef'));
+        } else if ($this->uses_extra_credit) {
             $this->columns[] = grade_edit_tree_column::factory('extracredit', array('adv' => 'aggregationcoef'));
         }
 
@@ -296,7 +319,8 @@ class grade_edit_tree {
 
             foreach ($this->columns as $column) {
                 if (!($this->moving && $column->hide_when_moving) && !$column->is_hidden($mode)) {
-                    $row->cells[] = $column->get_category_cell($category, $levelclass, array('id' => $id, 'name' => $object->name, 'level' => $level, 'actions' => $actions, 'eid' => $eid));
+                    //TODO: why does this need gtree - breaks encapsulation
+                    $row->cells[] = $column->get_category_cell($category, $levelclass, array('id' => $id, 'name' => $object->name, 'level' => $level, 'actions' => $actions, 'eid' => $eid, 'gtree' => $this->gtree));
                 }
             }
 
@@ -331,8 +355,9 @@ class grade_edit_tree {
 
             foreach ($this->columns as $column) {
                 if (!($this->moving && $column->hide_when_moving) && !$column->is_hidden($mode)) {
+                    //TODO: why does this need gtree
                     $gradeitemrow->cells[] = $column->get_item_cell($item, array('id' => $id, 'name' => $object->name, 'level' => $level, 'actions' => $actions,
-                                                                 'element' => $element, 'eid' => $eid, 'itemtype' => $object->itemtype));
+                                                                 'element' => $element, 'eid' => $eid, 'itemtype' => $object->itemtype, 'gtree' => $this->gtree));
                 }
             }
 
@@ -349,11 +374,13 @@ class grade_edit_tree {
      * @param string type "extra" or "weight": the type of the column hosting the weight input
      * @return string HTML
      */
-    static function get_weight_input($item, $type) {
+    static function get_extracredit_input($item, $type) {
+        //TODO: refactor phpdoc
+        //TODO: type parameter is obsolete
         global $OUTPUT;
 
         if (!is_object($item) || get_class($item) !== 'grade_item') {
-            throw new Exception('grade_edit_tree::get_weight_input($item) was given a variable that is not of the required type (grade_item object)');
+            throw new Exception('grade_edit_tree::get_extracredit_input($item) was given a variable that is not of the required type (grade_item object)');
             return false;
         }
 
@@ -363,23 +390,14 @@ class grade_edit_tree {
 
         $parent_category = $item->get_parent_category();
         $parent_category->apply_forced_settings();
-        $aggcoef = $item->get_coefstring();
 
-        if ((($aggcoef == 'aggregationcoefweight' || $aggcoef == 'aggregationcoef') && $type == 'weight') ||
-            ($aggcoef == 'aggregationcoefextraweight' && $type == 'extra')) {
-            return '<label class="accesshide" for="aggregationcoef_'.$item->id.'">'.
-                get_string('extracreditvalue', 'grades', $item->itemname).'</label>'.
-                '<input type="text" size="6" id="aggregationcoef_'.$item->id.'" name="aggregationcoef_'.$item->id.'"
-                value="'.grade_edit_tree::format_number($item->aggregationcoef).'" />';
-        } elseif ($aggcoef == 'aggregationcoefextrasum' && $type == 'extra') {
-            $checked = ($item->aggregationcoef > 0) ? 'checked="checked"' : '';
-            return '<input type="hidden" name="extracredit_'.$item->id.'" value="0" />
-                <label class="accesshide" for="extracredit_'.$item->id.'">'.
-                get_string('extracreditvalue', 'grades', $item->itemname).'</label>
-                <input type="checkbox" id="extracredit_'.$item->id.'" name="extracredit_'.$item->id.'" value="1" '."$checked />\n";
-        } else {
-            return '';
-        }
+        $checked = ($item->extracredit > 0) ? 'checked="checked"' : '';
+
+        //TODO: find out where extracredit_$item->id is used
+        return '<input type="hidden" name="extracredit_'.$item->id .'" value="0" />' .
+            '<label class="accesshide" for="extracredit"'.$item->id.'">'.
+            get_string('extracreditvalue', 'grades', $item->itemname).'</label>'.
+            '<input type="checkbox" id="extacredit_'.$item->id.'" name="extacredit_'.$item->id.'" value="1" '.$checked.'/>';
     }
 
     //Trims trailing zeros
@@ -704,20 +722,20 @@ class grade_edit_tree_column_extracredit extends grade_edit_tree_column {
         $item = $category->get_grade_item();
         $categorycell = clone($this->categorycell);
         $categorycell->attributes['class'] .= ' ' . $levelclass;
-        $categorycell->text = grade_edit_tree::get_weight_input($item, 'extra');
+        $categorycell->text = grade_edit_tree::get_extracredit_input($item, 'extra');
         return $categorycell;
     }
 
     public function get_item_cell($item, $params) {
         if (empty($params['element'])) {
-            throw new Exception('Array key (element) missing from 2nd param of grade_edit_tree_column_weightorextracredit::get_item_cell($item, $params)');
+            throw new Exception('Array key (element) missing from 2nd param of grade_edit_tree_column_extracredit::get_item_cell($item, $params)');
         }
 
         $itemcell = clone($this->itemcell);
         $itemcell->text = '&nbsp;';
 
         if (!in_array($params['element']['object']->itemtype, array('courseitem', 'categoryitem', 'category'))) {
-            $itemcell->text = grade_edit_tree::get_weight_input($item, 'extra');
+            $itemcell->text = grade_edit_tree::get_extracredit_input($item, 'extra');
         }
 
         return $itemcell;
@@ -736,9 +754,22 @@ class grade_edit_tree_column_extracredit extends grade_edit_tree_column {
 class grade_edit_tree_column_weight extends grade_edit_tree_column {
 
     public function get_header_cell() {
-        global $OUTPUT;
+        global $OUTPUT, $COURSE, $gtree;    //TODO: gtree should NOT be global
+
         $headercell = clone($this->headercell);
-        $headercell->text = get_string('weightuc', 'grades').$OUTPUT->help_icon('aggregationcoefweight', 'grades');
+
+        if ($gtree->sumofgradesonly) {
+            $label = get_string('reset');
+            $optionsreset = array('sesskey' => sesskey(), 'id' => $COURSE->id, 'action' => 'reset');
+            $url = new moodle_url('index.php', $optionsreset);
+
+            //TODO: needs to be a better way to get the weight_edit_icon
+            $headercell->text = get_string('weightuc', 'grades') . $OUTPUT->help_icon('aggregationcoefweight', 'grades') .
+                                        '<br/>' . $gtree->get_weight_edit_icon() .
+                                        $OUTPUT->action_icon($url, new pix_icon('t/reload', get_string('resetweights', 'grades')));
+        } else {
+            $headercell->text = get_string('weightuc', 'grades').$OUTPUT->help_icon('aggregationcoefextra', 'grades');
+        }
         return $headercell;
     }
 
@@ -747,19 +778,57 @@ class grade_edit_tree_column_weight extends grade_edit_tree_column {
         $item = $category->get_grade_item();
         $categorycell = clone($this->categorycell);
         $categorycell->attributes['class']  .= ' ' . $levelclass;
-        $categorycell->text = grade_edit_tree::get_weight_input($item, 'weight');
+        $gtree_item = $params['gtree']->grades[$item->id];
+
+        if ($item->itemtype !== 'course') {
+            if (!isset($gtree_item->weight)) {
+                $categorycell->text = '-';
+            } else if ($gtree_item->weight === '') {
+                $categorycell->text = '-';
+            } else if ($params['gtree']->action === 'editweights') {
+                $categorycell->text = '<label class="accesshide" for="weight'. $item->id .'">'.get_string('editweight', 'grades').'</label>' .
+                                '<input type="text" size="6" id="weight'. $item->id .'" name="weight_'.$item->id.'" value="' .
+                                format_float($gtree_item->weight, 3).'" />' .
+                                '<input type="hidden" size="6" id="old_weight'. $item->id .'" name="old_weight_'.$item->id.'" value="' .
+                                format_float($gtree_item->weight, 3).'" />';
+            } else {
+                $categorycell->text = format_float($gtree_item->weight, 3) . '%';
+            }
+
+            if ($item->weightoverride > 0) {
+                $categorycell->text .= '<br/>' . get_string('adjusted', 'grades');
+            }
+        }
+
         return $categorycell;
     }
 
     public function get_item_cell($item, $params) {
         if (empty($params['element'])) {
-            throw new Exception('Array key (element) missing from 2nd param of grade_edit_tree_column_weightorextracredit::get_item_cell($item, $params)');
+            throw new Exception('Array key (element) missing from 2nd param of grade_edit_tree_column_weight::get_item_cell($item, $params)');
         }
         $itemcell = clone($this->itemcell);
         $itemcell->text = '&nbsp;';
 
         if (!in_array($params['element']['object']->itemtype, array('courseitem', 'categoryitem', 'category'))) {
-            $itemcell->text = grade_edit_tree::get_weight_input($item, 'weight');
+            $gtree_item = $params['gtree']->grades[$item->id];
+
+            if (!isset($gtree_item->weight)) {
+                $itemcell->text = '-';
+            } else if ($gtree_item->weight == '') {
+                $itemcell->text = '-';
+            } else if ($params['gtree']->action === 'editweights') {
+                $itemcell->text = '<label class="accesshide" for="weight' . $item->id . '">'.get_string('editweight', 'grades').'</label>' .
+                            '<input type="text" size="6" id="weight'. $item->id .'" name="weight_'.$item->id.'" value="'.
+                            format_float($gtree_item->weight, 3).'" />' .
+                            '<input type="hidden" size="6" id="old_weight'. $item->id . '" name="old_weight_'.$item->id.'" value="'.
+                            format_float($gtree_item->weight, 3).'" />';
+            } else {
+                $itemcell->text = format_float($gtree_item->weight, 3) . '%';
+            }
+            if ($item->weightoverride > 0) {
+                $itemcell->text .= '<br />' . get_string('adjusted', 'grades');
+          }
         }
 
         return $itemcell;
@@ -796,10 +865,9 @@ class grade_edit_tree_column_range extends grade_edit_tree_column {
         // If the parent aggregation is Sum of Grades, we should show the number, even for scales, as that value is used...
         // ...in the computation. For text grades, the grademax is not used, so we can still show the no value string.
         $parent_cat = $item->get_parent_category();
-        if ($item->gradetype == GRADE_TYPE_TEXT) {
-            $grademax = ' - ';
-        } else if ($parent_cat->aggregation == GRADE_AGGREGATE_SUM) {
-            $grademax = format_float($item->grademax, $item->get_decimals());
+
+        if ($params['itemtype'] === 'course' || $params['itemtype'] === 'category') {
+            $grademax = (isset($item->max_earnable)) ? format_float($item->max_earnable, $item->get_decimals()) : format_float($item->grademax, $item->get_decimals());
         } elseif ($item->gradetype == GRADE_TYPE_SCALE) {
             $scale = $DB->get_record('scale', array('id' => $item->scaleid));
             $scale_items = null;
