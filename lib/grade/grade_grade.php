@@ -49,7 +49,7 @@ class grade_grade extends grade_object {
      */
     public $required_fields = array('id', 'itemid', 'userid', 'rawgrade', 'rawgrademax', 'rawgrademin',
                                  'rawscaleid', 'usermodified', 'finalgrade', 'hidden', 'locked',
-                                 'locktime', 'exported', 'overridden', 'excluded', 'timecreated', 'timemodified');
+                                 'locktime', 'exported', 'overridden', 'excluded', 'timecreated', 'timemodified', 'weight');
 
     /**
      * Array of optional fields with default values (these should match db defaults)
@@ -535,6 +535,49 @@ class grade_grade extends grade_object {
      */
     public static function fetch_all($params) {
         return grade_object::fetch_all_helper('grade_grades', 'grade_grade', $params);
+    }
+
+
+    /**
+     * Returns a string representing the range of grademin - grademax for this grade item.
+     *
+     * @param int $rangesdisplaytype
+     * @param int $rangesdecimalpoints
+     * @return string
+     */
+    function get_formatted_range($rangesdisplaytype=null, $rangesdecimalpoints=null) {
+
+        global $USER;
+
+        // Determine which display type to use for this average
+        if (isset($USER->gradeediting) && array_key_exists($this->grade_item->courseid, $USER->gradeediting) && $USER->gradeediting[$this->grade_item->courseid]) {
+            $displaytype = GRADE_DISPLAY_TYPE_REAL;
+
+        } else if ($rangesdisplaytype == GRADE_REPORT_PREFERENCE_INHERIT) { // no ==0 here, please resave report and user prefs
+            $displaytype = $this->get_displaytype();
+
+        } else {
+            $displaytype = $rangesdisplaytype;
+        }
+
+        // Override grade_item setting if a display preference (not default) was set for the averages
+        if ($rangesdecimalpoints == GRADE_REPORT_PREFERENCE_INHERIT) {
+            $decimalpoints = $this->get_decimals();
+
+        } else {
+            $decimalpoints = $rangesdecimalpoints;
+        }
+
+        if ($displaytype == GRADE_DISPLAY_TYPE_PERCENTAGE) {
+            $grademin = "0 %";
+            $grademax = "100 %";
+
+        } else {
+            $grademin = grade_format_gradevalue($this->rawgrademin, $this->grade_item, true, $displaytype, $decimalpoints);
+            $grademax = grade_format_gradevalue($this->rawgrademax, $this->grade_item, true, $displaytype, $decimalpoints);
+        }
+
+        return $grademin.'&ndash;'. $grademax;
     }
 
     /**
