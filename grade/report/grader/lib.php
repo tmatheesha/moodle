@@ -108,6 +108,10 @@ class grade_report_grader extends grade_report {
         parent::__construct($courseid, $gpr, $context, $page);
 
         $this->canviewhidden = has_capability('moodle/grade:viewhidden', context_course::instance($this->course->id));
+        
+        // included so totals displayed in Grader match User
+        $this->showtotalsifcontainhidden = array($this->courseid => grade_get_setting($this->courseid, 'report_user_showtotalsifcontainhidden', $CFG->grade_report_user_showtotalsifcontainhidden));
+        $showtotalsifcontainhidden = $this->showtotalsifcontainhidden[$this->courseid];
 
         // load collapsed settings for this report
         $this->collapsed = static::get_collapsed_preferences($this->course->id);
@@ -124,8 +128,16 @@ class grade_report_grader extends grade_report {
             $switch = grade_get_setting($this->courseid, 'aggregationposition', $CFG->grade_aggregationposition);
         }
 
-        // Grab the grade_tree for this course
         $this->gtree = new grade_tree($this->courseid, true, $switch, $this->collapsed, $nooutcomes);
+
+        $this->sumofgradesonly = grade_helper::get_sum_of_grades_only($courseid);
+    
+        // Fill items with parent information needed later
+//        $this->gtree->parents = array();
+        $this->gtree->cats = array();
+        $this->gtree->fill_cats($this->gtree);
+//        $this->gtree->parents[$this->gtree->top_element['object']->grade_item->id] = new stdClass(); // initiate the course item
+//        $this->gtree->fill_parents($this->gtree->top_element, $this->gtree->top_element['object']->grade_item->id, $this->showtotalsifcontainhidden);
 
         $this->sortitemid = $sortitemid;
 
@@ -735,6 +747,11 @@ class grade_report_grader extends grade_report {
         $strerror = get_string('error');
         $strtypescale = get_string('typescale', 'grades');
 
+        // need a grades array for calc_weights_recursive to work right
+        //TODO: we should probably epxlain why this is renaming to a column that already exists
+        $sql = 'SELECT id, grademax as finalgrade, grademax as rawgrademax FROM {grade_items} WHERE courseid = ' . $this->courseid;
+        $this->tempgrades = $DB->get_records_sql($sql);
+    
         foreach ($this->gtree->get_levels() as $key => $row) {
             $headingrow = new html_table_row();
             $headingrow->attributes['class'] = 'heading_name_row';
@@ -825,7 +842,7 @@ class grade_report_grader extends grade_report {
         $scaleslist = array();
         $tabindices = array();
 
-        foreach ($this->gtree->get_items() as $itemid => $item) {
+        foreach ($this->gtree->items as $itemid => $item) {
             $scale = null;
             if (!empty($item->scaleid)) {
                 $scaleslist[] = $item->scaleid;
@@ -848,6 +865,8 @@ class grade_report_grader extends grade_report {
 
         foreach ($this->users as $userid => $user) {
 
+            $this->gtree->calc_values($this->grades[$userid], true, false);
+
             if ($this->canviewhidden) {
                 $altered = array();
                 $unknown = array();
@@ -867,7 +886,7 @@ class grade_report_grader extends grade_report {
 
             foreach ($this->gtree->items as $itemid => $unused) {
                 $item =& $this->gtree->items[$itemid];
-                $grade = $this->grades[$userid][$item->id];
+                $grade = $this->grades[$userid][$itemid];
 
                 $itemcell = new html_table_cell();
 
@@ -1035,9 +1054,9 @@ class grade_report_grader extends grade_report {
                     if ($item->needsupdate) {
                         $itemcell->text .= "<span class='gradingerror{$hidden}{$gradepass}'>" . $error . "</span>";
                     } else {
-                        $itemcell->text .= "<span class='gradevalue{$hidden}{$gradepass}'>" .
-                                grade_format_gradevalue($gradeval, $item, true, $gradedisplaytype, null) . "</span>";
-                        if ($showanalysisicon) {
+                        $itemcell->text .= html_writer::tag('span', $this->grade_format_gradevalue($gradeval, $item, $grade, true, $gradedisplaytype, null),
+                                array('class'=>"gradevalue$hidden$gradepass"));
+                        if ($this->get_pref('showanalysisicon')) {
                             $itemcell->text .= $this->gtree->get_grade_analysis_icon($grade);
                         }
                     }
@@ -1272,10 +1291,17 @@ class grade_report_grader extends grade_report {
         global $OUTPUT;
 
         if ($this->get_pref('showranges')) {
+            $this->gtree->calc_values($this->grades, false, true);
+
             $rangesdisplaytype   = $this->get_pref('rangesdisplaytype');
             $rangesdecimalpoints = $this->get_pref('rangesdecimalpoints');
             $rangerow = new html_table_row();
             $rangerow->attributes['class'] = 'heading range';
+
+        
+            // grademax
+            // $grades, $updateitemrecord, $grademax
+//            $this->gtree->accuratepoints($this->tempgrades, true, true, false); // calculates range correctly for categories and course
 
             foreach ($this->gtree->items as $itemid => $unused) {
                 $item =& $this->gtree->items[$itemid];
@@ -1797,6 +1823,84 @@ class grade_report_grader extends grade_report {
      */
     public function get_students_per_page() {
         return $this->get_pref('studentsperpage');
+    }
+
+    /**
+     * Returns string representation of grade value
+     *
+     * @param float $value The grade value
+     * @param object $grade_item Grade item object passed by reference to prevent scale reloading
+     * @param bool $localized use localised decimal separator
+     * @param int $displaytype type of display. For example GRADE_DISPLAY_TYPE_REAL, GRADE_DISPLAY_TYPE_PERCENTAGE, GRADE_DISPLAY_TYPE_LETTER
+     * @param int $decimals The number of decimal places when displaying float values
+     * @return string
+     */
+    function grade_format_gradevalue($value, &$grade_item, $grade, $localized=true, $displaytype=null, $decimals=null) {
+        if ($grade_item->gradetype == GRADE_TYPE_NONE or $grade_item->gradetype == GRADE_TYPE_TEXT) {
+            return '';
+        }
+
+        // no grade yet?
+        if (is_null($value)) {
+            return '-';
+        }
+
+        if ($grade_item->gradetype != GRADE_TYPE_VALUE and $grade_item->gradetype != GRADE_TYPE_SCALE) {
+            //unknown type??
+            return '';
+        }
+
+        if (is_null($displaytype)) {
+            $displaytype = $grade_item->get_displaytype();
+        }
+
+        if (is_null($decimals)) {
+            $decimals = $grade_item->get_decimals();
+        }
+
+        $value2 = null;
+        if (isset($grade->contrib)) {
+            // sum of contrib is exact percentage but when it goes through formatting its going to divide by grade_item grademax (wrong) 
+            // so we need to multiply it timee that value to make the number right
+            $value2 = is_array($grade->contrib) ? array_sum($grade->contrib) * $grade_item->grademax : $grade->contrib;
+        }
+
+        switch ($displaytype) {
+            case GRADE_DISPLAY_TYPE_REAL:
+                return grade_format_gradevalue_real($value, $grade_item, $decimals, $localized);
+
+            case GRADE_DISPLAY_TYPE_PERCENTAGE:
+                return grade_format_gradevalue_percentage($value2, $grade_item, $decimals, $localized);
+
+            case GRADE_DISPLAY_TYPE_LETTER:
+                return grade_format_gradevalue_letter($value2, $grade_item);
+
+            case GRADE_DISPLAY_TYPE_REAL_PERCENTAGE:
+                return grade_format_gradevalue_real($value, $grade_item, $decimals, $localized) . ' (' .
+                        grade_format_gradevalue_percentage($value2, $grade_item, $decimals, $localized) . ')';
+
+            case GRADE_DISPLAY_TYPE_REAL_LETTER:
+                return grade_format_gradevalue_real($value, $grade_item, $decimals, $localized) . ' (' .
+                        grade_format_gradevalue_letter($value, $grade_item) . ')';
+
+            case GRADE_DISPLAY_TYPE_PERCENTAGE_REAL:
+                return grade_format_gradevalue_percentage($value2, $grade_item, $decimals, $localized) . ' (' .
+                        grade_format_gradevalue_real($value, $grade_item, $decimals, $localized) . ')';
+
+            case GRADE_DISPLAY_TYPE_LETTER_REAL:
+                return grade_format_gradevalue_letter($value2, $grade_item) . ' (' .
+                        grade_format_gradevalue_real($value, $grade_item, $decimals, $localized) . ')';
+
+            case GRADE_DISPLAY_TYPE_LETTER_PERCENTAGE:
+                return grade_format_gradevalue_letter($value2, $grade_item) . ' (' .
+                        grade_format_gradevalue_percentage($value2, $grade_item, $decimals, $localized) . ')';
+
+            case GRADE_DISPLAY_TYPE_PERCENTAGE_LETTER:
+                return grade_format_gradevalue_percentage($value2, $grade_item, $decimals, $localized) . ' (' .
+                        grade_format_gradevalue_letter($value2, $grade_item) . ')';
+            default:
+                return '';
+        }
     }
 }
 
