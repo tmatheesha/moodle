@@ -597,7 +597,7 @@ class grade_category extends grade_object {
             } else if (in_array($itemid, $excluded)) {
                 unset($grade_values[$itemid]);
                 continue;
-            } else if ($this->aggregatonlygraded && $v == null) {
+            } else if ($this->aggregateonlygraded && $v == null) {
                 // allow for exclude empty grades for Sum
                 unset($grade_values[$itemid]);
             }
@@ -885,7 +885,7 @@ class grade_category extends grade_object {
             }
         } else if ($this->aggregateonlygraded) {
             foreach ($items as $itemid=>$value) {
-                if (!isset($grade_values[$itemid]) and !in_array($itemid, $exclude)) {
+                if (!isset($grade_values[$itemid]) and !in_array($itemid, $excluded)) {
                     $grade_values[$itemid] = 0;
                 }
             }

@@ -2606,7 +2606,7 @@ class grade_tree extends grade_structure {
                 if ($dropped < $this->cat->droplow) {
                     if (is_null($contrib)) {
                         continue;
-                    } else if ($extraused && $this->cat->aggregation == GRADE_AGGREGATE_WEIGHTED_MEAN2 && $this->items[$childid]->aggregationcoef > 0) {
+                    } else if ($extraused && $this->items[$childid]->extracredit > 0) {
                         // no drop low for extra credits
                     } else {
                         if ($unsetgrades) {
@@ -2629,7 +2629,7 @@ class grade_tree extends grade_structure {
             foreach ($grades[$itemid]->contrib as $childid=>$contrib) {
                 if (is_null($contrib)) {
                     continue;
-                } else if ($extraused && $this->cat->aggregation == GRADE_AGGREGATE_WEIGHTED_MEAN2 && $this->items[$childid]->aggregationcoef > 0) {
+                } else if ($extraused && $this->items[$childid]->extracredit > 0) {
                     // we keep all extra credits
                 } else if ($kept < $this->cat->keephigh) {
                     $kept++;
@@ -2645,6 +2645,7 @@ class grade_tree extends grade_structure {
             }
         }
     }
+    
     /*
      * Used to calculate accurate point totals
      * Called from each report to make sure nothing has been injected from a feeder activity
@@ -2673,8 +2674,9 @@ class grade_tree extends grade_structure {
                         $item = $this->cats[$element['object']->id];
                         // exclude ungraded, hidden, and extra credit items
                         // exclude ungraded, hidden, and extra credit items
-                        if ($item->extracredit !== 1 && 
-                                $item->weight !== -1 &&
+                        if ($item->extracredit != 1 && 
+                                isset($grades[$item->id]->weight) &&
+                                $grades[$item->id]->weight != -1 &&
                                 !is_null($element['object']->parent) &&
                                 (!$item->is_hidden() || $this->showtotalsifcontainhidden == GRADE_REPORT_SHOW_REAL_TOTAL_IF_CONTAINS_HIDDEN) &&
                                 ($grades[$item->id]->finalgrade !== null || $this->cats[$element['object']->parent]->grade_category->aggregateonlygraded == 0)) {
@@ -2691,16 +2693,18 @@ class grade_tree extends grade_structure {
                         // exclude ungraded, hidden, and extra credit items
                         if ($grademax !== null) {
                             // exclude ungraded, hidden, and extra credit items
-                            if ($item->extracredit !== 1 && 
-                                    $item->weight !== -1 &&
+                            if ($item->extracredit != 1 && 
+                                    isset($grades[$item->id]->weight) &&
+                                    $grades[$item->id]->weight != -1 &&
                                     (!$item->is_hidden() || $this->showtotalsifcontainhidden == GRADE_REPORT_SHOW_REAL_TOTAL_IF_CONTAINS_HIDDEN) &&
                                     (isset($grades[$item->id]->finalgrade) || $cat->grade_category->aggregateonlygraded == 0) &&
                                     ($grades[$item->id]->finalgrade !== null || $this->cats[$item->categoryid]->grade_category->aggregateonlygraded == 0)) {
                                 $cat->value += $grades[$item->id]->rawgrademax;
                             }
                         } else {
-                            if ($item->extracredit !== 1 &&
-                                    $item->weight !== -1 &&
+                            // include extra credit in point tallies
+                            if (isset($grades[$item->id]->weight) &&
+                                    $grades[$item->id]->weight != -1 &&
                                     (!$item->is_hidden() || $this->showtotalsifcontainhidden == GRADE_REPORT_SHOW_REAL_TOTAL_IF_CONTAINS_HIDDEN) &&
                                     isset($grades[$item->id]->finalgrade) &&
                                     ($grades[$item->id]->finalgrade !== null || $cat->grade_category->aggregateonlygraded == 0)) {
@@ -2715,7 +2719,12 @@ class grade_tree extends grade_structure {
          
         // store to db
         foreach ($this->cats as $key => $cat) {
-            if ($grademax !== null) {
+            if (!isset($grades[$cat->id]->id)) {
+                if (isset($cat->value) && $grades[$cat->id]->rawgrademax != $cat->value) {
+                    $this->items[$cat->id]->rawgrademax = $cat->value;
+                    $this->items[$cat->id]->update('aggregation');
+                }
+            } else if ($grademax !== null) {
                 if (isset($cat->value) && $grades[$cat->id]->rawgrademax != $cat->value) {
                     $grades[$cat->id]->rawgrademax = $cat->value;
                     $grades[$cat->id]->update('aggregation');
