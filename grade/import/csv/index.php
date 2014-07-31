@@ -210,6 +210,7 @@ if ($formdata = $mform2->get_data()) {
 
     $newgradeitems = array(); // temporary array to keep track of what new headers are processed
     $status = true;
+    $problemlines = array();
 
     while ($line = $csvimport->next()) {
         if(count($line) <= 1){
@@ -259,10 +260,16 @@ if ($formdata = $mform2->get_data()) {
                         $usermappingerrorobj = new stdClass();
                         $usermappingerrorobj->field = $userfields[$t0]['label'];
                         $usermappingerrorobj->value = $value;
-                        echo $OUTPUT->notification(get_string('usermappingerror', 'grades', $usermappingerrorobj));
+                        $offendingline = implode(',', $line);
+                        if (isset($problemlines[get_string('usermappingerror', 'grades', $usermappingerrorobj)])) {
+                            $problemlines[get_string('usermappingerror', 'grades', $usermappingerrorobj)][] = $offendingline;
+                        } else {
+                            $problemlines[get_string('usermappingerror', 'grades', $usermappingerrorobj)] = array();
+                            $problemlines[get_string('usermappingerror', 'grades', $usermappingerrorobj)][] = $offendingline;
+                        }
                         unset($usermappingerrorobj);
                         $status = false;
-                        break 3;
+                        break 2;
                     }
                     $studentid = $user->id;
                 break;
@@ -328,8 +335,14 @@ if ($formdata = $mform2->get_data()) {
                         if ($gradeitem->is_locked()) {
                             $status = false;
                             import_cleanup($importcode);
-                            echo $OUTPUT->notification(get_string('gradeitemlocked', 'grades'));
-                            break 3;
+                            $offendingline = implode(',', $line);
+                            if (isset($problemlines[get_string('gradeitemlocked', 'grades')])) {
+                                $problemlines[get_string('gradeitemlocked', 'grades')][] = $offendingline;
+                            } else {
+                                $problemlines[get_string('gradeitemlocked', 'grades')] = array();
+                                $problemlines[get_string('gradeitemlocked', 'grades')][] = $offendingline;
+                            }
+                            break 2;
                         }
 
                         $newgrade = new stdClass();
@@ -344,12 +357,16 @@ if ($formdata = $mform2->get_data()) {
                                 array_unshift($scales, '-'); // scales start at key 1
                                 $key = array_search($value, $scales);
                                 if ($key === false) {
-                                    echo "<br/>t0 is $t0";
-                                    echo "<br/>grade is $value";
                                     $status = false;
+                                    $offendingline = implode(',', $line);
                                     import_cleanup($importcode);
-                                    echo $OUTPUT->notification(get_string('badgrade', 'grades'));
-                                    break 3;
+                                    if (isset($problemlines[get_string('badgrade', 'grades')])) {
+                                        $problemlines[get_string('badgrade', 'grades')][] = $offendingline;
+                                    } else {
+                                        $problemlines[get_string('badgrade', 'grades')][] = array();
+                                        $problemlines[get_string('badgrade', 'grades')][] = $offendingline;
+                                    }
+                                    break 2;
                                 }
                                 $value = $key;
                             }
@@ -364,12 +381,16 @@ if ($formdata = $mform2->get_data()) {
                                     $value = $validvalue;
                                 } else {
                                     // Non numeric grade value supplied, possibly mapped wrong column.
-                                    echo "<br/>t0 is $t0";
-                                    echo "<br/>grade is $value";
                                     $status = false;
+                                    $offendingline = implode(',', $line);
                                     import_cleanup($importcode);
-                                    echo $OUTPUT->notification(get_string('badgrade', 'grades'));
-                                    break 3;
+                                    if (isset($problemlines[get_string('badgrade', 'grades')])) {
+                                        $problemlines[get_string('badgrade', 'grades')][] = $offendingline;
+                                    } else {
+                                        $problemlines[get_string('badgrade', 'grades')] = array();
+                                        $problemlines[get_string('badgrade', 'grades')][] = $offendingline;
+                                    }
+                                    break 2;
                                 }
                             }
                             $newgrade->finalgrade = $value;
@@ -394,13 +415,18 @@ if ($formdata = $mform2->get_data()) {
             // not allowed to import into this group, abort
             $status = false;
             import_cleanup($importcode);
-            echo $OUTPUT->notification(get_string('usermappingerrorcurrentgroup', 'grades'));
+            $offendingline = implode(',', $line);
+            if (isset($problemlines[get_string('usermappingerrorcurrentgroup', 'grades')])) {
+                $problemlines[get_string('usermappingerrorcurrentgroup', 'grades')][] = $offendingline;
+            } else {
+                $problemlines[get_string('usermappingerrorcurrentgroup', 'grades')] = array();
+                $problemlines[get_string('usermappingerrorcurrentgroup', 'grades')][] = $offendingline;
+            }
             break;
         }
 
         // insert results of this students into buffer
-        if ($status and !empty($newgrades)) {
-
+        if (!empty($newgrades)) {
             foreach ($newgrades as $newgrade) {
 
                 // check if grade_grade is locked and if so, abort
@@ -409,15 +435,23 @@ if ($formdata = $mform2->get_data()) {
                         // individual grade locked
                         $status = false;
                         import_cleanup($importcode);
-                        echo $OUTPUT->notification(get_string('gradelocked', 'grades'));
-                        break 2;
+                        $offendingline = implode(',', $line);
+                        if (isset($problemlines[get_string('gradelocked', 'grades')])) {
+                            $problemlines[get_string('gradelocked', 'grades')][] = $offendingline;
+                        } else {
+                            $problemlines[get_string('gradelocked', 'grades')] = array();
+                            $problemlines[get_string('gradelocked', 'grades')][] = $offendingline;
+                        }
+                        break;
                     }
                 }
 
-                $newgrade->importcode = $importcode;
-                $newgrade->userid     = $studentid;
-                $newgrade->importer   = $USER->id;
-                $DB->insert_record('grade_import_values', $newgrade);
+                if ($status) {
+                    $newgrade->importcode = $importcode;
+                    $newgrade->userid     = $studentid;
+                    $newgrade->importer   = $USER->id;
+                    $DB->insert_record('grade_import_values', $newgrade);
+                }
             }
         }
 
@@ -445,6 +479,15 @@ if ($formdata = $mform2->get_data()) {
     /// at this stage if things are all ok, we commit the changes from temp table
     if ($status) {
         grade_import_commit($course->id, $importcode);
+    } else {
+        echo $OUTPUT->notification(get_string('nogradeimported', 'grades'));
+        // Show problamatic lines.
+        foreach ($problemlines as $problemdescription => $lines) {
+            echo $OUTPUT->notification($problemdescription);
+            foreach ($lines as $line) {
+                echo $OUTPUT->notification($line, array('notifyproblem', 'details'));
+            }
+        }
     }
 } else {
     // If data hasn't been submitted then display the data mapping form.
