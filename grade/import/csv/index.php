@@ -155,10 +155,14 @@ if ($formdata = $mform2->get_data()) {
     }
 
     $map = array();
+    $timeexportkey = null;
     // loops mapping_0, mapping_1 .. mapping_n and construct $map array
     foreach ($header as $i => $head) {
         if (isset($formdata->{'mapping_'.$i})) {
             $map[$i] = $formdata->{'mapping_'.$i};
+        }
+        if ($head == get_string('timeexported', 'gradeexport_txt')) {
+            $timeexportkey = $i;
         }
     }
 
@@ -324,6 +328,14 @@ if ($formdata = $mform2->get_data()) {
                             break 3;
                         }
 
+                        // Check that time modified is earlier than time exported.
+                        if ($timeexportkey && ($line[$timeexportkey] < $gradeitem->timemodified)) {
+                            $status = false;
+                            import_cleanup($importcode);
+                            echo $OUTPUT->notification(get_string('gradealreadyupdated', 'grades'));
+                            break 3;
+                        }
+
                         // check if grade item is locked if so, abort
                         if ($gradeitem->is_locked()) {
                             $status = false;
@@ -412,6 +424,12 @@ if ($formdata = $mform2->get_data()) {
                         echo $OUTPUT->notification(get_string('gradelocked', 'grades'));
                         break 2;
                     }
+                    if ($timeexportkey && ($line[$timeexportkey] < $grade_grade->timemodified)) {
+                        $status = false;
+                        import_cleanup($importcode);
+                        echo $OUTPUT->notification(get_string('gradealreadyupdated', 'grades'));
+                        break 2;
+                    }
                 }
 
                 $newgrade->importcode = $importcode;
@@ -449,5 +467,5 @@ if ($formdata = $mform2->get_data()) {
 } else {
     // If data hasn't been submitted then display the data mapping form.
     $mform2->display();
-    echo $OUTPUT->footer();
 }
+echo $OUTPUT->footer();
