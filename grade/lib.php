@@ -2604,6 +2604,7 @@ class grade_tree extends grade_structure {
     function normalize_weights($element, &$grades, $fullweight) {
         $adjustedweights = 0;
         $normalweights = 0;
+
         foreach ($element['children'] as $position => $child) {
             if ($child['type'] == 'categoryitem' || $child['type'] == 'fillerlast') {
                 continue;
@@ -2612,6 +2613,7 @@ class grade_tree extends grade_structure {
             } else {
                 $id = $child['object']->id;
             }
+
             if (($fullweight && $this->items[$id]->weight == -1)||
                     (!$fullweight && isset($grades[$id]->weight) && $grades[$id]->weight == -1)) {
                 continue;
@@ -2619,10 +2621,11 @@ class grade_tree extends grade_structure {
                 $adjustedweights += $this->checkitems[$id]->weight;
             } else if ($fullweight) {
                 $normalweights += $this->items[$id]->weight;
-            } else if (!isset($grades[$id]->weight)) {
-                $grades[$id]->weight = 0;
-            } else {
+            } else if (isset($grades[$id]->weight)) {
                 $normalweights += $grades[$id]->weight;
+            }
+            if (!isset($grades[$id]->weight)) {
+                $grades[$id]->weight = 0;
             }
         }
         if ($adjustedweights + $normalweights == 100) {
