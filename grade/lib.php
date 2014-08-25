@@ -3391,9 +3391,9 @@ abstract class grade_helper {
     public static function get_sum_of_grades_only($courseid) {
         global $CFG, $DB;
         require_once "$CFG->dirroot/lib/grade/constants.php";
-        if ($CFG->grade_sumofgradesonly == FORCE_SUM_OF_GRADES) {
+        if (!empty($CFG->grade_sumofgradesonly) && $CFG->grade_sumofgradesonly == FORCE_SUM_OF_GRADES) {
             return 'force';
-        } else if ($CFG->grade_sumofgradesonly == OPTIONAL_SUM_OF_GRADES) {
+        } else if (!empty($CFG->grade_sumofgradesonly) && $CFG->grade_sumofgradesonly == OPTIONAL_SUM_OF_GRADES) {
             $categories = $DB->get_records('grade_categories', array('courseid' => $courseid));
             foreach ($categories as $cat) {
                 if ($cat->aggregation != GRADE_AGGREGATE_SUM) {
