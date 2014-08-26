@@ -509,7 +509,11 @@ class grade_report_user extends grade_report {
                 $grade_grade->grade_item->grademax = $grade_grade->rawgrademax;
 
                 if (isset($grade_grade->contrib)) {
-                    $gradeval = array_sum($grade_grade->contrib) * $grade_grade->rawgrademax;
+                    if (is_array($grade_grade->contrib)) {
+                        $gradeval = array_sum($grade_grade->contrib) * $grade_grade->rawgrademax;
+                    } else {
+                        $gradeval = $grade_grade->contrib * $grade_grade->rawgrademax;
+                    }
                    // if ($type == 'courseitem') {
                    //     $gradeval *= .01;
                    // }
