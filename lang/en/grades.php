@@ -96,6 +96,7 @@ $string['averagesdecimalpoints_help'] = 'This setting determines the number of d
 $string['averagesdisplaytype'] = 'Column averages display type';
 $string['averagesdisplaytype_help'] = 'This setting determines whether the average (mean) is displayed as real grades, percentages or letters, or whether the display type for the category or grade item is used (inherit).';
 $string['backupwithoutgradebook'] = 'Backup does not contain gradebook configuration';
+$string['badadjustedweight'] = 'There was a problem with the manually adjusted weights. No weights were changed.';
 $string['badgrade'] = 'Supplied grade is invalid';
 $string['badlyformattedscale'] = 'Please enter a comma-separated list of values (at least two values required).';
 $string['baduser'] = 'Supplied user is invalid';

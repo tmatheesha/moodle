@@ -225,6 +225,8 @@ if ($current_view != '') {
 // $grade_edit_tree has already been constructed.
 //Ideally we could do the updates through $grade_edit_tree to avoid recreating it
 $recreatetree = false;
+// A flag for if there is a problem with the adjusted weight.
+$weightingerror = false;
 
 if ($data = data_submitted() and confirm_sesskey()) {
     // Perform bulk actions first
@@ -243,108 +245,228 @@ if ($data = data_submitted() and confirm_sesskey()) {
     // Preload grade_items so we can determine if weights in particular have been manually changed or been automatically adjusted.
     // As soon as we touch one grade item the others will be re-weighted automatically so retrieving these from the database later
     // will result in them all being marked as adjusted.
-    $oldgradeitems = Array();
+    $oldgradeitems = array();
+    // New variance for the adjusted weights.
+    $newvariance = array();
+    // Total adjusted weight for the category.
+    $categorytotalarray = array();
+    // Initialise the course total.
+    $categorytotalarray[1] = 0;
+    // This variable is for comparison between the aggregationcoef2 match here and the extra credit match which follows.
+    $currentaid = null;
+    // If the next section of data is extra credit then we need to remove this variance from the overall total.
+    $currentitemvariance = 0;
+    // Make not of the category ID if required for reversing the weighting variance.
+    $currentcategoryid = null;
     foreach ($data as $key => $value) {
         if (preg_match('/^(aggregationcoef2)_([0-9]+)$/', $key, $matches)) {
             $param = $matches[1];
             $aid   = $matches[2];
+            $currentaid = $aid;
 
             $value = unformat_float($value);
             $value = clean_param($value, PARAM_FLOAT);
 
             $oldgradeitems[$aid] = grade_item::fetch(array('id' => $aid, 'courseid' => $courseid));
+            // For ease of use later.
+            $gradeitem = $oldgradeitems[$aid];
+            // Aggregation coef2 is in decimal format. Change it to a range between 0 and 100.
+            $gradeweight = $gradeitem->aggregationcoef2 * 100;
+
+            // If the grade item is extra credit then ignore it for adjusted weight calculations.
+            if (!empty($gradeitem->aggregationcoef)) {
+                // Find out the variance in the new adjusted weights.
+                if ($param === 'aggregationcoef2' && round($gradeweight, 4) != round($value, 4)) {
+                    $categoryid = null;
+                    // If the category id is empty then this is a category object that belongs to category 1.
+                    if (empty($gradeitem->categoryid)) {
+                        $categoryid = 1;
+                    } else {
+                        $categoryid = $gradeitem->categoryid;
+                    }
+                    $currentcategoryid = $categoryid;
+
+                    // Check if there is a category existing to add it to, if not create one.
+                    if (isset($newvariance[$categoryid])) {
+                        // If this value was adjusted before then add the variance.
+                        if ($gradeitem->weightoverride) {
+                            $newvariance[$categoryid] += ($value - $gradeweight);
+                            $currentitemvariance = $value - $gradeweight;
+                        } else {
+                            $newvariance[$categoryid] += $value;
+                            $currentitemvariance = $value;
+                        }
+                    } else {
+                        // If this value was adjusted before then add the variance.
+                        if ($gradeitem->weightoverride) {
+                            $newvariance[$categoryid] = ($value - $gradeweight);
+                            $currentitemvariance = $value - $gradeweight;
+                        } else {
+                            $newvariance[$categoryid] = $value;
+                            $currentitemvariance = $value;
+                        }
+                    }
+                }
+
+                // Create a running total of the adjusted weight.
+                if ($gradeitem->weightoverride) {
+                    // Add adjusted weights for the course category.
+                    if (empty($gradeitem->categoryid) || $gradeitem->categoryid == 1) {
+                        $categorytotalarray[1] += $gradeweight;
+                    } else { // Add adjusted weights for other categories.
+                       if (isset($categorytotalarray[$gradeitem->categoryid])) {
+                            // If the category has already been set add the next adjusted weight.
+                            $categorytotalarray[$gradeitem->categoryid] += $gradeweight;
+                        } else {
+                            // If this is the first item in the category just assign the adjusted weight.
+                            $categorytotalarray[$gradeitem->categoryid] = $gradeweight;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Check if an item just became extra credit. If so, remove that item's weight from the new variance.
+        if (preg_match('/^(aggregationcoef2|extracredit)_([0-9]+)$/', $key, $matches)) {
+            $aid   = $matches[2];
+            $value = clean_param($value, PARAM_BOOL);
+
+            // Value will equal 1 if extra credit is checked.
+            if ($value) {
+                if ($aid === $currentaid) {
+                    // Check to see if we just applied am adjusted weight to this same grade item.
+                    if ($currentitemvariance !== 0) {
+                        // If the variance is positive, then make it negative and vice versa,
+                        // then remove it from the category total.
+                        $categorytotalarray[$currentcategoryid] = $currentitemvariance * -1;
+                    }
+                }
+            } else {
+                // Check to see if we just turned off extra credit.
+                $oldgradeitems[$aid] = grade_item::fetch(array('id' => $aid, 'courseid' => $courseid));
+                // When using natural weights, an aggregationcoef value of 1 means that this item is extra credit.
+                if ($oldgradeitems[$aid]->aggregationcoef == 1) {
+                    // See if extra credit will put the category total above 100.
+                    if (isset($categorytotalarray[$oldgradeitems[$aid]->categoryid]) &&
+                            $categorytotalarray[$oldgradeitems[$aid]->categoryid] > 100) {
+                        // If it does then display an error and don't proceed with saving the weights.
+                        $weightingerror = true;
+                    }
+                }
+            }
         }
     }
 
-    // Category and item field updates
-    foreach ($data as $key => $value) {
-        // Grade category text inputs
-        if (preg_match('/^(aggregation|droplow|keephigh)_([0-9]+)$/', $key, $matches)) {
-            $param = $matches[1];
-            $aid   = $matches[2];
-
-            // Do not allow negative values
-            $value = clean_param($value, PARAM_INT);
-            $value = ($value < 0) ? 0 : $value;
-
-            $grade_category = grade_category::fetch(array('id'=>$aid, 'courseid'=>$courseid));
-            $grade_category->$param = $value;
-
-            $grade_category->update();
-            grade_regrade_final_grades($courseid);
-
-            $recreatetree = true;
-
-        // Grade item text inputs
-        } elseif (preg_match('/^(grademax|aggregationcoef|aggregationcoef2|multfactor|plusfactor)_([0-9]+)$/', $key, $matches)) {
-            $param = $matches[1];
-            $aid   = $matches[2];
-
-            $value = unformat_float($value);
-            $value = clean_param($value, PARAM_FLOAT);
-
-            if (preg_match('/^(aggregationcoef2)_([0-9]+)$/', $key, $matches)) {
-                $value = $value / 100.0;
+    // Go through the new variances and check with the old adjusted weight.
+    // If the total does not exceed 100 or 0 then we are free to progress.
+    foreach ($newvariance as $categoryid => $variance) {
+        $variance = round($variance, 4);
+        // There have been no adjusted weights in this category.
+        if (!isset($categorytotalarray[$categoryid])) {
+            if ($variance > 100 || $variance < 0) {
+                $weightingerror = true;
             }
+        } else if (($categorytotalarray[$categoryid] + $variance) > 100 || ($categorytotalarray[$categoryid] + $variance) < 0) {
+            $weightingerror = true;
+        }
+    }
 
-            $grade_item = $oldgradeitems[$aid];
+    if (!$weightingerror) {
+        // Category and item field updates.
+        foreach ($data as $key => $value) {
+            // Grade category text inputs.
+            if (preg_match('/^(aggregation|droplow|keephigh)_([0-9]+)$/', $key, $matches)) {
+                $param = $matches[1];
+                $aid   = $matches[2];
 
-            if ($param === 'grademax' and $value < $grade_item->grademin) {
-                // better not allow values lower than grade min
-                $value = $grade_item->grademin;
-            }
+                // Do not allow negative values.
+                $value = clean_param($value, PARAM_INT);
+                $value = ($value < 0) ? 0 : $value;
 
-            if ($param === 'aggregationcoef2' && round($grade_item->aggregationcoef2, 4) != round($value, 4)) {
-                $grade_item->weightoverride = 1;
-            }
+                $grade_category = grade_category::fetch(array('id'=>$aid, 'courseid'=>$courseid));
+                $grade_category->$param = $value;
 
-            $grade_item->$param = $value;
+                $grade_category->update();
+                grade_regrade_final_grades($courseid);
 
-            $grade_item->update();
-            if ($param === 'aggregationcoef') {
-                // Put the updated object back to avoid extracredit changes (below) reinstating the old value.
+                $recreatetree = true;
+
+            // Grade item text inputs.
+            } elseif (preg_match('/^(grademax|aggregationcoef|aggregationcoef2|multfactor|plusfactor)_([0-9]+)$/',
+                    $key, $matches)) {
+                $param = $matches[1];
+                $aid   = $matches[2];
+
+                $value = unformat_float($value);
+                $value = clean_param($value, PARAM_FLOAT);
+
+                if (preg_match('/^(aggregationcoef2)_([0-9]+)$/', $key, $matches)) {
+                    $value = $value / 100.0;
+                }
+
+                $grade_item = $oldgradeitems[$aid];
+
+                if ($param === 'grademax' and $value < $grade_item->grademin) {
+                    // Better not allow values lower than grade min.
+                    $value = $grade_item->grademin;
+                }
+
+                if ($param === 'aggregationcoef2' && round($grade_item->aggregationcoef2, 4) != round($value, 4)) {
+                    $grade_item->weightoverride = 1;
+                }
+
+                $grade_item->$param = $value;
+
+                $grade_item->update();
+                if ($param === 'aggregationcoef') {
+                    // Put the updated object back to avoid extracredit changes (below) reinstating the old value.
+                    $oldgradeitems[$aid] = $grade_item;
+                }
+                grade_regrade_final_grades($courseid);
+
+                $recreatetree = true;
+
+            // Grade item checkbox inputs.
+            } elseif (preg_match('/^extracredit_([0-9]+)$/', $key, $matches)) { // Sum extra credit checkbox.
+                $aid   = $matches[1];
+                $value = clean_param($value, PARAM_BOOL);
+
+                $grade_item = $oldgradeitems[$aid];
+
+                $grade_item->aggregationcoef = $value;
+
+                $grade_item->update();
+
+                // Put the updated object back to avoid aggregationcoef changes (above) reinstating the old value.
                 $oldgradeitems[$aid] = $grade_item;
+
+                grade_regrade_final_grades($courseid);
+
+                $recreatetree = true;
+
+            // Grade category checkbox inputs.
+            } elseif (preg_match('/^aggregate(onlygraded|subcats|outcomes)_([0-9]+)$/', $key, $matches)) {
+                $param = 'aggregate'.$matches[1];
+                $aid    = $matches[2];
+                $value = clean_param($value, PARAM_BOOL);
+
+                $grade_category = grade_category::fetch(array('id'=>$aid, 'courseid'=>$courseid));
+                $grade_category->$param = $value;
+
+                $grade_category->update();
+                grade_regrade_final_grades($courseid);
+
+                $recreatetree = true;
             }
-            grade_regrade_final_grades($courseid);
-
-            $recreatetree = true;
-
-        // Grade item checkbox inputs
-        } elseif (preg_match('/^extracredit_([0-9]+)$/', $key, $matches)) { // Sum extra credit checkbox
-            $aid   = $matches[1];
-            $value = clean_param($value, PARAM_BOOL);
-
-            $grade_item = $oldgradeitems[$aid];
-
-            $grade_item->aggregationcoef = $value;
-
-            $grade_item->update();
-
-            // Put the updated object back to avoid aggregationcoef changes (above) reinstating the old value.
-            $oldgradeitems[$aid] = $grade_item;
-
-            grade_regrade_final_grades($courseid);
-
-            $recreatetree = true;
-
-        // Grade category checkbox inputs
-        } elseif (preg_match('/^aggregate(onlygraded|subcats|outcomes)_([0-9]+)$/', $key, $matches)) {
-            $param = 'aggregate'.$matches[1];
-            $aid    = $matches[2];
-            $value = clean_param($value, PARAM_BOOL);
-
-            $grade_category = grade_category::fetch(array('id'=>$aid, 'courseid'=>$courseid));
-            $grade_category->$param = $value;
-
-            $grade_category->update();
-            grade_regrade_final_grades($courseid);
-
-            $recreatetree = true;
         }
     }
 }
 
 print_grade_page_head($courseid, 'edittree', $current_view, get_string('categoriesedit', 'grades') . ': ' . $current_view_str);
+
+if ($weightingerror) {
+    echo $OUTPUT->notification(get_string('badadjustedweight', 'grades'));
+}
 
 // Print Table of categories and items
 echo $OUTPUT->box_start('gradetreebox generalbox');
