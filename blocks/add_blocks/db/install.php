@@ -31,19 +31,19 @@
  */
 function xmldb_block_add_blocks_install() {
 
-    $courses = get_courses("all", "c.sortorder ASC", "c.*");
-    $blocknames = array(BLOCK_POS_LEFT => array('add_blocks'));
-    foreach ($courses as $course) {
-        $page = new moodle_page();
-        $page->set_course($course);
-        if (!$page->blocks->is_block_present('add_blocks')) {
-            // We must always have the "add_blocks" block.
-            if ($course->id == SITEID) {
-                $pagetypepattern = 'site-index';
-            } else {
-                $pagetypepattern = 'course-view-*';
-            }
-            $page->blocks->add_blocks($blocknames, $pagetypepattern);
-        }
-    }
+    // $courses = get_courses("all", "c.sortorder ASC", "c.*");
+    // $blocknames = array(BLOCK_POS_LEFT => array('add_blocks'));
+    // foreach ($courses as $course) {
+    //     $page = new moodle_page();
+    //     $page->set_course($course);
+    //     if (!$page->blocks->is_block_present('add_blocks')) {
+    //         // We must always have the "add_blocks" block.
+    //         if ($course->id == SITEID) {
+    //             $pagetypepattern = 'site-index';
+    //         } else {
+    //             $pagetypepattern = 'course-view-*';
+    //         }
+    //         $page->blocks->add_blocks($blocknames, $pagetypepattern);
+    //     }
+    // }
 }

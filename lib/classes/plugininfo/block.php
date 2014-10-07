@@ -105,7 +105,7 @@ class block extends base {
     }
 
     public function is_uninstall_allowed() {
-        if ($this->name === 'settings' or $this->name === 'navigation') {
+        if ($this->name === 'settings' or $this->name === 'navigation' or $this->name === 'add_blocks') {
             return false;
         }
         return true;
