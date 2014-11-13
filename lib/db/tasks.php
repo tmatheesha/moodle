@@ -292,5 +292,14 @@ $tasks = array(
         'day' => '*',
         'dayofweek' => '*',
         'month' => '*'
+    ),
+    array(
+        'classname' => 'core\task\failed_backup_task',
+        'blocking' => 0,
+        'minute' => '0',
+        'hour' => '*/6',
+        'day' => '*',
+        'dayofweek' => '*',
+        'month' => '*'
     )
 );

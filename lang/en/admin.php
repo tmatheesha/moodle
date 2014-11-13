@@ -1020,6 +1020,7 @@ $string['taskdeletecachetext'] = 'Delete old text cache records';
 $string['taskdeleteincompleteusers'] = 'Delete incomplete users';
 $string['taskdeleteunconfirmedusers'] = 'Delete unconfirmed users';
 $string['taskeventscron'] = 'Background processing for events';
+$string['taskfailedbackup'] = 'Clean up failed backup files from the temp directory';
 $string['taskfiletrashcleanup'] = 'Cleanup files in trash';
 $string['taskgradecron'] = 'Background processing for gradebook';
 $string['tasklegacycron'] = 'Legacy cron processing for plugins';

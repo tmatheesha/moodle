@@ -182,6 +182,18 @@ if ($hassiteconfig or has_any_capability($capabilities, $systemcontext)) {
         365 => new lang_string('numdays', '', 365)
     )));
 
+    $temp->add(new admin_setting_configselect('backup/failedbackupcheck', new lang_string('failedbackupcheck', 'backup'),
+            new lang_string('configfailedbackupcheck', 'backup'), 6, array(
+                1  => new lang_string('numhours', '', 1),
+                3  => new lang_string('numhours', '', 3),
+                6  => new lang_string('numhours', '', 6),
+                9  => new lang_string('numhours', '', 9),
+                12 => new lang_string('numhours', '', 12),
+                18 => new lang_string('numhours', '', 18),
+                24 => new lang_string('numhours', '', 24),
+                48 => new lang_string('numhours', '', 48),
+    )));
+
     // General defaults section.
     $temp->add(new admin_setting_heading('generalsettings', new lang_string('generalsettings', 'backup'), ''));
     $temp->add(new admin_setting_configcheckbox_with_lock('backup/backup_general_users', new lang_string('generalusers','backup'), new lang_string('configgeneralusers','backup'), array('value'=>1, 'locked'=>0)));
