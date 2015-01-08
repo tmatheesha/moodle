@@ -46,5 +46,9 @@
             <?php echo get_string('maxbytes_desc', 'datafield_textarea'); ?>
         </td>
     </tr>
+    <tr>
+        <td class="c0"><label for="default"><?php echo get_string('defaultfield', 'data'); ?></label></td>
+        <td class="c1"><input type="fielddefault" type="text" name="param6" id="param6" value="<?php p($this->field->param6) ?>" /></td>
+    </tr>
 </table>
 <input type="hidden" name="param4" id="param4" value="<?php echo FORMAT_HTML; ?>" />

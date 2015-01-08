@@ -34,6 +34,40 @@ class data_field_text extends data_field_base {
         return optional_param('f_'.$this->field->id, '', PARAM_NOTAGS);
     }
 
+    /**
+     * Print the relevant form element in the ADD template for this field
+     *
+     * @global object
+     * @param int $recordid
+     * @return string
+     */
+    function display_add_field($recordid=0){
+        global $DB;
+
+        if ($recordid){
+            $content = $DB->get_field('data_content', 'content', array('fieldid'=>$this->field->id, 'recordid'=>$recordid));
+        } else {
+            $content = '';
+        }
+
+        // beware get_field returns false for new, empty records MDL-18567
+        if ($content===false) {
+            $content='';
+        }
+
+        $str = '<div title="'.s($this->field->description).'">';
+        $str .= '<label class="accesshide" for="field_'.$this->field->id.'">'.$this->field->description.'</label>';
+        // Param 2 is the field for the default value of the text box.
+        if ($content == '') {
+            $str .= '<input class="basefieldinput" type="text" name="field_'.$this->field->id.'" id="field_'.$this->field->id.'" value="'.s($this->field->param2).'" />';
+        } else {
+            $str .= '<input class="basefieldinput" type="text" name="field_'.$this->field->id.'" id="field_'.$this->field->id.'" value="'.s($content).'" />';
+        }
+        $str .= '</div>';
+
+        return $str;
+    }
+
     function generate_sql($tablealias, $value) {
         global $DB;
 

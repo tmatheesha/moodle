@@ -97,6 +97,7 @@ $string['data:viewrating'] = 'View the total rating you received';
 $string['data:writeentry'] = 'Write entries';
 $string['date'] = 'Date';
 $string['dateentered'] = 'Date entered';
+$string['defaultfield'] = 'Default value for this field';
 $string['defaultfielddelimiter'] = '(default is the comma character)';
 $string['defaultfieldenclosure'] = '(default is none)';
 $string['defaultsortfield'] = 'Default sort field';
