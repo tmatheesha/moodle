@@ -414,9 +414,14 @@
         } else {
             $validrecords = array();
             $recordids = array();
+            $allnamefields = user_picture::fields('u');
+            $dbparams = array('id' => $value);
             foreach ($multidelete as $value) {
-                if ($deleterecord = $DB->get_record('data_records', array('id'=>$value))) {   // Need to check this is valid
-                    if ($deleterecord->dataid == $data->id) {                       // Must be from this database
+                if ($deleterecord = $DB->get_record_sql("SELECT dr.*, $allnamefields
+                                                           FROM {data_records} dr
+                                                           JOIN {user} u ON dr.userid = u.id
+                                                          WHERE dr.id = ?", $dbparams)) { // Need to check this is valid.
+                    if ($deleterecord->dataid == $data->id) { // Must be from this database.
                         $validrecords[] = $deleterecord;
                         $recordids[] = $deleterecord->id;
                     }
