@@ -161,11 +161,63 @@ Y.namespace('M.mod_lesson').PagemMove = Y.extend(PagemMove, Y.Base, {
         dd.on('drag:end', function(e) {
 
             // var currentnode = dd.get('currentNode');
-            console.log(e.pageX - canvas.getX() - 10);
-            console.log(page);
+            // console.log(e.pageX - canvas.getX() - 10);
+            // console.log(page);
+            this.savePosition(page);
 
 
         }, this);
+
+    },
+
+    savePosition: function(page) {
+
+        console.log(page);
+
+        var corelessondata = {
+            id: page.id,
+            x: page.x,
+            y: page.y
+        };
+
+        var ajaxurl = AJAXBASE,
+                    config;
+
+        config = {
+            method: 'post',
+            context: this,
+            sync: false,
+            data : {
+                'action' : 'saveposition',
+                'page'   : Y.JSON.stringify(corelessondata)
+            },
+            on: {
+                success: function(tid, response) {
+                    var jsondata;
+                    try {
+                        jsondata = Y.JSON.parse(response.response);
+                        // jsondata = Y.JSON.parse(response.responseText);
+                        // console.log(jsondata);
+                        // if (jsondata.error) {
+                        //     return new M.core.ajaxException(jsondata);
+                        // } else {
+                        //     console.log(jsondata);
+                        // }
+                    } catch (e) {
+                        //return new M.core.exception(e);
+                    }
+                },
+                failure: function(tid, response) {
+                    //return M.core.exception(response.responseText);
+                    alert('something went wrong');
+                }
+            }
+        };
+
+        YUI().use("io-base", function(Y) {
+            Y.io(ajaxurl, config);
+        });
+
 
     },
 
@@ -212,63 +264,7 @@ Y.namespace('M.mod_lesson').PagemMove = Y.extend(PagemMove, Y.Base, {
 
             });
 
-            del.on('drag:end', function(e) {
-
-                var currentnode = del.get('currentNode');
-                console.log(currentnode.getXY());
-
-                var ajaxurl = AJAXBASE,
-                    config;
-
-                config = {
-                    method: 'post',
-                    context: this,
-                    sync: false,
-                    data : {
-                        'action' : 'saveposition',
-                    },
-                    on: {
-                        success: function(tid, response) {
-                            var jsondata, quickcomment;
-                            try {
-                                jsondata = Y.JSON.parse(response.responseText);
-                                console.log(jsondata);
-                                // if (jsondata.error) {
-                                //     return new M.core.ajaxException(jsondata);
-                                // } else {
-                                //     console.log(jsondata);
-                                // }
-                            } catch (e) {
-                                //return new M.core.exception(e);
-                            }
-                        },
-                        failure: function(tid, response) {
-                            //return M.core.exception(response.responseText);
-                            alert('something went wrong');
-                        }
-                    }
-                };
-
-                YUI().use("io-base", function(Y) {
-                    Y.io(ajaxurl, config);
-                });
-
-
-                // console.log('got here');
-
-                // alert('got here');
-                // Save position.
-                // this._savedata();
-
-
-                // Keep it in the main container.
-
-                // Get x and y coordinates and update the database.
-
-
-            });
-
-
+            
         });
 
         allLessonPages.each(function (lessonPage) {
