@@ -63,7 +63,7 @@ Y.namespace('M.mod_lesson').PagemMove = Y.extend(PagemMove, Y.Base, {
     drawJumps: function(page, allpages) {
         var i = 0, j = 0;
 
-        console.log(page);
+        // console.log(page);
         var jumpname = "jumpto[" + j + "]";
         while (page.hasOwnProperty(jumpname)) {
             nextpageid = page[jumpname];
@@ -153,8 +153,17 @@ Y.namespace('M.mod_lesson').PagemMove = Y.extend(PagemMove, Y.Base, {
             page.x = e.pageX - canvas.getX() - 10;
             page.y = e.pageY - canvas.getY() - 10;
             this.redrawAllPages();
-            console.log(e);
+            // console.log(e);
+            // console.log(page);
+
+        }, this);
+
+        dd.on('drag:end', function(e) {
+
+            // var currentnode = dd.get('currentNode');
+            console.log(e.pageX - canvas.getX() - 10);
             console.log(page);
+
 
         }, this);
 
@@ -273,40 +282,7 @@ Y.namespace('M.mod_lesson').PagemMove = Y.extend(PagemMove, Y.Base, {
 
             });
         });
-<<<<<<< HEAD
-
-        this._redraw();
-
-    },
-
-    _savedata: function() {
-        // alert('saving data');
-        console.log('saving data');
-    },
-
-    _redraw: function() {
-
-        var lessonpagedata = Y.JSON.parse(this.get('lessondata'));
-        // console.log(lessonpagedata);
-        var lessonpagenodes = Y.all('.mod_lesson_page_element');
-        // console.log(lessonpagenodes);
-        // // Perhaps destroy the old one first.
-        // lessonpagenodes.each(function(node) {
-        //     console.log(node);
-        //     node.destroy();
-        // });
-
-        // lessonpagedata.each(function(lessonnode) {
-        //     console.log(lessonnode);
-        // });
-
-        // Draw a lesson page node.
-
-
-        // console.log('something');
-=======
-        **/
->>>>>>> 9d397a4... Draw lines between pages and enable drag and drop
+    **/
     }
 
 
