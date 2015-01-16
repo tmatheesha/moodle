@@ -28,9 +28,37 @@ require('../../config.php');
 // require_once($CFG->dirroot . '/mod/assign/locallib.php');
 
 $action = optional_param('action', '', PARAM_ALPHANUM);
+$page = optional_param('page', '', PARAM_RAW);
+
+$pagecookie = array();
+if (isset($_COOKIE['pageinfo'])) {
+    $pagecookie = json_decode($_COOKIE['pageinfo']);
+}
+// var_dump($pagecookie);
 
 if ($action == 'saveposition') {
+
+    // var_dump($page);
+
+    $lessonpage = json_decode($page);
+    // var_dump($lessonpage);
+
+    // foreach ($pagecookie as $key => $pageinfo) {
+    //     # code...
+    // }
+
+    // if (!isset($pagecookie[$lessonpage->id])) {
+
+    // }
+    // $pagecookie[$lessonpage->id] = $lessonpage;
+    var_dump($lessonpage['id']);
+
+
+
+    // setcookie('pageinfo', json_encode($pagecookie));
     $response = 'this was a success!';
     echo json_encode($response);
+    // print_object($lessonpage);
+    // echo json_encode($lessonpage['title']);
     die();
 }
