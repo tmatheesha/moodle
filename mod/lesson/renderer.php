@@ -632,12 +632,7 @@ class mod_lesson_renderer extends plugin_renderer_base {
         $data = array();
         while ($pageid != 0) {
             $page = $lesson->load_page($pageid);
-            // print_object($page->properties());
             $data[] = $page->properties();
-            // $data[$pageid]['id'] = $pageid;
-            // $data[$pageid]['title'] = $page->title;
-            // $data[$pageid]['pagetype'] = $qtypes[$page->qtype];
-            // $data[$pageid]['jumps'] = $page->jumps;
             $pageid = $page->nextpageid;
         }
         return json_encode($data);
