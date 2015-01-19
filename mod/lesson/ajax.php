@@ -28,9 +28,12 @@ require('../../config.php');
 // require_once($CFG->dirroot . '/mod/assign/locallib.php');
 
 $action = optional_param('action', '', PARAM_ALPHANUM);
-$page = optional_param('page', '', PARAM_RAW);
+$lessonid = optional_param('lessonid', '', PARAM_ALPHANUM); // Definitely need this.
+$pageid = optional_param('pageid', '', PARAM_RAW);
+$pagex = optional_param('pagex', '', PARAM_RAW);
+$pagey = optional_param('pagey', '', PARAM_RAW);
 
-$pagecookie = array();
+$pagecookie = new stdClass();
 if (isset($_COOKIE['pageinfo'])) {
     $pagecookie = json_decode($_COOKIE['pageinfo']);
 }
@@ -38,27 +41,23 @@ if (isset($_COOKIE['pageinfo'])) {
 
 if ($action == 'saveposition') {
 
-    // var_dump($page);
+    if (!isset($pagecookie->{$lessonid})) {
+        $pagecookie->{$lessonid} = new stdClass();
+        $pagecookie->{$lessonid}->{$pageid} = new stdClass();
+        $pagecookie->{$lessonid}->{$pageid}->id = $pageid;
+        $pagecookie->{$lessonid}->{$pageid}->x = $pagex;
+        $pagecookie->{$lessonid}->{$pageid}->y = $pagey;
+    } else {
+        if (!isset($pagecookie->{$lessonid}->{$pageid})) {
+            $pagecookie->{$lessonid}->{$pageid} = new stdClass();
+        }
+        $pagecookie->{$lessonid}->{$pageid}->id = $pageid;
+        $pagecookie->{$lessonid}->{$pageid}->x = $pagex;
+        $pagecookie->{$lessonid}->{$pageid}->y = $pagey;
+    }
 
-    $lessonpage = json_decode($page);
-    // var_dump($lessonpage);
-
-    // foreach ($pagecookie as $key => $pageinfo) {
-    //     # code...
-    // }
-
-    // if (!isset($pagecookie[$lessonpage->id])) {
-
-    // }
-    // $pagecookie[$lessonpage->id] = $lessonpage;
-    var_dump($lessonpage['id']);
-
-
-
-    // setcookie('pageinfo', json_encode($pagecookie));
+    setcookie('pageinfo', json_encode($pagecookie));
     $response = 'this was a success!';
     echo json_encode($response);
-    // print_object($lessonpage);
-    // echo json_encode($lessonpage['title']);
     die();
 }

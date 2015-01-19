@@ -54,8 +54,9 @@ Y.namespace('M.mod_lesson').PagemMove = Y.extend(PagemMove, Y.Base, {
             stroke: DEFAULTS.PATHSTROKE,
             fill: DEFAULTS.PATHFILL
         });
-        jumpShape.moveTo(pagefrom.x + pagefrom.width, pagefrom.y + (pagefrom.height / 2));
-        jumpShape.lineTo(pageto.x, pageto.y + (pageto.height / 2));
+        // jumpShape.moveTo(pagefrom.x + pagefrom.width, pagefrom.y + (pagefrom.height / 2));
+        jumpShape.moveTo(pagefrom.x + (pagefrom.width / 2), pagefrom.y + pagefrom.height);
+        jumpShape.lineTo(pageto.x + (pagefrom.width / 2), pageto.y);
         jumpShape.end();
         pagefrom.jumpShapes[pagefrom.jumpShapes.length] = jumpShape;
     },
@@ -115,10 +116,23 @@ Y.namespace('M.mod_lesson').PagemMove = Y.extend(PagemMove, Y.Base, {
 
     drawPage: function(page, position) {
         var canvas = Y.one(SELECTORS.LESSONPAGES);
+        var allpages = this.get('pages');
+
         page.x = position.x;
         page.y = position.y;
         page.width = DEFAULTS.PAGEWIDTH;
         page.height = DEFAULTS.PAGEHEIGHT;
+        if (page.qtype === "30") {
+            // Find out how many elements in the cluster.
+            // console.log(page.clusterchildrenids.length)
+            page.width = page.clusterchildrenids.length * 330;
+            page.height = 200;
+            if (page.clusterchildrenids.length > 3) {
+                page.width = 3 * 330;
+                page.height = (Math.ceil(page.clusterchildrenids.length / 3)*200);
+                console.log(page.height);
+            }
+        }
         page.jumpShapes = [];
 
         var shapeNode = this.graphic.addShape({
@@ -159,6 +173,7 @@ Y.namespace('M.mod_lesson').PagemMove = Y.extend(PagemMove, Y.Base, {
         }, this);
 
         dd.on('drag:end', function(e) {
+            console.log(page);
 
             // var currentnode = dd.get('currentNode');
             // console.log(e.pageX - canvas.getX() - 10);
@@ -172,13 +187,7 @@ Y.namespace('M.mod_lesson').PagemMove = Y.extend(PagemMove, Y.Base, {
 
     savePosition: function(page) {
 
-        console.log(page);
-
-        var corelessondata = {
-            id: page.id,
-            x: page.x,
-            y: page.y
-        };
+        // console.log(page);
 
         var ajaxurl = AJAXBASE,
                     config;
@@ -188,8 +197,11 @@ Y.namespace('M.mod_lesson').PagemMove = Y.extend(PagemMove, Y.Base, {
             context: this,
             sync: false,
             data : {
-                'action' : 'saveposition',
-                'page'   : Y.JSON.stringify(corelessondata)
+                'action'   : 'saveposition',
+                'lessonid' : page.lessonid,
+                'pageid'   : page.id,
+                'pagex'    : page.x,
+                'pagey'    : page.y
             },
             on: {
                 success: function(tid, response) {
@@ -231,15 +243,27 @@ Y.namespace('M.mod_lesson').PagemMove = Y.extend(PagemMove, Y.Base, {
         var allpages = this.get('pages');
         var i = 0;
         var page;
+        var tempposition;
         var position = {
             x: 0,
             y: 0
         };
+
         // First draw all the page containers
         for (i = 0; i < allpages.length; i++) {
             page = allpages[i];
 
-            this.drawPage(page, position);
+            // console.log(page.x);
+            if (page.x !== 0) {
+                tempposition = {
+                    x: parseInt(page.x),
+                    y: parseInt(page.y)
+                }
+            } else {
+                tempposition = position;
+            }
+
+            this.drawPage(page, tempposition);
 
             position.y += 150;
         }

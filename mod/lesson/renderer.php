@@ -644,14 +644,54 @@ class mod_lesson_renderer extends plugin_renderer_base {
 
     private function get_lesson_data($lesson, $pageid) {
         $pages = array();
+        $locationdata = $this->get_temp_cookie_data($lesson->id);
+        $clusters = array();
+        $clustercount = 0;
+        $currentclusterid = 0;
         while ($pageid != 0) {
             $page = $lesson->load_page($pageid);
+            if ($clustercount) {
+                if ($page->qtype == 31) {
+                    $clustercount --;
+                } else {
+                    $clusters[$currentclusterid][] = $pageid;
+                }
+            }
+            if ($page->qtype == 30) {
+                $clusters[$pageid] = array(); 
+                $clustercount ++;
+                $currentclusterid = $pageid;
+            }
             $pageproperties = $page->properties();
             $pageproperties->qtypestr = $page->get_typestring();
-            $pages[] = $pageproperties;
+            if (isset($locationdata->{$pageid})) {
+                $pageproperties->x = $locationdata->{$pageid}->x;
+                $pageproperties->y = $locationdata->{$pageid}->y;
+            } else {
+                $pageproperties->x = 0;
+                $pageproperties->y = 0;
+            }
+            $pages[$pageid] = $pageproperties;
             $pageid = $page->nextpageid;
         }
+        // print_object($clusters);
+        // print_object($pages);
+        foreach ($clusters as $key => $value) {
+            $pages[$key]->clusterchildrenids = $value;
+        }
+        // Reindex the array for use with YUI.
+        $pages = array_values($pages);
         return $pages;
+    }
+
+    private function get_temp_cookie_data($lessonid) {
+
+        $pagecookie = json_decode($_COOKIE['pageinfo']);
+        if (isset($pagecookie->{$lessonid})) {
+            return $pagecookie->{$lessonid};
+        } else {
+            return null;
+        }
     }
 
     private function lesson_page_loop(lesson $lesson, &$pageid, $clusterflag = false) {
