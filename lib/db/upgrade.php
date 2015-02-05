@@ -4216,6 +4216,7 @@ function xmldb_main_upgrade($oldversion) {
         upgrade_main_savepoint(true, 2015030400.00);
     }
 
+
     if ($oldversion < 2015031100.00) {
         // Unset old config variable.
         unset_config('enabletgzbackups');
@@ -4245,6 +4246,14 @@ function xmldb_main_upgrade($oldversion) {
 
         // Main savepoint reached.
         upgrade_main_savepoint(true, 2015031400.00);
+    }
+
+    if ($oldversion < 2015030400.00) {
+        // Add "My grades" to the user menu.
+        $newconfig = "mygrades,grades|/grade/report/mygrades.php|grades\n" . $CFG->customusermenuitems;
+        set_config('customusermenuitems', $newconfig);
+
+        upgrade_main_savepoint(true, 2015030400.00);
     }
 
     return true;
