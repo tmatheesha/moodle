@@ -4177,5 +4177,13 @@ function xmldb_main_upgrade($oldversion) {
         upgrade_main_savepoint(true, 2015021100.00);
     }
 
+    if ($oldversion < 2015021900.01) {
+        // Add "My grades" to the user menu.
+        $newconfig = "mygrades,grades|/grade/report/mygrades.php|grades\n" . $CFG->customusermenuitems;
+        set_config('customusermenuitems', $newconfig);
+
+        upgrade_main_savepoint(true, 2015021900.01);
+    }
+
     return true;
 }
