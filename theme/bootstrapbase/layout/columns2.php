@@ -67,7 +67,7 @@ echo $OUTPUT->doctype() ?>
 </header>
 
 <div id="page" class="container-fluid">
-
+    <!--
     <header id="page-header" class="clearfix">
         <div id="page-navbar" class="clearfix">
             <nav class="breadcrumb-nav"><?php echo $OUTPUT->navbar(); ?></nav>
@@ -78,7 +78,8 @@ echo $OUTPUT->doctype() ?>
             <?php echo $OUTPUT->course_header(); ?>
         </div>
     </header>
-
+    -->
+    <?php echo $OUTPUT->header_bar(); ?>
     <div id="page-content" class="row-fluid">
         <section id="region-main" class="<?php echo $regionmain; ?>">
             <?php

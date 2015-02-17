@@ -3044,6 +3044,48 @@ class tabobject implements renderable {
 }
 
 /**
+ * Renderable for the main page header.
+ *
+ * @package core
+ * @category output
+ * @since 2.9
+ * @copyright 2015 Adrian Greeve <adrian@moodle.com>
+ * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+class header_bar implements renderable {
+
+    /** @var $imagedata Image information to retrieve a picture for the header. */
+    public $imagedata;
+    /** @var $additionalbuttons Additional buttons for the header e.g. Messaging button for the user header. */
+    public $additionalbuttons;
+    /** @var $subheading Secondary information to show with the header. */
+    public $subheading;
+
+    public $shownavbar;
+    public $showbutton;
+
+    /**
+     * Constructor.
+     *
+     * @param object $imagedata Information needed to include a picture in the header.
+     * @param string $additionalbuttons Buttons for the header e.g. Messaging button for the user header.
+     * @param string $subheading Secondary text for the header.
+     * @param bool $shownavbar Switch for showing the navigation bar.
+     * @param bool $showbutton Switch for showing the editing button for the page.
+     */
+    public function __construct($imagedata = null, $additionalbuttons = null, $subheading = null, $shownavbar = true,
+            $showbutton = true) {
+        // Check to see if the image id is for a user or something else (course, module);
+        $this->imagedata = $imagedata;
+        $this->additionalbuttons = $additionalbuttons;
+        $this->subheading = $subheading;
+        $this->shownavbar = $shownavbar;
+        $this->showbutton = $showbutton;
+    }
+
+}
+
+/**
  * Stores tabs list
  *
  * Example how to print a single line tabs:

@@ -80,6 +80,7 @@ echo $OUTPUT->doctype() ?>
 </header>
 
 <div id="page" class="container-fluid">
+<!--
 
     <header id="page-header" class="clearfix">
         <?php echo $html->heading; ?>
@@ -91,6 +92,8 @@ echo $OUTPUT->doctype() ?>
             <?php echo $OUTPUT->course_header(); ?>
         </div>
     </header>
+//-->
+    <?php echo $OUTPUT->header_bar(); ?>
 
     <div id="page-content" class="row-fluid">
         <div id="region-main-box" class="<?php echo $regionmainbox; ?>">

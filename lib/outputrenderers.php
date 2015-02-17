@@ -3678,6 +3678,59 @@ EOD;
     public function favicon() {
         return $this->pix_url('favicon', 'theme');
     }
+
+    /**
+     * Returns the header bar.
+     *
+     * @since Moodle 2.9
+     * @return string HTML for the header bar.
+     */
+    public function header_bar() {
+        global $PAGE, $DB;
+        $context = $PAGE->context;
+        $imagedata = null;
+        $subheader = null;
+        if ($context->contextlevel == CONTEXT_USER) {
+            $imagedata = $DB->get_record('user', array('id' => $context->instanceid));
+            $subheader = $imagedata->city . ', ' . get_string($imagedata->country, 'countries');
+         }
+        $headerbar = new header_bar($imagedata, null, $subheader);
+        return $this->render_header_bar($headerbar);
+     }
+
+     /**
+      * Renders the header bar.
+      *
+      * @param header_bar $headerbar Header bar object.
+      * @return string HTML for the header bar.
+      */
+    public function render_header_bar(header_bar $headerbar) {
+        // All the html stuff goes here.
+        $html = html_writer::start_tag('header', array('id' => 'page-header', 'class' => 'clearfix'));
+
+        if (isset($headerbar->imagedata)) {
+            $html .= html_writer::div($this->user_picture($headerbar->imagedata, array('size' => 100)), 'page-header-image');
+        }
+        $html .= html_writer::div($this->page_heading(), 'page-header-heading');
+        if (isset($headerbar->additionalbuttons)) {
+            $html .= html_writer::div($headerbar->additionalbuttons, 'page-header-additionalbuttons');
+        }
+        if (isset($headerbar->subheading)) {
+            $html .= html_writer::div($headerbar->subheading, 'page-header-subheading');
+        }
+
+        $html .= html_writer::tag('div', $this->course_header(), array('class' => 'course-header'));
+        if ($headerbar->shownavbar) {
+            $html .= html_writer::tag('nav', $this->navbar(), array('class' => 'breadcrumb-nav'));
+        }
+        if ($headerbar->showbutton) {
+            $html .= html_writer::div($this->page_heading_button(), 'breadcrumb-button');
+        }
+
+        $html .= html_writer::end_tag('header');
+
+        return $html;
+    }
 }
 
 /**
