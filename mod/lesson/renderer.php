@@ -631,13 +631,14 @@ class mod_lesson_renderer extends plugin_renderer_base {
         $output = html_writer::start_div('mod_lesson_main');
         $output .= html_writer::start_div('mod_lesson_pages');
 
-        //$output .= $this->lesson_page_loop($lesson, $pageid);
+        $output .= $this->lesson_page_loop($lesson, $pageid);
 
         $output .= html_writer::end_div();
         $output .= html_writer::end_div();
 
-        $PAGE->requires->yui_module('moodle-mod_lesson-pagemmove', 'Y.M.mod_lesson.PagemMove.init',
-                array($lessonpagedata));
+        $PAGE->requires->js_call_amd('mod_lesson/helloworld', 'init', array($lessonpagedata));
+        // $PAGE->requires->yui_module('moodle-mod_lesson-pagemmove', 'Y.M.mod_lesson.PagemMove.init',
+        //         array($lessonpagedata));
         return $output;
         
     }
@@ -680,7 +681,7 @@ class mod_lesson_renderer extends plugin_renderer_base {
             $pages[$key]->clusterchildrenids = $value;
         }
         // Reindex the array for use with YUI.
-        $pages = array_values($pages);
+        // $pages = array_values($pages);
         return $pages;
     }
 
