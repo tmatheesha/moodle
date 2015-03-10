@@ -113,9 +113,9 @@
     width: 240px;
     height: 100px;
 }
-.mod_lesson_main .mod_lesson_page_element > * {
+/*.mod_lesson_main .mod_lesson_page_element > * {
     padding: 0.25em 0.5em;
-}
+}*/
 .mod_lesson_main .mod_lesson_page_element header {
     border-bottom: 1px solid #000;
     font-weight: bold;
@@ -123,4 +123,32 @@
 }
 .mod_lesson_main .mod_lesson_page_element_body {
     font-size: 0.8em;
+}
+
+.path-mod-lesson .lessonline {
+    z-index: -1;
+    padding: 0;
+    margin: 0;
+    height: 1px;
+    background-color: black;
+    line-height: 1px;
+    position: absolute;
+    
+    user-select: none;
+}
+
+.mod_lesson_menu {
+    border: 1px solid #000;
+    width: 200px;
+    height: 50px;
+    text-align: center;
+    user-select: none;
+}
+
+.mod_lesson_menu_item {
+    border: 1px solid #000;
+    width: 120px;
+    height: 25px;
+    text-align: center;
+    user-select: none;
 }

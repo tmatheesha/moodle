@@ -629,6 +629,14 @@ class mod_lesson_renderer extends plugin_renderer_base {
         // print_object($lessonpagedata);
 
         $output = html_writer::start_div('mod_lesson_main');
+        // Create menu for adding lesson pages and objects.
+        $output .= html_writer::start_div('mod_lesson_menu');
+        // Menu elements.
+        $output .= 'Add lesson elements';
+        $output .= html_writer::div('content', 'mod_lesson_menu_item');
+
+        $output .= html_writer::end_div();
+
         $output .= html_writer::start_div('mod_lesson_pages');
 
         $output .= $this->lesson_page_loop($lesson, $pageid);
@@ -671,6 +679,18 @@ class mod_lesson_renderer extends plugin_renderer_base {
             } else {
                 $pageproperties->x = 0;
                 $pageproperties->y = 0;
+            }
+
+            // if ($clustercount && !($page->qtype == 30 && $clustercount == 1)) {
+            if ($clustercount) {
+                $pageproperties->location = 'cluster';
+            } else {
+                $pageproperties->location = 'normal';
+            }
+
+            // Add the cluster id to the cluster end object.
+            if ($page->qtype == 31) {
+                $pageproperties->clusterid = $currentclusterid;
             }
             $pages[$pageid] = $pageproperties;
             $pageid = $page->nextpageid;
@@ -722,7 +742,7 @@ class mod_lesson_renderer extends plugin_renderer_base {
                 $output .= html_writer::end_tag('header');
                 $output .= html_writer::start_div('mod_lesson_page_element_body', array('id' => 'mod_lesson_page_element_' . $pageid . '_body'));
                 $output .= $page->title . '<br />';
-                $output .= $pageid;
+                // $output .= $pageid;
                 $output .= html_writer::end_div();
                 $pageid = $page->nextpageid;
                 $output .= $this->lesson_page_loop($lesson, $pageid, true);
@@ -735,8 +755,8 @@ class mod_lesson_renderer extends plugin_renderer_base {
                 $output .= html_writer::end_tag('header');
                 $output .= html_writer::start_div('mod_lesson_page_element_body', array('id' => 'mod_lesson_page_element_' . $pageid . '_body'));
                 $output .= $page->title . '<br />';
-                $output .= $pageid . '<br />';
-                $output .= $clusterflag;
+                // $output .= $pageid . '<br />';
+                // $output .= $clusterflag;
                 $output .= html_writer::end_div();
                 $pageid = $page->nextpageid;
                 $output .= $this->lesson_page_loop($lesson, $pageid, $clusterflag);
@@ -748,8 +768,8 @@ class mod_lesson_renderer extends plugin_renderer_base {
                 $output .= html_writer::end_tag('header');
                 $output .= html_writer::start_div('mod_lesson_page_element_body', array('id' => 'mod_lesson_page_element_' . $pageid . '_body'));
                 $output .= $page->title . '<br />';
-                $output .= $pageid . '<br />';
-                $output .= $clusterflag;
+                // $output .= $pageid . '<br />';
+                // $output .= $clusterflag;
                 $output .= html_writer::end_div();
                 $output .= html_writer::end_div();
                 $pageid = $page->nextpageid;
