@@ -2,6 +2,8 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
 
     var lessonobjects = null;
     var lessonobjectid = 9999;
+    var lessonid = 0;
+    var ajaxlocation = 'ajax.php';
 
     var drawline = function(pagefrom, pageto) {
         if (pageto === 0) {
@@ -25,7 +27,10 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
         var angle = Math.atan2((fromy - tooffset.top), (fromx - tooffset.left)) * (180 / Math.PI);
         var cx = ((fromx + tooffset.left) / 2) - (length / 2);
         var cy = ((fromy + tooffset.top) / 2) - 1;
-        var htmlline = "<div class='lessonline' style='left:" + cx + "px; top:" + cy + "px; width:" + length + "px; -moz-transform:rotate(" + angle + "deg); -webkit-transform:rotate(" + angle + "deg); -o-transform:rotate(" + angle + "deg); -ms-transform:rotate(" + angle + "deg); transform:rotate(" + angle + "deg);' />";
+        var htmlline = "<div class='lessonline' style='left:" + cx + "px; top:" + cy + "px; width:" + length + "px;";
+        htmlline += " -moz-transform:rotate(" + angle + "deg); -webkit-transform:rotate(" + angle + "deg);";
+        htmlline += " -o-transform:rotate(" + angle + "deg); -ms-transform:rotate(" + angle + "deg);";
+        htmlline += " transform:rotate(" + angle + "deg);' />";
         $('body').append(htmlline);
     };
 
@@ -72,7 +77,8 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
                 if (nextpageid === "-9") {
                     // Add the html to the screen.
                     // var currentobject = lessonobjects[lessonpageid];
-                    var htmleol = "<div class='mod_lesson_page_element' id='mod_lesson_page_element_" + lessonpageid + "1'><header id='mod_lesson_page_element_" + lessonpageid + "1'>End Of Lesson</header>";
+                    var htmleol = "<div class='mod_lesson_page_element' id='mod_lesson_page_element_" + lessonpageid + "1'>";
+                    htmleol += "<header id='mod_lesson_page_element_" + lessonpageid + "1'>End Of Lesson</header>";
                     htmleol += "<div class='mod_lesson_page_body' id='mod_lesson_page_element_" + lessonpageid + "1'></div></div>";
                     $('#mod_lesson_page_element_' + lessonpageid).append(htmleol);
                     // Add an End Of Lesson object to the lessonobjects.
@@ -92,6 +98,26 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
         }
     };
 
+    var attachElement = function(event, ui) {
+        var ischild = $(this).find(ui.helper).length;
+        if (!ischild) {
+            ui.helper.detach();
+            $(this).append(ui.helper);
+            // formatClusters();
+        }
+    };
+
+    var detachElement = function(event, ui) {
+        var ischild = $(this).find(ui.helper).length;
+        // var lastoffset = ui.helper.offset();
+        if (ischild) {
+            ui.helper.detach();
+            $(".mod_lesson_pages").append(ui.helper);
+            ui.helper.offset({left: event.pageX, top: event.pageY});
+            // formatClusters();
+        }
+    };
+
     var formatClusters = function() {
         for (var lessonpageid in lessonobjects) {
             var currentobject = lessonobjects[lessonpageid];
@@ -100,7 +126,7 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
                 // console.log('children ' + currentobject.clusterchildrenids.length);
                 var childwidth = 270;
                 var childheight = 100;
-                var clusterwidth = $("#mod_lesson_page_element_" + lessonpageid).width();
+                // var clusterwidth = $("#mod_lesson_page_element_" + lessonpageid).width();
                 var clusterheight = $("#mod_lesson_page_element_" + lessonpageid).height();
                 var newwidth = 0;
                 var newheight = 0;
@@ -125,7 +151,10 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
                     
                     if ((key % 3) === 0 && key !== "0") {
                         starty = starty + 110;
-                        $("#mod_lesson_page_element_" + currentobject.clusterchildrenids[key]).offset({top: starty, left: originalx});
+                        $("#mod_lesson_page_element_" + currentobject.clusterchildrenids[key]).offset({
+                            top: starty,
+                            left: originalx
+                        });
                         startx = originalx + $("#mod_lesson_page_element_" + currentobject.clusterchildrenids[key]).width() + 30;
                     } else {
                         $("#mod_lesson_page_element_" + currentobject.clusterchildrenids[key]).offset({top: starty, left: startx});
@@ -133,6 +162,10 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
                     }
 
                 }
+                $("#mod_lesson_page_element_" + lessonpageid).droppable({
+                    drop: attachElement,
+                    out: detachElement
+                });
             }
         }
     };
@@ -141,27 +174,112 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
         var htmlelement = "<div class='mod_lesson_menu_item'>Content</div>";
         $('.mod_lesson_menu').append(htmlelement);
         $(".mod_lesson_menu_item").draggable({
-             stop: function(event, ui) {
+             stop: createLessonObject
+        });
+        // console.log('put another content object in the menu');
+    };
 
-                if (!ui.helper.hasClass('mod_lesson_page_element')) {
-                    var lastoffset = ui.helper.offset();
-                    // console.log(lastoffset);
-                    ui.helper.addClass('mod_lesson_page_element');
-                    ui.helper.removeClass('mod_lesson_menu_item');
-                    ui.helper.attr('id', 'mod_lesson_page_element_' + lessonobjectid);
-                    var htmlelement = '<header id="mod_lesson_page_element_' + lessonobjectid + '">Content</header>';
-                    htmlelement += '<div class="mod_lesson_page_body" id="mod_lesson_page_element_' + lessonobjectid + '"></div>';
-                    $("#mod_lesson_page_element_" + lessonobjectid).html(htmlelement);
+    var createLessonObject = function(event, ui) {
+        if (!ui.helper.hasClass('mod_lesson_page_element')) {
+            var lastoffset = ui.helper.offset();
+            // console.log(lastoffset);
+            ui.helper.addClass('mod_lesson_page_element');
+            ui.helper.removeClass('mod_lesson_menu_item');
+
+            var defaultdata = {
+                title: 'Default title',
+                contents: '',
+                qtype: "20",
+                // jumpto[0]: "-1", Need to find another way.
+                lessonid: lessonid,
+                location: "normal",
+                previouspageid: "0",
+                nextpageid: "0",
+                positionx: Math.round(lastoffset.left),
+                positiony: Math.round(lastoffset.top)
+            };
+
+            // Try some ajax here.
+            $.ajax({
+                method: "POST",
+                url: ajaxlocation,
+                dataType: "json",
+                data: {
+                    action: "createcontent",
+                    lessonid: lessonid,
+                    lessondata: defaultdata
+                }
+            })
+                .done(function(newobjectid) {
+                    // alert("Data Saved: " + msg);
+                    console.log(newobjectid);
+                    ui.helper.attr('id', 'mod_lesson_page_element_' + newobjectid);
+                    var htmlelement = '<header id="mod_lesson_page_element_' + newobjectid + '">Content</header>';
+                    htmlelement += '<div class="mod_lesson_page_body" id="mod_lesson_page_element_' + newobjectid + '"></div>';
+                    $("#mod_lesson_page_element_" + newobjectid).html(htmlelement);
+
+                    // Add default information to the main lesson object.
+                    lessonobjects[newobjectid] = {
+                        title: 'Default title',
+                        contents: '',
+                        qtype: "20",
+                        // jumpto[0]: "-1", Need to find another way.
+                        lessonid: lessonid,
+                        location: "normal",
+                        previouspageid: "0",
+                        nextpageid: "0"
+                    };
 
                     ui.helper.detach();
                     $('.mod_lesson_pages').append(ui.helper);
-                    $("#mod_lesson_page_element_" + lessonobjectid).offset(lastoffset);
-                    lessonobjectid = lessonobjectid + 1;
-                    // $(".mod_lesson_page_element").draggable();    
-                }
-            }
+                    $("#mod_lesson_page_element_" + newobjectid).offset(lastoffset);
+                    
+                })
+
+                .fail(function(e) {
+                    console.log(e);
+                })
+        }
+        resetListeners();
+
+    };
+
+    var openEditor = function(event) {
+        event.stopPropagation();
+        var elementid = this.id;
+        var pageids = elementid.split('_');
+        var pageid = pageids[4];
+   
+        // Create a page for editing the content.
+        var pageeditor = '<div class="mod_lesson_page_editor">';
+        pageeditor += '<h3>Edit this lesson page </h3>';
+        pageeditor += '<div>Page title</div>';
+        pageeditor += '<div><input type="text" id="mod_lesson_title" value="' + lessonobjects[pageid].title + '" /></div>';
+        pageeditor += '<div>Page contents</div>';
+        pageeditor += '<div><textarea id="mod_lesson_contents">' + lessonobjects[pageid].contents + '</textarea></div>';
+        pageeditor += '</div>';
+        $('.mod_lesson_pages').append(pageeditor);
+        $('.mod_lesson_page_editor').dblclick(function() {
+            $(this).remove();
         });
-        // console.log('put another content object in the menu');
+    };
+
+    var resetListeners = function() {
+        $(".mod_lesson_page_element").draggable({
+            drag: drawalllines
+        });
+
+        // Remove handler so that we don't double up with other elements.
+        $(".mod_lesson_page_element").unbind('dblclick');
+
+        $(".mod_lesson_page_element").on({
+            dblclick: openEditor
+        });
+
+        $(".mod_lesson_menu_item").draggable({
+            stop: createLessonObject
+        });
+
     };
 
 
@@ -170,6 +288,11 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
         init: function(deliverytext) {
             console.log(deliverytext);
             lessonobjects = deliverytext;
+            var firstelementid;
+            for (firstelementid in lessonobjects) {
+                break;    
+            } 
+            lessonid = lessonobjects[firstelementid].lessonid;
             // Add end of lesson objects.
             addEOL();
             // Format clusters.
@@ -178,33 +301,7 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
             drawalllines();
 
             // addMenu();
-
-
-
-            $(".mod_lesson_page_element").draggable({
-                // drag: onDragStop
-                drag: drawalllines
-            });
-
-            $(".mod_lesson_menu_item").draggable({
-                stop: function(event, ui) {
-
-                    console.log('still bound');
-                    var lastoffset = ui.helper.offset();
-                    ui.helper.addClass('mod_lesson_page_element');
-                    ui.helper.removeClass('mod_lesson_menu_item');
-                    ui.helper.attr('id', 'mod_lesson_page_element_' + lessonobjectid);
-                    var htmlelement = '<header id="mod_lesson_page_element_' + lessonobjectid + '">Content</header>';
-                    htmlelement += '<div class="mod_lesson_page_body" id="mod_lesson_page_element_' + lessonobjectid + '"></div>';
-                    $("#mod_lesson_page_element_" + lessonobjectid).html(htmlelement);
-
-                    ui.helper.detach();
-                    $('.mod_lesson_pages').append(ui.helper);
-                    $("#mod_lesson_page_element_" + lessonobjectid).offset(lastoffset);
-                    lessonobjectid = lessonobjectid + 1;
-                    // $(".mod_lesson_page_element").draggable();
-                }
-            });
+            resetListeners();
 
             $(".mod_lesson_menu").droppable({
                 out: replacecontent,
@@ -212,20 +309,6 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
                     // console.log(ui.draggable);
                     ui.draggable.remove();
                 }
-            });
-
-            // $(".mod_lesson_page_element").resizable();
-
-            $(".mod_lesson_pages").on('click', '.mod_lesson_page_element', function() {
-                var elementid = this.id;
-                var pageids = elementid.split('_');
-                var pageid = pageids[4];
-                var offset = $(this).offset();
-                deliverytext[pageid].x = offset.left;
-                deliverytext[pageid].y = offset.top;
-                // console.log(deliverytext[pageid]);
-                // drawlines(15, 23);
-                // console.log($(this).height());
             });
         }
     };

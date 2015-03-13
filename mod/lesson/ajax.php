@@ -25,13 +25,15 @@
 define('AJAX_SCRIPT', true);
 
 require('../../config.php');
-// require_once($CFG->dirroot . '/mod/assign/locallib.php');
+// require_once($CFG->dirroot . '/mod/lesson/locallib.php');
 
 $action = optional_param('action', '', PARAM_ALPHANUM);
 $lessonid = optional_param('lessonid', '', PARAM_ALPHANUM); // Definitely need this.
 $pageid = optional_param('pageid', '', PARAM_RAW);
 $pagex = optional_param('pagex', '', PARAM_RAW);
 $pagey = optional_param('pagey', '', PARAM_RAW);
+$lessondata = optional_param_array('lessondata', '', PARAM_RAW);
+
 
 $pagecookie = new stdClass();
 if (isset($_COOKIE['pageinfo'])) {
@@ -59,5 +61,13 @@ if ($action == 'saveposition') {
     setcookie('pageinfo', json_encode($pagecookie));
     $response = 'this was a success!';
     echo json_encode($response);
+    die();
+} else if ($action == 'createcontent') {
+
+    $lessondata['timecreated'] = time();
+    // Instead of direct call, we need to use the API. With that in mind, we will probably end up using web services anyway.
+    $insertid = $DB->insert_record('lesson_pages', $lessondata);
+    
+    echo json_encode($insertid);
     die();
 }

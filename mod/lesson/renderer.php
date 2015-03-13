@@ -653,7 +653,6 @@ class mod_lesson_renderer extends plugin_renderer_base {
 
     private function get_lesson_data($lesson, $pageid) {
         $pages = array();
-        $locationdata = $this->get_temp_cookie_data($lesson->id);
         $clusters = array();
         $clustercount = 0;
         $currentclusterid = 0;
@@ -673,13 +672,10 @@ class mod_lesson_renderer extends plugin_renderer_base {
             }
             $pageproperties = $page->properties();
             $pageproperties->qtypestr = $page->get_typestring();
-            if (isset($locationdata->{$pageid})) {
-                $pageproperties->x = $locationdata->{$pageid}->x;
-                $pageproperties->y = $locationdata->{$pageid}->y;
-            } else {
-                $pageproperties->x = 0;
-                $pageproperties->y = 0;
-            }
+
+            $pageproperties->x = $page->positionx;
+            $pageproperties->y = $page->positiony;
+
 
             // if ($clustercount && !($page->qtype == 30 && $clustercount == 1)) {
             if ($clustercount) {
@@ -703,16 +699,6 @@ class mod_lesson_renderer extends plugin_renderer_base {
         // Reindex the array for use with YUI.
         // $pages = array_values($pages);
         return $pages;
-    }
-
-    private function get_temp_cookie_data($lessonid) {
-
-        $pagecookie = json_decode($_COOKIE['pageinfo']);
-        if (isset($pagecookie->{$lessonid})) {
-            return $pagecookie->{$lessonid};
-        } else {
-            return null;
-        }
     }
 
     private function lesson_page_loop(lesson $lesson, &$pageid, $clusterflag = false) {
