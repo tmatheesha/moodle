@@ -164,7 +164,7 @@ if (empty($result->posts)) {
 
     // Get the page heading
     if ($isspecificcourse) {
-        $pageheading = format_string($course->shortname, true, array('context' => $coursecontext));
+        $pageheading = format_string($course->fullname, true, array('context' => $coursecontext));
     } else {
         $pageheading = get_string('pluginname', 'mod_forum');
     }
@@ -310,7 +310,7 @@ if ($discussionsonly) {
 if ($isspecificcourse) {
     $a = new stdClass;
     $a->fullname = $userfullname;
-    $a->coursename = format_string($course->shortname, true, array('context' => $coursecontext));
+    $a->coursename = format_string($course->fullname, true, array('context' => $coursecontext));
     $pageheading = $a->coursename;
     if ($discussionsonly) {
         $pagetitle = get_string('discussionsstartedbyuserincourse', 'mod_forum', $a);
