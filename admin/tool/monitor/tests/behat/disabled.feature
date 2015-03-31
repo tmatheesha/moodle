@@ -1,4 +1,4 @@
-@javascript @tool @tool_monitor
+@javascript @tool @tool_monitor @aids
 Feature: Enable/disable managment of the event monitor
   In order to manage event monitoring
   As an admin

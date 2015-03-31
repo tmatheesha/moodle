@@ -15,7 +15,7 @@ Feature: Manage availability conditions
     # Enable it and check I can now see and click on it.
     And I set the following administration settings values:
       | Enable conditional access | 1 |
-    And I am on homepage
+    And I am on site homepage
     And I navigate to "Manage restrictions" node in "Site administration > Plugins > Availability restrictions"
 
     # Having clicked on it, I should also see the list of plugins.
@@ -31,7 +31,7 @@ Feature: Manage availability conditions
     And I log in as "admin"
     And I set the following administration settings values:
       | Enable conditional access | 1 |
-    And I am on homepage
+    And I am on site homepage
     When I navigate to "Manage restrictions" node in "Site administration > Plugins > Availability restrictions"
 
     # Check the icon is there (it should be a Hide icon, meaning is currently visible).
@@ -47,7 +47,7 @@ Feature: Manage availability conditions
 
     # OK, toggling works. Set the grade one to Hide and we'll go see if it actually worked.
     And I click on "input[title=Hide]" "css_element" in the "Restriction by grade" "table_row"
-    And I am on homepage
+    And I am on site homepage
     And I follow "Course 1"
     And I turn editing mode on
     And I add a "Page" to section "1"
