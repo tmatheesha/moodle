@@ -24,6 +24,8 @@
 
 defined('MOODLE_INTERNAL') || die();
 
+require_once($CFG->dirroot . '/user/user_search_form.php');
+
 /**
  * Provides user rendering functionality such as printing private files tree and displaying a search utility
  * @copyright  2010 Dongsheng Cai <dongsheng@moodle.com>
@@ -164,26 +166,6 @@ class core_user_renderer extends plugin_renderer_base {
         $usersearchform->display();
     }
 
-}
-
-require_once($CFG->libdir.'/formslib.php');
-/**
- * Allows classes to call moodleform functions
- * @copyright   2015 Joseph Inhofer <jinhofer@umn.edu>
- * @license     http://www.gnu.org/copyleft/glp.html GNU GPL v3 or later
- */
-class user_search_form extends moodleform {
-    /**
-     * This will initiate an instance of moodleform
-     * @return moodleform
-     */
-    public function definition() {
-        $mform = $this->_form;
-        $content = $this->_customdata;
-        $mform->addElement('header', 'filter_options', get_string('filter'));
-        $mform->addElement('static', 'filter_content', null, $content);
-        $mform->setExpanded('filter_options', false);
-    }
 }
 
 /**
