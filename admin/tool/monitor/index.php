@@ -25,7 +25,7 @@
 require_once(__DIR__ . '/../../../config.php');
 require_once($CFG->libdir.'/adminlib.php');
 
-$courseid = optional_param('courseid', SITEID, PARAM_INT);
+$courseid = optional_param('courseid', 0, PARAM_INT);
 $action = optional_param('action', '', PARAM_ALPHA);
 $cmid = optional_param('cmid', 0, PARAM_INT);
 $ruleid = optional_param('ruleid', 0, PARAM_INT);
@@ -34,12 +34,12 @@ $confirm = optional_param('confirm', false, PARAM_BOOL);
 
 require_login();
 
-// We need to explicitly check that the course id is something legitimate.
-if (empty($courseid)) {
-    $courseid = SITEID;
+// The courseid could be set to 0. 0 being Site level events.
+if ($courseid === 0) {
+    $coursecontext = context_course::instance(SITEID);
+} else {
+    $coursecontext = context_course::instance($courseid);
 }
-
-$coursecontext = context_course::instance($courseid);
 
 if (!get_config('tool_monitor', 'enablemonitor')) {
     // This should never happen as the this page does not appear in navigation when the tool is disabled.
