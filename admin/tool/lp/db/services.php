@@ -308,6 +308,14 @@ $functions = array(
         'type'        => 'write',
         'capabilities'=> 'tool/lp:templatemanage',
     ),
+    'tool_lp_get_scale_values' => array(
+        'classname'   => 'tool_lp\external',
+        'methodname'  => 'get_scale_values',
+        'classpath'   => '',
+        'description' => 'Fetch the values for a specific scale',
+        'type'        => 'read',
+        'capabilities'=> 'tool/lp:competencymanage',
+    ),
 
 );
 

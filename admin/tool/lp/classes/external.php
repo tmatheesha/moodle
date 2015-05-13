@@ -2953,4 +2953,64 @@ class external extends external_api {
         ));
 
     }
+
+    /**
+     * Returns the description of the get_scale_values() parameters.
+     *
+     * @return external_function_parameters.
+     */
+    public static function get_scale_values_parameters() {
+        $scaleid = new external_value(
+            PARAM_INT,
+            'The scale id',
+            VALUE_REQUIRED
+        );
+        $params = array('scaleid' => $scaleid);
+        return new external_function_parameters($params);
+    }
+
+    /**
+     * Expose to AJAX
+     *
+     * @return boolean
+     */
+    public static function get_scale_values_is_allowed_from_ajax() {
+        return true;
+    }
+
+    /**
+     * Get the values associated with a scale.
+     *
+     * @param int $scaleid Scale ID
+     * @return array Values for a scale.
+     */
+    public static function get_scale_values($scaleid) {
+        global $DB;
+        $params = self::validate_parameters(self::get_scale_values_parameters(),
+            array(
+                'scaleid' => $scaleid,
+            )
+        );
+        // Retrieve the scale value from the database.
+        $scalestring = $DB->get_field('scale', 'scale', array('id' => $params['scaleid']));
+        // Change the string into an array and then reverse the array so that high levels are at the top.
+        $scalevalues = array_reverse(explode(',', $scalestring));
+        foreach ($scalevalues as $key => $value) {
+            // Add a key (make the first value 1) and trim off excess whitespace.
+            $scalevalues[$key] = array(
+                    'id' => $key + 1,
+                    'name' => ltrim($value)
+                );
+        }
+        return $scalevalues;
+    }
+
+    /**
+     * Returns description of get_scale_values() result value.
+     *
+     * @return external_description
+     */
+    public static function get_scale_values_returns() {
+        return new external_multiple_structure(new external_value(PARAM_RAW, 'Values for the scale'));
+    }
 }
