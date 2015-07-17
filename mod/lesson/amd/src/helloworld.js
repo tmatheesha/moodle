@@ -241,13 +241,16 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
                 .done(function(newobject) {
 
                     ui.helper.attr('id', 'mod_lesson_page_element_' + newobject.id);
-                    var htmlelement = '<header id="mod_lesson_page_element_' + newobject.id + '">' + pagetype + '</header>';
-                    htmlelement += '<div class="mod_lesson_page_body" id="mod_lesson_page_element_' + newobject.id + '"></div>';
-                    htmlelement += '<img src="../../theme/image.php?theme=clean&component=core&image=t%2Fedit" class="mod_lesson_page_object_menu"></div>';
+                    var htmlelement = '<header id="mod_lesson_page_element_' + newobject.id + '">' + pagetype;
+                    htmlelement += '<img src="../../theme/image.php?theme=clean&component=core&image=t%2Fedit" class="mod_lesson_page_object_menu"></div></header>';
+                    htmlelement += '<div class="mod_lesson_page_element_body" id="mod_lesson_page_element_' + newobject.id + '_body"></div>';
                     $("#mod_lesson_page_element_" + newobject.id).html(htmlelement);
 
                     // Add default information to the main lesson object.
                     newobject['jumpto[0]'] = '-1';
+                    if (parseInt(qtype) < 11) {
+                        newobject['jumpto[1]'] = '0';
+                    }
                     // newobject['jumpto[0]'] = newobject.nextpageid;
                     lessonobjects[newobject.id] = newobject;
                     lessonobjects[newobject.prevpageid].nextpageid = newobject.id;
@@ -431,7 +434,7 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
     };
 
     var hoverin = function() {
-        $(this).css('background-color', 'blue');
+        $(this).css('background-color', '#b8b8b8');
     };
 
     var hoverout = function() {
@@ -467,21 +470,36 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
                 var i = 0;
                 var jumpname = "jumpto[" + i + "]";
                 if (response === 'linked') {
+                    // console.log(response + ' page id: ' + pageid + ' jump id: ' + jumpid);
                     while (lessonobjects[pageid].hasOwnProperty(jumpname)) {
                         i += 1;
                         jumpname = "jumpto[" + i + "]";
                     }
                     lessonobjects[pageid][jumpname] = jumpid;
                 } else if (response === 'linked-type2') {
+                    // console.log(response + ' page id: ' + pageid + ' jump id: ' + jumpid);
                     while (lessonobjects[pageid].hasOwnProperty(jumpname)) {
+                        var nextjump = "jumpto[" + (i + 1) + "]";
+                        var nextjumppossible = lessonobjects[pageid].hasOwnProperty(nextjump);
                         if (lessonobjects[pageid][jumpname] === "0" ) {
-                            lessonobjects[pageid][jumpname] = 1;
+                            lessonobjects[pageid][jumpname] = jumpid;
+                            // lessonobjects[pageid][jumpname] = 1;
                             break;
+                        }
+                        if (lessonobjects[pageid][jumpname] === "-1") {
+                            if (nextjumppossible && lessonobjects[pageid][nextjump] === "0") {
+                                // Do nothing.
+                            } else {
+                                lessonobjects[pageid][jumpname] = jumpid;
+                                // lessonobjects[pageid][jumpname] = 1;
+                                break;
+                            }
                         }
                         i += 1;
                         jumpname = "jumpto[" + i + "]";
                     }
                 } else if (response === 'unlinked-type1') {
+                    // console.log(response + ' page id: ' + pageid + ' jump id: ' + jumpid);
                     while (lessonobjects[pageid].hasOwnProperty(jumpname)) {
                         if (lessonobjects[pageid][jumpname] === jumpid ) {
                             delete lessonobjects[pageid][jumpname];
@@ -491,10 +509,23 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
                         jumpname = "jumpto[" + i + "]";
                     }
                 } else {
+                    // console.log(response + ' page id: ' + pageid + ' jump id: ' + jumpid);
                     // Special stuff has to happen here.
+
+                    // // Find the jumpto that is set to -1 and change that.
+                    // while (lessonobjects[pageid].hasOwnProperty(jumpname)) {
+                    //     if (lessonobjects[pageid][jumpname] === jumpid ) {
+                    //         delete lessonobjects[pageid][jumpname];
+                    //         break;
+                    //     }
+                    //     i += 1;
+                    //     jumpname = "jumpto[" + i + "]";
+                    // }
+
                     lessonobjects[pageid].nextpageid = "0";
                 }
                 drawalllines();
+                // console.log(lessonobjects);
             })
 
             .fail(function(e) {
@@ -521,6 +552,10 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
 
         $(".mod_lesson_menu_item").draggable({
             stop: createLessonObject
+        });
+
+        $('.mod_lesson_pages').scroll(function() {
+            drawalllines();
         });
 
     };
