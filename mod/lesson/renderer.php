@@ -636,6 +636,7 @@ class mod_lesson_renderer extends plugin_renderer_base {
         $output .= html_writer::div('True False', 'mod_lesson_menu_item');
         $output .= html_writer::div('Numerical', 'mod_lesson_menu_item');
         $output .= html_writer::div('Multiple Choice', 'mod_lesson_menu_item');
+        $output .= html_writer::div('Cluster', 'mod_lesson_menu_item');
 
         $output .= html_writer::end_div();
 

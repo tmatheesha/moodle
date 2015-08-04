@@ -4,15 +4,418 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
     var lessonobjectid = 9999;
     var lessonid = 0;
     var ajaxlocation = 'ajax.php';
+    var lesson = null;
+
+    var Lesson = function(data) {
+        /**
+         * Create and add lesson pages to the lesson.
+         *
+         * @param {int} pageid Page ID for the lesson page.
+         * @param {object} pagedata Data relating to the lesson page.
+         */
+        this.add_lessonpage = function(pageid, pagedata) {
+            // Would like a better way to do this.
+            switch(parseInt(pagedata.qtype)) {
+                case 31:
+                    this.pages[pageid] = new endofcluster_lessonPage(pagedata);
+                    break;
+                case 30:
+                    this.pages[pageid] = new cluster_lessonPage(pagedata);
+                    break;
+                case 21:
+                    this.pages[pageid] = new endofbranch_lessonPage(pagedata);
+                    break;
+                case 20:
+                    this.pages[pageid] = new branchtable_lessonPage(pagedata);
+                    break;
+                case 10:
+                    this.pages[pageid] = new essay_lessonPage(pagedata);
+                    break;
+                case 8:
+                    this.pages[pageid] = new numerical_lessonPage(pagedata);
+                    break;
+                case 5:
+                    this.pages[pageid] = new matching_lessonPage(pagedata);
+                    break;
+                case 3:
+                    this.pages[pageid] = new multichoice_lessonPage(pagedata);
+                    break;
+                case 2:
+                    this.pages[pageid] = new truefalse_lessonPage(pagedata);
+                    break;
+                case 1:
+                    this.pages[pageid] = new shortanswer_lessonPage(pagedata);
+                    break;
+                default:
+                    this.pages[pageid] = new lessonPage(pagedata);
+                    break;
+            }
+        }
+
+        this.id = lessonid;
+        this.pages = {};
+        for (lessonpage in data) {
+            this.add_lessonpage(lessonpage, data[lessonpage]);
+        }
+
+    };
+
+    var lessonPage = function(lessonobjectdata) {
+        this.id = lessonobjectdata.id;
+        this.qtype = parseInt(lessonobjectdata.qtype);
+        this.lessonid = lessonobjectdata.lessonid;
+        this.title = lessonobjectdata.title;
+        this.contents = lessonobjectdata.contents;
+        this.positionx = lessonobjectdata.positionx;
+        this.positiony = lessonobjectdata.positiony;
+        this.qtypestring = lessonobjectdata.qtypestr;
+        this.nextpageid = lessonobjectdata.nextpageid;
+        this.previouspageid = lessonobjectdata.prevpageid;
+        this.location = lessonobjectdata.location;
+
+        if (lessonobjectdata.hasOwnProperty("clusterid")) {
+            this.clusterid = lessonobjectdata.clusterid;
+        }
+        if (lessonobjectdata.hasOwnProperty("subclusterid")) {
+            this.subclusterid = lessonobjectdata.subclusterid;
+        }
+
+        this.jumps = {};
+        var i = 0;
+        var jumpname = "jumpto[" + i + "]";
+        var answereditor = "answer_editor[" + i + "]";
+        var responseeditor = "response_editor[" + i + "]";
+        var lessonscore = "score[" + i + "]";
+
+        while (lessonobjectdata.hasOwnProperty(jumpname)) {
+            this.jumps[i] = {
+                id: parseInt(lessonobjectdata[jumpname]),
+                answer: lessonobjectdata[answereditor].text,
+                response: lessonobjectdata[responseeditor].text,
+                score: lessonobjectdata[lessonscore] // Might need grade here as well.
+            }
+            i += 1;
+            jumpname = "jumpto[" + i + "]";
+            answereditor = "answer_editor[" + i + "]";
+            responseeditor = "response_editor[" + i + "]";
+            lessonscore = "score[" + i + "]";
+        }
+
+        // console.log(Object.keys(this.jumps).length);
+        if (Object.keys(this.jumps).length === 0) {
+            // Create default jumps.
+            this.jumps[0] = {
+                id: -1,
+                answer: "Next page",
+                response: "",
+                score: 0
+            }
+            if (this.qtype < 11) {
+                this.jumps[1] = {
+                    id: 0,
+                    answer: "This page",
+                    response: "",
+                    score: 0
+                }
+            }
+        }
+
+        if (lessonobjectdata.hasOwnProperty("subclusterchildrenids")) {
+            this.childrenids = lessonobjectdata["subclusterchildrenids"];
+        }
+
+    };
+
+    lessonPage.prototype = {
+        in_cluster: function() {
+            if (this.location === "cluster") {
+                return true;
+            }
+            return false;
+        },
+        in_subcluster: function() {
+            if (this.location == "subcluster") {
+                return true;
+            }
+            return false;
+        },
+        update_jumps: function(jumpdata) {
+            // Remove existing jumps.
+            for (index in this.jumps) {
+                delete this.jumps[index];
+            }
+            // Create new jumps from data.
+            var i = 0;
+            for (jumpid in jumpdata) {
+                this.jumps[i] = {
+                    id: parseInt(jumpdata[jumpid].jumpto),
+                    answer: jumpdata[jumpid].answer,
+                    response: jumpdata[jumpid].response,
+                    score: jumpdata[jumpid].score,
+                }
+                i++;
+            }
+        },
+        get_default_edit_form: function() {
+            var editform = '<div class="mod_lesson_page_editor">';
+            editform += '<h3>Edit this ' + this.qtypestring + ' </h3>';
+            editform += pageTitle(this.id, this.title);
+            editform += pageContents(this.id, this.contents);
+            return editform;
+        }
+    };
+
+    // Lesson page types
+    // Cluster
+    var cluster_lessonPage = function(lessonobjectdata) {
+        lessonPage.call(this, lessonobjectdata);
+        if ("clusterchildrenids" in lessonobjectdata) {
+            this.childrenids = lessonobjectdata["clusterchildrenids"];
+        } else {
+            this.childrenids = [];
+        }
+    };
+
+    cluster_lessonPage.prototype = {
+        in_cluster: function() {
+            return lessonPage.prototype.in_cluster.call(this);
+        },
+        update_jumps: function(jumpdata) {
+            lessonPage.prototype.update_jumps.call(this, jumpdata);
+        },
+        get_edit_form: function(jumpoptions) {
+            return branchtable_lessonPage.prototype.get_edit_form.call(this, jumpoptions);
+        }
+    }
+
+    // End of Cluster
+    var endofcluster_lessonPage = function(lessonobjectdata) {
+        lessonPage.call(this, lessonobjectdata);
+    };
+
+    endofcluster_lessonPage.prototype = {
+        in_cluster: function() {
+            return lessonPage.prototype.in_cluster.call(this);
+        },
+        update_jumps: function(jumpdata) {
+            lessonPage.prototype.update_jumps.call(this, jumpdata);
+        }
+    }
+
+    // True / False
+    var truefalse_lessonPage = function(lessonobjectdata) {
+        lessonPage.call(this, lessonobjectdata);
+    };
+
+    truefalse_lessonPage.prototype = {
+        in_cluster: function() {
+            return lessonPage.prototype.in_cluster.call(this);
+        },
+        in_subcluster: function () {
+            return lessonPage.prototype.in_subcluster.call(this);
+        },
+        update_jumps: function(jumpdata) {
+            lessonPage.prototype.update_jumps.call(this, jumpdata);
+        },
+        get_edit_form: function(jumpoptions) {
+            return branchtable_lessonPage.prototype.get_edit_form.call(this, jumpoptions);
+        }
+    }
+
+    // Numerical
+    var numerical_lessonPage = function(lessonobjectdata) {
+        lessonPage.call(this, lessonobjectdata);
+    };
+
+    numerical_lessonPage.prototype = {
+        in_cluster: function() {
+            return lessonPage.prototype.in_cluster.call(this);
+        },
+        in_subcluster: function () {
+            return lessonPage.prototype.in_subcluster.call(this);
+        },
+        update_jumps: function(jumpdata) {
+            lessonPage.prototype.update_jumps.call(this, jumpdata);
+        },
+        get_edit_form: function(jumpoptions) {
+            return branchtable_lessonPage.prototype.get_edit_form.call(this, jumpoptions);
+        }
+    }
+
+    // Short answer
+    var shortanswer_lessonPage = function(lessonobjectdata) {
+        lessonPage.call(this, lessonobjectdata);
+    };
+
+    shortanswer_lessonPage.prototype = {
+        in_cluster: function() {
+            return lessonPage.prototype.in_cluster.call(this);
+        },
+        in_subcluster: function () {
+            return lessonPage.prototype.in_subcluster.call(this);
+        },
+        update_jumps: function(jumpdata) {
+            lessonPage.prototype.update_jumps.call(this, jumpdata);
+        },
+        get_edit_form: function(jumpoptions) {
+            return branchtable_lessonPage.prototype.get_edit_form.call(this, jumpoptions);
+        }
+    }
+
+    // End of branch
+    var endofbranch_lessonPage = function(lessonobjectdata) {
+        lessonPage.call(this, lessonobjectdata);
+    };
+
+    endofbranch_lessonPage.prototype = {
+        in_cluster: function() {
+            return lessonPage.prototype.in_cluster.call(this);
+        },
+        update_jumps: function(jumpdata) {
+            lessonPage.prototype.update_jumps.call(this, jumpdata);
+        }
+    }
+
+    // Content page
+    var branchtable_lessonPage = function(lessonobjectdata) {
+        lessonPage.call(this, lessonobjectdata);
+    };
+
+    branchtable_lessonPage.prototype = {
+        in_cluster: function() {
+            return lessonPage.prototype.in_cluster.call(this);
+        },
+        in_subcluster: function() {
+            return lessonPage.prototype.in_subcluster.call(this);
+        },
+        update_jumps: function(jumpdata) {
+            lessonPage.prototype.update_jumps.call(this, jumpdata);
+        },
+        get_edit_form: function(jumpoptions) {
+            var editform = lessonPage.prototype.get_default_edit_form.call(this);
+            var i = 1;
+            for (jumpid in this.jumps) {
+                editform += '<h4>Content ' + i + '</h4>';
+                editform += '<div>Jump name</div>';
+                editform += '<div><input type="text" id="jumpname" /></div>';
+                editform += pageJump(this.jumps[jumpid].id, this.id, jumpoptions, i);
+                i++;
+            }
+            editform += '<div><button type="button" id="mod_lesson_editor_save_btn">Save</button>';
+            editform += '<button type="button" id="mod_lesson_editor_cancel_btn">Cancel</button></div>';
+            editform += '</div>';
+            return editform;
+        }
+    }
+
+    // Essay page
+    var essay_lessonPage = function(lessonobjectdata) {
+        lessonPage.call(this, lessonobjectdata);
+    };
+
+    essay_lessonPage.prototype = {
+        in_cluster: function() {
+            return lessonPage.prototype.in_cluster.call(this);
+        },
+        in_subcluster: function() {
+            return lessonPage.prototype.in_subcluster.call(this);
+        },
+        update_jumps: function(jumpdata) {
+            lessonPage.prototype.update_jumps.call(this, jumpdata);
+        },
+        get_edit_form: function(jumpoptions) {
+            return branchtable_lessonPage.prototype.get_edit_form.call(this, jumpoptions);
+        }
+    }
+
+    // Matching page
+    var matching_lessonPage = function(lessonobjectdata) {
+        lessonPage.call(this, lessonobjectdata);
+    };
+
+    matching_lessonPage.prototype = {
+        in_cluster: function() {
+            return lessonPage.prototype.in_cluster.call(this);
+        },
+        in_subcluster: function () {
+            return lessonPage.prototype.in_subcluster.call(this);
+        },
+        update_jumps: function(jumpdata) {
+            lessonPage.prototype.update_jumps.call(this, jumpdata);
+        },
+        get_edit_form: function(jumpoptions) {
+            return branchtable_lessonPage.prototype.get_edit_form.call(this, jumpoptions);
+        }
+    }
+
+    // Multichoice page
+    var multichoice_lessonPage = function(lessonobjectdata) {
+        lessonPage.call(this, lessonobjectdata);
+    };
+
+    multichoice_lessonPage.prototype = {
+        in_cluster: function() {
+            return lessonPage.prototype.in_cluster.call(this);
+        },
+        in_subcluster: function () {
+            return lessonPage.prototype.in_subcluster.call(this);
+        },
+        update_jumps: function(jumpdata) {
+            lessonPage.prototype.update_jumps.call(this, jumpdata);
+        },
+        get_edit_form: function(jumpoptions) {
+            return branchtable_lessonPage.prototype.get_edit_form.call(this, jumpoptions);
+        }
+    }
+
+    // End Lesson page types
+
+    // Lesson page edit elements
+
+    var pageTitle = function(pageid, title) {
+        var html;
+        html = '<div>Page Title</div>';
+        html += '<div><input type="input" class="mod_lesson_title" id="mod_lesson_title_' + pageid + '" value="' + title + '" /></div>';
+        return html;
+    };
+
+    var pageContents = function(pageid, contents) {
+        var html;
+        html = '<div>Page Content</div>';
+        html += '<div><textarea id="mod_lesson_contents_' + pageid + '">' + contents + '</textarea></div>';
+        return html;
+    };
+
+    var pageJump = function(jumpid, pageid, jumpoptions, number) {
+        var html;
+        html = '<div>Jump</div>';
+        html += '<select id="mod_lesson_jump_select_' + pageid + '_' + number + '">';
+        // $.each(jumpoptions ,function(index, jumpoption) {
+        for (index in jumpoptions) {
+            if (jumpid == index) {
+                html += '<option value="' + index + '" selected>' + jumpoptions[index] + '</option>';
+            } else {
+                html += '<option value="' + index + '">' + jumpoptions[index] + '</option>';
+            }
+        }
+        html += '</select>';
+        return html;
+    }
+    // End of Lesson page edit elements
+
+
 
     var drawline = function(pagefrom, pageto) {
         if (pageto === 0) {
+            // console.log('page to equals zero');
             return;
         }
         if (!document.getElementById('mod_lesson_page_element_' + pagefrom)) {
+            // console.log('no page from');
             return;
         }
         if (!document.getElementById('mod_lesson_page_element_' + pageto)) {
+            // console.log('no page to ' + pageto);
             return;
         }
 
@@ -37,78 +440,92 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
     var drawalllines = function() {
         // console.log('drawinglines');
         $('.lessonline').remove();
-        for (var lessonpageid in lessonobjects) {
-            var currentlessonobject = lessonobjects[lessonpageid];
-            var i = 0, nextpageid = 0;
-            var jumpname = "jumpto[" + i + "]";
-            while (currentlessonobject.hasOwnProperty(jumpname)) {
-            // var nextjumpid = currentlessonobject[jumpname];
-            // console.log(currentlessonobject[jumpname]);
-                if(currentlessonobject[jumpname] === "-1") {
-                    nextpageid = currentlessonobject.nextpageid;
+        for (lpid in lesson.pages) {
+            var currentobject = lesson.pages[lpid];
+            for (jumpid in currentobject.jumps) {
+                if (currentobject.jumps[jumpid].id == -1) {
+                    nextpageid = currentobject.nextpageid;
                 } else {
-                    nextpageid = currentlessonobject[jumpname];
+                    nextpageid = currentobject.jumps[jumpid].id;
                 }
 
-                if (currentlessonobject.qtype === "31") {
-                    drawline(currentlessonobject.clusterid, nextpageid);
+                if (currentobject.qtype == 31) {
+                    drawline(currentobject.clusterid, nextpageid);
                 } else if (nextpageid === "-9") {
-                    drawline(currentlessonobject.id, currentlessonobject.id + '1');
-                } else if (currentlessonobject.location !== "cluster") {
-                    drawline(currentlessonobject.id, nextpageid);
+                    drawline(currentobject.id, currentobject.id + '1');
+                } else if (!currentobject.in_cluster()) {
+                    drawline(currentobject.id, nextpageid);
                 }
-                i += 1;
-                jumpname = "jumpto[" + i + "]";
-            }
-        } 
-    };
-
-    /**
-     * I now think that we don't need this.
-     */
-    var addEOL = function() {
-        for (var lessonpageid in lessonobjects) {
-
-            var i = 0, nextpageid = 0;
-            var jumpname = "jumpto[" + i + "]";
-            while(lessonobjects[lessonpageid].hasOwnProperty(jumpname)) {
-                if(lessonobjects[lessonpageid][jumpname] === "-1") {
-                    nextpageid = lessonobjects[lessonpageid].nextpageid;
-                } else {
-                    nextpageid = lessonobjects[lessonpageid][jumpname];
-                }
-
-                if (nextpageid === "-9") {
-                    // Add the html to the screen.
-                    // var currentobject = lessonobjects[lessonpageid];
-                    var htmleol = "<div class='mod_lesson_page_element' id='mod_lesson_page_element_" + lessonpageid + "1'>";
-                    htmleol += "<header id='mod_lesson_page_element_" + lessonpageid + "1'>End Of Lesson</header>";
-                    htmleol += "<div class='mod_lesson_page_body' id='mod_lesson_page_element_" + lessonpageid + "1'></div></div>";
-                    $('#mod_lesson_page_element_' + lessonpageid).append(htmleol);
-                    // Add an End Of Lesson object to the lessonobjects.
-                    var newid = lessonpageid + '1';
-                    var temp = {
-                        id: newid,
-                        prevpageid: lessonpageid,
-                        nextpageid: 'none',
-                        qtype: '-1',
-                        eolid: newid
-                    };
-                    lessonobjects[newid] = temp;
-                }
-                i += 1;
-                jumpname = "jumpto[" + i + "]";
             }
         }
     };
 
+
     var attachElement = function(event, ui) {
+        var elementid = ui.helper.attr('id');
+        var pagesections = elementid.split('_');
+        var pageid = pagesections[4];
         var ischild = $(this).find(ui.helper).length;
+        if (ischild) {
+            return;
+        }
+
+        // Need to get the cluster id as well.
+        var parentpageid = $(this).attr('id');
+        pagesections = parentpageid.split('_');
+        var parentid = pagesections[4];
+
+        lesson.pages[pageid].location = 'cluster';
+
+        // Find location in cluster for item.
+        // See if there are any childelements.
+        var afterid = null;
+        if (lesson.pages[parentid].childrenids.length > 0) {
+            afterid = lesson.pages[parentid].childrenids[lesson.pages[parentid].childrenids.length -1];
+        } else {
+            afterid = lesson.pages[parentid].id;
+        }
+
+        // Check that this item isn't already in the array.
+        if ($.inArray(pageid, lesson.pages[parentid].childrenids) == -1) {
+            lesson.pages[parentid].childrenids.push(pageid);
+        }
+
+        var previousid = lesson.pages[pageid].previouspageid;
+        var nextid = lesson.pages[pageid].nextpageid;
+        if (previousid !== "0") {
+            lesson.pages[previousid].nextpageid = nextid;
+        }
+        if (nextid !== "0") {
+            lesson.pages[nextid].previouspageid = previousid;
+        }
+
+        lessondata = {
+            pageid: pageid,
+            after: afterid
+        }
+
+        // Try some ajax here.
+        $.ajax({
+            method: "POST",
+            url: ajaxlocation,
+            dataType: "json",
+            data: {
+                action: "movepage",
+                lessonid: lesson.id,
+                lessondata: lessondata
+            }
+        })
+            .done(function(newobject) {
+
+            })
         if (!ischild) {
             ui.helper.detach();
             $(this).append(ui.helper);
             formatClusters();
         }
+        
+        console.log(lesson);
     };
 
     var detachElement = function(event, ui) {
@@ -123,15 +540,12 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
     };
 
     var formatClusters = function() {
-        for (var lessonpageid in lessonobjects) {
-            var currentobject = lessonobjects[lessonpageid];
-            if (lessonobjects[lessonpageid].qtype === "30") {
+        for (var lessonpageid in lesson.pages) {
+            var currentobject = lesson.pages[lessonpageid];
+            if (currentobject.qtype === 30) {
                 // We have a cluster. Now count how many children it has.
-                var childcount = currentobject.clusterchildrenids.length;
-                // console.log('child count ' + childcount);
-                if (childcount === 0) {
-                    childcount = 1;
-                }
+                var childcount = currentobject.childrenids.length;
+                
                 var childwidth = 270;
                 var childheight = 100;
                 // var clusterwidth = $("#mod_lesson_page_element_" + lessonpageid).width();
@@ -141,35 +555,108 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
                 
                 if  (childcount > 3) {
                     newwidth = childwidth * 3;
-                    newheight = clusterheight + (Math.ceil(childcount / 3) * childheight);
+                    additionalheight = (Math.ceil(childcount / 3) * childheight) + 10;
+                    // console.log('additional height: ' + additionalheight);
+                    newheight = 100 + additionalheight;
                 } else {
-                    newwidth = childwidth * childcount;
-                    newheight = clusterheight + (childheight * 1);
+                    var newchildcount = childcount;
+                    if (childcount == 0) {
+                        newchildcount = 1;
+                    }
+                    newwidth = childwidth * newchildcount;
+                    if (clusterheight == 200) {
+                        // Height does not need to be adjusted.
+                        newheight = clusterheight;
+                    } else {
+                        newheight = clusterheight + (childheight * 1);
+                    }
                 }
+                
 
                 // Adjust the cluster width.
                 $("#mod_lesson_page_element_" + lessonpageid).width(newwidth);
                 // Adjust the cluster height.
                 $("#mod_lesson_page_element_" + lessonpageid).height(newheight);
                 // Position children in the cluster.
+                if (childcount) {
+                    var originalx = $("#mod_lesson_page_element_" + lessonpageid).offset().left + 10;
+                    var startx = originalx;
+                    var starty = $("#mod_lesson_page_element_" + lessonpageid).offset().top + 80;
+                    for (var key in currentobject.childrenids) {
+                        
+                        if ((key % 3) === 0 && key !== "0") {
+                            starty = starty + 110;
+                            $("#mod_lesson_page_element_" + currentobject.childrenids[key]).offset({
+                                top: starty,
+                                left: originalx
+                            });
+                            startx = originalx + $("#mod_lesson_page_element_" + currentobject.childrenids[key]).width() + 30;
+                        } else {
+                            $("#mod_lesson_page_element_" + currentobject.childrenids[key]).offset({top: starty, left: startx});
+                            startx = startx + $("#mod_lesson_page_element_" + currentobject.childrenids[key]).width() + 30;
+                        }
+
+                    }
+                }
+                $("#mod_lesson_page_element_" + lessonpageid).droppable({
+                    drop: attachElement,
+                    out: detachElement
+                });
+            }
+        }
+    };
+
+    var formatSubClusters = function() {
+        for (var lessonpageid in lesson.pages) {
+            var currentpage = lesson.pages[lessonpageid];
+            if (currentpage.qtype === 20 && currentpage.in_subcluster()) {
+                // We have a subcluster. Now count how many children it has.
+                var childcount = currentpage.childrenids.length;
+                // console.log('child count ' + childcount);
+                if (childcount === 0) {
+                    childcount = 1;
+                }
+                var childwidth = 250;
+                var childheight = 100;
+                // var clusterwidth = $("#mod_lesson_page_element_" + lessonpageid).width();
+                var subclusterheight = $("#mod_lesson_page_element_" + lessonpageid).height();
+                var newwidth = 0;
+                var newheight = 0;
+                
+                if  (childcount > 3) {
+                    newwidth = childwidth * 3;
+                    newheight = subclusterheight + (Math.ceil(childcount / 3) * childheight);
+                } else {
+                    newwidth = childwidth * childcount;
+                    newheight = subclusterheight + (childheight * 1);
+                }
+
+                // Adjust the subcluster width.
+                $("#mod_lesson_page_element_" + lessonpageid).width(newwidth);
+                // Adjust the subcluster height.
+                $("#mod_lesson_page_element_" + lessonpageid).height(newheight);
+                // Position children in the subcluster.
                 var originalx = $("#mod_lesson_page_element_" + lessonpageid).offset().left + 10;
                 var startx = originalx;
                 var starty = $("#mod_lesson_page_element_" + lessonpageid).offset().top + 80;
-                for (var key in currentobject.clusterchildrenids) {
+                for (var key in currentpage.childrenids) {
                     
                     if ((key % 3) === 0 && key !== "0") {
                         starty = starty + 110;
-                        $("#mod_lesson_page_element_" + currentobject.clusterchildrenids[key]).offset({
+                        $("#mod_lesson_page_element_" + currentpage.childrenids[key]).offset({
                             top: starty,
                             left: originalx
                         });
-                        startx = originalx + $("#mod_lesson_page_element_" + currentobject.clusterchildrenids[key]).width() + 30;
+                        startx = originalx + $("#mod_lesson_page_element_" + currentpage.childrenids[key]).width() + 30;
                     } else {
-                        $("#mod_lesson_page_element_" + currentobject.clusterchildrenids[key]).offset({top: starty, left: startx});
-                        startx = startx + $("#mod_lesson_page_element_" + currentobject.clusterchildrenids[key]).width() + 30;
+                        $("#mod_lesson_page_element_" + currentpage.childrenids[key]).offset({top: starty, left: startx});
+                        startx = startx + $("#mod_lesson_page_element_" + currentpage.childrenids[key]).width() + 30;
                     }
 
                 }
+                // Change the title of the sub cluster from "Content" to "Sub cluster".
+                $("#mod_lesson_page_element_" + lessonpageid + "_header").html("Sub cluster");
+
                 $("#mod_lesson_page_element_" + lessonpageid).droppable({
                     drop: attachElement,
                     out: detachElement
@@ -190,22 +677,46 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
 
     var createLessonObject = function(event, ui) {
         var pagetype = ui.helper.text();
-        var qtype;
+        var qtype,
+            content,
+            title,
+            location;
         switch(pagetype) {
             case "Content":
                 qtype = "20";
+                content = "";
+                title =  "Default title";
+                location = "normal";
                 break;
             case "True False":
                 qtype = "2";
+                content = "";
+                title =  "Default title";
+                location = "normal";
                 break;
             case "Numerical":
                 qtype = "8";
+                content = "";
+                title =  "Default title";
+                location = "normal";
                 break;
             case "Multiple Choice":
                 qtype = "3";
+                content = "";
+                title =  "Default title";
+                location = "normal";
+                break;
+            case "Cluster":
+                qtype = "30";
+                content = "Cluster";
+                title =  "Cluster";
+                location = "cluster";
                 break;
             default:
                 qtype = "0";
+                content = "";
+                title =  "Default title";
+                location = "normal";
                 break;
         }
         
@@ -216,16 +727,18 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
             ui.helper.removeClass('mod_lesson_menu_item');
 
             var defaultdata = {
-                title: 'Default title',
-                contents: '',
+                title: title,
+                contents: content,
                 qtype: qtype,
-                lessonid: lessonid,
-                location: "normal",
+                lessonid: lesson.id,
+                location: location,
                 previouspageid: "0",
                 nextpageid: "0",
                 positionx: Math.round(lastoffset.left),
                 positiony: Math.round(lastoffset.top)
             };
+
+
 
             // Try some ajax here.
             $.ajax({
@@ -234,39 +747,62 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
                 dataType: "json",
                 data: {
                     action: "createcontent",
-                    lessonid: lessonid,
+                    lessonid: lesson.id,
                     lessondata: defaultdata
                 }
             })
                 .done(function(newobject) {
-
-                    ui.helper.attr('id', 'mod_lesson_page_element_' + newobject.id);
-                    var htmlelement = '<header id="mod_lesson_page_element_' + newobject.id + '">' + pagetype;
-                    htmlelement += '<img src="../../theme/image.php?theme=clean&component=core&image=t%2Fedit" class="mod_lesson_page_object_menu"></div></header>';
-                    htmlelement += '<div class="mod_lesson_page_element_body" id="mod_lesson_page_element_' + newobject.id + '_body"></div>';
-                    $("#mod_lesson_page_element_" + newobject.id).html(htmlelement);
-
-                    // Add default information to the main lesson object.
-                    newobject['jumpto[0]'] = '-1';
-                    if (parseInt(qtype) < 11) {
-                        newobject['jumpto[1]'] = '0';
+                    if (newobject.qtype !== "31") {
+                        ui.helper.attr('id', 'mod_lesson_page_element_' + newobject.id);
+                        var htmlelement = '<header id="mod_lesson_page_element_' + newobject.id + '">' + pagetype;
+                        htmlelement += '<img src="../../theme/image.php?theme=clean&component=core&image=t%2Fedit" class="mod_lesson_page_object_menu"></div></header>';
+                        htmlelement += '<div class="mod_lesson_page_element_body" id="mod_lesson_page_element_' + newobject.id + '_body">' + newobject.title + '</div>';
+                        $("#mod_lesson_page_element_" + newobject.id).html(htmlelement);
                     }
-                    // newobject['jumpto[0]'] = newobject.nextpageid;
-                    lessonobjects[newobject.id] = newobject;
-                    lessonobjects[newobject.prevpageid].nextpageid = newobject.id;
-                    // console.log(lessonobjects);
 
-                    ui.helper.detach();
-                    $('.mod_lesson_pages').append(ui.helper);
-                    $("#mod_lesson_page_element_" + newobject.id).offset(lastoffset);
-                    resetListeners();
-                    drawalllines();
+
+                    lesson.add_lessonpage(newobject.id, newobject);
+                    lesson.pages[newobject.prevpageid].nextpageid = newobject.id;
+                    // This is really bad, need to figure out another way to do this.
+                    if (newobject.qtype === "30") {
+                        // Add the end of cluster object.
+                        var endofclusterid = (parseInt(newobject.id)) + 1;
+                        var endofclusterdata = {
+                            clusterid: newobject.id,
+                            contents: "End of cluster",
+                            id: endofclusterid,
+                            lessonid: lesson.id,
+                            location: "normal",
+                            nextpageid: "0", 
+                            positionx: "0",
+                            positiony: "0",
+                            qtype: 31,
+                            qtypestring: "End of cluster",
+                            title: "End of cluster"
+                        }
+                        lesson.add_lessonpage(endofclusterid, endofclusterdata);
+                        lesson.pages[newobject.id].nextpageid = endofclusterid;
+                    }
+                    // console.log(lesson);
+
+                    if (newobject.qtype !== "31") {
+                        ui.helper.detach();
+                        $('.mod_lesson_pages').append(ui.helper);
+                        $("#mod_lesson_page_element_" + newobject.id).offset(lastoffset);
+                        if (pagetype === "Cluster") {
+                            formatClusters();
+                        }
+                        resetListeners();
+                        drawalllines();
+                    }
                 })
 
                 .fail(function(e) {
                     console.log(e);
                 })
+
         }
+        drawalllines();
         resetListeners();
 
     };
@@ -274,7 +810,7 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
     /**
      * May need to be expanded to return the full record for the lesson page.
      */
-    var getJumpOptions = function() {
+    var getJumpOptions = function(pageid) {
         var jumpoptions = $.Deferred();
 
         var promise = $.ajax({
@@ -283,12 +819,12 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
             dataType: "json",
             data: {
                 action: "getjumpoptions",
-                lessonid: lessonid
+                lessonid: lessonid,
+                pageid: pageid
             }
         });
 
         promise.done(function(options) {
-            // console.log(options);
             jumpoptions.resolve(options);
         });
 
@@ -301,38 +837,18 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
     var openEditor = function(event) {
         event.preventDefault();
         event.stopPropagation();
-        var elementid = $(this).parent().parent().parent().parent().attr('id');
+        // console.log($(this).closest('.mod_lesson_page_element_body').context);
+        // console.log($(this).parents('.mod_lesson_page_element').attr('id'));
+        var elementid = $(this).parents('.mod_lesson_page_element').attr('id');
         var pageids = elementid.split('_');
         var pageid = pageids[4];
         var jumpselectoptions = '';
 
         closeObjectMenus();
 
-        $.when(getJumpOptions()).done(function(joptions){
+        $.when(getJumpOptions(pageid)).done(function(joptions){
             // Create a page for editing the content.
-            var pageeditor = '<div class="mod_lesson_page_editor">';
-            pageeditor += '<h3>Edit this lesson content page </h3>';
-            pageeditor += '<div>Page title</div>';
-            pageeditor += '<div><input type="text" id="mod_lesson_title" value="' + lessonobjects[pageid].title + '" /></div>';
-            pageeditor += '<div>Page contents</div>';
-            pageeditor += '<div><textarea id="mod_lesson_contents">' + lessonobjects[pageid].contents + '</textarea></div>';
-            pageeditor += '<h4>Content 1</h4>';
-            pageeditor += '<div>Jump name</div>';
-            pageeditor += '<div><input type="text" id="jumpname" /></div>';
-            pageeditor += '<div>Jump</div>';
-            pageeditor += '<div><select id="mod_lesson_jump_select">';
-            var jumpname = "jumpto[0]";
-            $.each(joptions ,function(index, tmepspecial) {
-                if (lessonobjects[pageid][jumpname] === index.toString()) {
-                    pageeditor += '<option value="' + index + '" selected>' + tmepspecial.title + '</option>';
-                } else {
-                    pageeditor += '<option value="' + index + '">' + tmepspecial.title + '</option>';
-                }
-            });
-            pageeditor += '</select></div>';
-            pageeditor += '<div><button type="button" id="mod_lesson_editor_save_btn">Save</button>';
-            pageeditor += '<button type="button" id="mod_lesson_editor_cancel_btn">Cancel</button></div>';
-            pageeditor += '</div>';
+            var pageeditor = lesson.pages[pageid].get_edit_form(joptions);
             $('.mod_lesson_pages').append(pageeditor);
             $('#mod_lesson_editor_save_btn').click({pageid: pageid}, saveTheCheerleader);
             $('#mod_lesson_editor_cancel_btn').click(function() {
@@ -347,7 +863,7 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
     var saveTheCheerleader = function(event) {
         var record = {
             id: event.data.pageid,
-            title: $('#mod_lesson_title').val()
+            title: $('#mod_lesson_title_' + event.data.pageid).val()
         };
 
         // More ajax to save us all.
@@ -400,6 +916,15 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
         var elementid = $(this).parents('.mod_lesson_page_element').attr('id');
         var pageids = elementid.split('_');
         var pageid = pageids[4];
+        var pagedata = {};
+        if (lesson.pages[pageid].qtype == 30) {
+            // Find the matching end of cluster.
+            for (index in lesson.pages) {
+                if (parseInt(lesson.pages[index].clusterid) == pageid) {
+                    pagedata.endofclusterid = lesson.pages[index].id;
+                }
+            }
+        }
         $.ajax({
             method: "POST",
             url: ajaxlocation,
@@ -407,10 +932,16 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
             data: {
                 action: "deletelessonpage",
                 lessonid: lessonid,
-                pageid: pageid
+                pageid: pageid,
+                lessondata: pagedata
             }
         })
             .done(function() {
+                if (lesson.pages[pageid].qtype == 30) {
+                    delete lesson.pages[pagedata.endofclusterid];
+                }
+                delete lesson.pages[pageid];
+                console.log(lesson);
 
             })
 
@@ -467,65 +998,9 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
             }
         })
             .done(function(response) {
-                var i = 0;
-                var jumpname = "jumpto[" + i + "]";
-                if (response === 'linked') {
-                    // console.log(response + ' page id: ' + pageid + ' jump id: ' + jumpid);
-                    while (lessonobjects[pageid].hasOwnProperty(jumpname)) {
-                        i += 1;
-                        jumpname = "jumpto[" + i + "]";
-                    }
-                    lessonobjects[pageid][jumpname] = jumpid;
-                } else if (response === 'linked-type2') {
-                    // console.log(response + ' page id: ' + pageid + ' jump id: ' + jumpid);
-                    while (lessonobjects[pageid].hasOwnProperty(jumpname)) {
-                        var nextjump = "jumpto[" + (i + 1) + "]";
-                        var nextjumppossible = lessonobjects[pageid].hasOwnProperty(nextjump);
-                        if (lessonobjects[pageid][jumpname] === "0" ) {
-                            lessonobjects[pageid][jumpname] = jumpid;
-                            // lessonobjects[pageid][jumpname] = 1;
-                            break;
-                        }
-                        if (lessonobjects[pageid][jumpname] === "-1") {
-                            if (nextjumppossible && lessonobjects[pageid][nextjump] === "0") {
-                                // Do nothing.
-                            } else {
-                                lessonobjects[pageid][jumpname] = jumpid;
-                                // lessonobjects[pageid][jumpname] = 1;
-                                break;
-                            }
-                        }
-                        i += 1;
-                        jumpname = "jumpto[" + i + "]";
-                    }
-                } else if (response === 'unlinked-type1') {
-                    // console.log(response + ' page id: ' + pageid + ' jump id: ' + jumpid);
-                    while (lessonobjects[pageid].hasOwnProperty(jumpname)) {
-                        if (lessonobjects[pageid][jumpname] === jumpid ) {
-                            delete lessonobjects[pageid][jumpname];
-                            break;
-                        }
-                        i += 1;
-                        jumpname = "jumpto[" + i + "]";
-                    }
-                } else {
-                    // console.log(response + ' page id: ' + pageid + ' jump id: ' + jumpid);
-                    // Special stuff has to happen here.
 
-                    // // Find the jumpto that is set to -1 and change that.
-                    // while (lessonobjects[pageid].hasOwnProperty(jumpname)) {
-                    //     if (lessonobjects[pageid][jumpname] === jumpid ) {
-                    //         delete lessonobjects[pageid][jumpname];
-                    //         break;
-                    //     }
-                    //     i += 1;
-                    //     jumpname = "jumpto[" + i + "]";
-                    // }
-
-                    lessonobjects[pageid].nextpageid = "0";
-                }
+                lesson.pages[pageid].update_jumps(response);
                 drawalllines();
-                // console.log(lessonobjects);
             })
 
             .fail(function(e) {
@@ -533,6 +1008,23 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
             });
         closeObjectMenus();
 
+    };
+
+    var editTitle = function(event) {
+        var classdetail = event.currentTarget.id;
+        var pageids = classdetail.split('_');
+        var pageid = pageids[4];
+        var innertext = event.currentTarget.innerText;
+        var inputid = 'mod_lesson_inline_edit_' + pageid;
+        event.currentTarget.innerHTML = '<input type="text" id="' + inputid + '" value="' + innertext + '"/>';
+        $('#' + inputid).keydown(function(e) {
+            if (e.which == 13) {
+                alert('save this title');
+            } 
+            if (e.which == 27) {
+                event.currentTarget.innerHTML = innertext;
+            }
+        });
     };
 
     var resetListeners = function() {
@@ -546,6 +1038,10 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
         $(".mod_lesson_page_element").unbind('dblclick');
         $(".mod_lesson_page_object_menu").unbind('click');
 
+        // $(".mod_lesson_page_element").on({
+        //     dblclick: openEditor
+        // });
+
         $(".mod_lesson_page_object_menu").on({
             click: openObjectMenu
         });        
@@ -556,6 +1052,10 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
 
         $('.mod_lesson_pages').scroll(function() {
             drawalllines();
+        });
+
+        $('.mod_lesson_page_element_body').on({
+            dblclick: editTitle
         });
 
     };
@@ -592,7 +1092,7 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
     var setLessonPages = function() {
         for (elementid in lessonobjects) {
             // End of cluster elements have been removed from this form.
-            if (lessonobjects[elementid].qtype !== "31") {
+            if (lessonobjects[elementid].qtype !== "31" && lessonobjects[elementid].qtype !== "21") {
                 var newx = lessonobjects[elementid].x;
                 var newy = lessonobjects[elementid].y;
                 var lessonelement = $("#mod_lesson_page_element_" + elementid);
@@ -643,11 +1143,15 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
             $.when(setLessonData(llessonid, pageid)).done(function(data) {
                 lessonobjects = data;
                 console.log(lessonobjects);
-                // lessonid = lessonobjects[firstelementid].lessonid;
+
+                lesson = new Lesson(lessonobjects);
+                console.log(lesson);
+
                 // Add end of lesson objects.
                 // addEOL();
                 // Format clusters.
                 formatClusters();
+                formatSubClusters();
 
                 // Position all elements.
                 setLessonPages();

@@ -53,50 +53,62 @@ if ($action == 'saveposition') {
     echo json_encode($response);
     die();
 } else if ($action == 'createcontent') {
-    // Find record with zero as the previous page.
-    $lastfile = $DB->get_record('lesson_pages', array('lessonid' => $lessonid, 'nextpageid' => 0));
+    $i = 1;
+    $returnid = null;
+    if ($lessondata['qtype'] == 30) {
+        $i = 2;
+    }
+    while ($i != 0) {
 
-    $lessondata['timecreated'] = time();
-    $lessondata['prevpageid'] = $lastfile->id;
-    // Instead of direct call, we need to use the API. With that in mind, we will probably end up using web services anyway.
-    $insertid = $DB->insert_record('lesson_pages', $lessondata);
+        if ($lessondata['qtype'] == 30 && $i == 1) {
+            // Add the end of cluster data.
+            $lessondata['qtype'] = 31;
+            $lessondata['title'] = "End of cluster";
+            $lessondata['contents'] = "End of cluster";
+            $lessondata['location'] = "normal";
+        }
 
-    $lastfile->nextpageid = $insertid;
-    $DB->update_record('lesson_pages', $lastfile);
+        // Find record with zero as the previous page.
+        $lastfile = $DB->get_record('lesson_pages', array('lessonid' => $lessonid, 'nextpageid' => 0));
 
-    // Also need an entry in lesson_answers.
-    $lessonanswerrecord = new stdClass();
-    $lessonanswerrecord->lessonid = $lessonid;
-    $lessonanswerrecord->pageid = $insertid;
-    $lessonanswerrecord->jumpto = -1;
-    $lessonanswerrecord->timecreated = time();
-    $lessonanswerrecord->answer = 'Next page';
-    $DB->insert_record('lesson_answers', $lessonanswerrecord);
+        $lessondata['timecreated'] = time();
+        $lessondata['prevpageid'] = $lastfile->id;
+        // Instead of direct call, we need to use the API. With that in mind, we will probably end up using web services anyway.
+        $insertid = $DB->insert_record('lesson_pages', $lessondata);
 
-    // Don't do this. Use the lesson_page::get_type
-    if ((int)$lessondata['qtype'] < 10) {
+        $lastfile->nextpageid = $insertid;
+        $DB->update_record('lesson_pages', $lastfile);
+
         // Also need an entry in lesson_answers.
         $lessonanswerrecord = new stdClass();
         $lessonanswerrecord->lessonid = $lessonid;
         $lessonanswerrecord->pageid = $insertid;
-        $lessonanswerrecord->jumpto = 0;
+        $lessonanswerrecord->jumpto = -1;
+        if ((int)$lessondata['qtype'] == 30) {
+            $lessonanswerrecord->jumpto = -80;
+        }
         $lessonanswerrecord->timecreated = time();
-        $lessonanswerrecord->answer = 'This page';
+        $lessonanswerrecord->answer = 'Next page';
         $DB->insert_record('lesson_answers', $lessonanswerrecord);
-    }  
 
-    // Also need an entry in lesson_answers.
-    // $lessonanswerrecord = new stdClass();
-    // $lessonanswerrecord->lessonid = $lessonid;
-    // $lessonanswerrecord->pageid = $lastfile->id;
-    // $lessonanswerrecord->jumpto = $insertid;
-    // $lessonanswerrecord->timecreated = time();
-    // $lessonanswerrecord->answer = 'Next page';
-    // $DB->insert_record('lesson_answers', $lessonanswerrecord);
-
+        // Don't do this. Use the lesson_page::get_typeid
+        if ((int)$lessondata['qtype'] < 10) {
+            // Also need an entry in lesson_answers.
+            $lessonanswerrecord = new stdClass();
+            $lessonanswerrecord->lessonid = $lessonid;
+            $lessonanswerrecord->pageid = $insertid;
+            $lessonanswerrecord->jumpto = 0;
+            $lessonanswerrecord->timecreated = time();
+            $lessonanswerrecord->answer = 'This page';
+            $DB->insert_record('lesson_answers', $lessonanswerrecord);
+        }  
+        if ($lessondata['qtype'] != 31) {
+            $returnid = $insertid;
+        }
+        $i--;
+    }
     // Get the complete record and send that back.
-    $lessonpage = $DB->get_record('lesson_pages', array('id' => $insertid));
-    // $lessonpage->jumpto = array($lessonpage->nextpageid);
+    $lessonpage = $DB->get_record('lesson_pages', array('id' => $returnid));
     
     echo json_encode($lessonpage);
     die();
@@ -104,10 +116,19 @@ if ($action == 'saveposition') {
 
     $lesson = lesson::load($lessonid);
     $lessonpage = lesson_page::load($pageid, $lesson);
+    $endofcluster = null;
+    if ($lessonpage->get_typeid() == 30) {
+        // Remove the end of cluster page as well.
+        $endofcluster = lesson_page::load($lessondata['endofclusterid'], $lesson);
+        $endofcluster->delete();
+    }
     $lessonpage->delete();
 
     // Delete lesson page
     echo json_encode('deleted');
+    // $manager = lesson_page_type_manager::get($lesson);
+    // $manager->load_all_pages();
+    // $manager->check_page_order();
     die();
 } else if ($action == 'linklessonpages') {
 
@@ -123,17 +144,14 @@ if ($action == 'saveposition') {
 
     if ($lessonanswer1) {
         $DB->delete_records('lesson_answers', array('id' => $lessonanswer1->id));
-        echo json_encode('unlinked-type1');
     } else if ($lessonanswer2) {
         $lessonanswer2->jumpto = 0;
         $DB->update_record('lesson_answers', $lessonanswer2);
-        echo json_encode('unlinked-type2');
     } else {
         // Check to see if there is a jumpto 0 and update that record first.
         if ($record = $DB->get_record('lesson_answers', array('lessonid' => $lessonid, 'pageid' => $lessondata['pageid'], 'jumpto' => 0))) {
             $record->jumpto = $lessondata['jumpid'];
             $DB->update_record('lesson_answers', $record);
-            echo json_encode('linked-type2');
         } else {
             $record = new stdClass();
             $record->pageid = $lessondata['pageid'];
@@ -142,21 +160,19 @@ if ($action == 'saveposition') {
             $record->timecreated = time();
             $record->answer = 'jump to ' . $lessondata['jumpid'];
             $DB->insert_record('lesson_answers', $record);
-            echo json_encode('linked');
         }
-
     }
+
+    // Returning required information about the object might be easier.
+    $newlessondata = $DB->get_records('lesson_answers', array('pageid' => $lessondata['pageid']));
+    echo json_encode($newlessondata);
 
     die();
 } else if ($action == 'getjumpoptions') {
-    $options = $DB->get_records('lesson_pages', array('lessonid' => $lessonid), '','id,title');
-    $options[0] = new stdClass();
-    $options[0]->id = 0;
-    $options[0]->title = 'This page';
-    $options[1] = new stdClass();
-    $options[1]->id = 1;
-    $options[1]->title = 'Next page';
-    // var_dump($options);
+    $lesson = lesson::load($lessonid);
+    $page = lesson_page::load($pageid, $lesson);
+    $options = $page->get_jumptooptions($pageid, $lesson);
+
     echo json_encode($options);
     die();
 } else if ($action == 'getlessondata') {
@@ -164,36 +180,62 @@ if ($action == 'saveposition') {
     $lesson = lesson::load($lessonid);
     $pages = array();
     $clusters = array();
+    $subclusters = array();
     $clustercount = 0;
+    $subclustercount = 0;
     $currentclusterid = 0;
+    $currentsubclusterid = 0;
     while ($pageid != 0) {
         $page = $lesson->load_page($pageid);
         if ($clustercount) {
-            if ($page->qtype == 31) {
+            if ($page->qtype == LESSON_PAGE_ENDOFCLUSTER) {
                 $clustercount --;
             } else {
                 $clusters[$currentclusterid][] = $pageid;
+                // Check if we are at the end of a subcluster.
+                if ($subclustercount) {
+                    if ($page->qtype == LESSON_PAGE_ENDOFBRANCH) {
+                        $subclustercount --;
+                    } else {
+                        $subclusters[$currentsubclusterid][] = $pageid;
+                    }
+                }
+
+                if ($page->qtype == LESSON_PAGE_BRANCHTABLE) {
+                    // If a content page is in a cluster then it is considered the start of a subcluster.
+                    $subclusters[$pageid][] = array();
+                    $subclustercount ++;
+                    $currentsubclusterid = $pageid;
+                }
             }
         }
-        if ($page->qtype == 30) {
+        if ($page->qtype == LESSON_PAGE_CLUSTER) {
             $clusters[$pageid] = array(); 
             $clustercount ++;
             $currentclusterid = $pageid;
         }
         $pageproperties = $page->properties();
         $pageproperties->qtypestr = $page->get_typestring();
+        $pageproperties->pagetypename = $page->get_idstring();
 
         $pageproperties->x = $page->positionx;
         $pageproperties->y = $page->positiony;
 
         if ($clustercount) {
-            $pageproperties->location = 'cluster';
+            if ($subclustercount) {
+                $pageproperties->location = 'subcluster';
+            } else {
+                $pageproperties->location = 'cluster';
+            }
         } else {
             $pageproperties->location = 'normal';
         }
+        if ($page->qtype == LESSON_PAGE_ENDOFBRANCH) {
+            $pageproperties->subclusterid = $currentsubclusterid;
+        }
 
         // Add the cluster id to the cluster end object.
-        if ($page->qtype == 31) {
+        if ($page->qtype == LESSON_PAGE_ENDOFCLUSTER) {
             $pageproperties->clusterid = $currentclusterid;
         }
         $pages[$pageid] = $pageproperties;
@@ -202,6 +244,9 @@ if ($action == 'saveposition') {
     foreach ($clusters as $key => $value) {
         $pages[$key]->clusterchildrenids = $value;
     }
+    foreach ($subclusters as $key => $value) {
+        $pages[$key]->subclusterchildrenids = $value;
+    }
     // Reindex the array for use with YUI.
     echo json_encode($pages);
     die();
@@ -209,5 +254,11 @@ if ($action == 'saveposition') {
     // var_dump($lessondata);
     $DB->update_record('lesson_pages', $lessondata);
     echo json_encode($lessondata);
+    die();
+} else if ($action == 'movepage') {
+    $lesson = lesson::load($lessonid);
+    $lesson->resort_pages($lessondata['pageid'], $lessondata['after']);
+
+    echo json_encode('success');
     die();
 }
