@@ -33,6 +33,7 @@ $pageid = optional_param('pageid', '', PARAM_RAW);
 $pagex = optional_param('pagex', '', PARAM_RAW);
 $pagey = optional_param('pagey', '', PARAM_RAW);
 $lessondata = optional_param_array('lessondata', '', PARAM_RAW);
+$jsondata = optional_param('jsondata', '', PARAM_RAW);
 
 
 $pagecookie = new stdClass();
@@ -171,6 +172,9 @@ if ($action == 'saveposition') {
 } else if ($action == 'getjumpoptions') {
     $lesson = lesson::load($lessonid);
     $page = lesson_page::load($pageid, $lesson);
+    if ($page->qtype == LESSON_PAGE_BRANCHTABLE) {
+        $pageid = false;
+    }
     $options = $page->get_jumptooptions($pageid, $lesson);
 
     echo json_encode($options);
@@ -251,11 +255,43 @@ if ($action == 'saveposition') {
     echo json_encode($pages);
     die();
 } else if ($action == 'updatelessonpage') {
-    // var_dump($lessondata);
-    $DB->update_record('lesson_pages', $lessondata);
-    echo json_encode($lessondata);
+
+    $expandeddata = json_decode($jsondata);
+    // Look to API to do this properly.
+    $pagerecord = $expandeddata->page;
+    $pagerecord->timemodified = time();
+    $DB->update_record('lesson_pages', $pagerecord);
+
+
+    $answerrecord = new stdClass();
+    $answerrecord->lessonid = $expandeddata->answer->lessonid;
+    $answerrecord->pageid = $expandeddata->answer->pageid;
+    // Get all of the answers for this page.
+    $answers = $DB->get_records('lesson_answers', array('lessonid' => $answerrecord->lessonid, 'pageid' => $answerrecord->pageid), 'id');
+    $answers = array_values($answers);
+    $i = 0;
+
+    foreach ($expandeddata->answer->jumps as $value) {
+        $answerrecord->jumpto = $value->jumpto;
+        $answerrecord->answer = $value->answer;
+        $answerrecord->response = $value->response;
+        $answerrecord->score = $value->score;
+        $answerrecord->timemodified = time();
+        if (isset($answers[$i])) {
+            $answerrecord->id = $answers[$i]->id;
+            // Update. Not reliable. We are betting that there are no two records that go to the same page.
+            // var_dump($answerrecord);
+            $DB->update_record('lesson_answers', $answerrecord);
+        } else {
+            $DB->insert_record('lesson_answers', $answerrecord);
+        }
+        $i++;
+    }
+
+    echo json_encode('Updated!');
     die();
 } else if ($action == 'movepage') {
+
     $lesson = lesson::load($lessonid);
     $lesson->resort_pages($lessondata['pageid'], $lessondata['after']);
 

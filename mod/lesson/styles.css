@@ -197,9 +197,9 @@
     resize: vertical;
 }
 
-.mod_lesson_page_editor div:last-child {
+/*.mod_lesson_page_editor div:last-child {
     text-align: center;
-}
+}*/
 
 .mod_lesson_page_object_menu {
     position: absolute;
