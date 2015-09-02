@@ -2229,6 +2229,8 @@ abstract class lesson_page extends lesson_base {
         $event = \mod_lesson\event\page_created::create($eventparams);
         $snapshot = clone($newpage);
         $snapshot->timemodified = 0;
+        $snapshot->positionx = 0;
+        $snapshot->positiony = 0;
         $event->add_record_snapshot('lesson_pages', $snapshot);
         $event->trigger();
 

@@ -101,7 +101,6 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
             lessonscore = "score[" + i + "]";
         }
 
-        // console.log(Object.keys(this.jumps).length);
         if (Object.keys(this.jumps).length === 0) {
             // Create default jumps.
             this.jumps[0] = {
@@ -156,12 +155,98 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
                 i++;
             }
         },
+        /**
+         * This needs to be extended by the child classes.
+         */
         get_default_edit_form: function() {
             var editform = '<div class="mod_lesson_page_editor">';
             editform += '<h3>Edit this ' + this.qtypestring + ' </h3>';
             editform += pageTitle(this.id, this.title);
             editform += pageContents(this.id, this.contents);
             return editform;
+        },
+        save_edit_form: function() {
+            var jumps = {};
+            var i = 1;
+            var j = 0;
+            // Iterate over lesson page answers.
+            while ($('#mod_lesson_answer_' + i).length) {
+                var jumpanswer = $('#mod_lesson_answer_' + i).val();
+                var jumpto = $('#mod_lesson_jump_select_' + i).val();
+                var response = '';
+                var score = 0;
+                if ($('#mod_lesson_response_' + i).length) {
+                    response = $('#mod_lesson_response_' + i).val();
+                    // console.log('responjse: ' + response);
+                }
+                if ($('#mod_lesson_score_' + i).length) {
+                    score = $('#mod_lesson_score_' + i).val();
+                }
+
+                if (Object.keys(this.jumps).length <= j) {
+                    // Need to add new jumps
+                    this.jumps[j] = {
+                        id: jumpto,
+                        answer: jumpanswer,
+                        response: response,
+                        score: score
+                    };
+                } else {
+                    // Update old jumps
+                    this.jumps[j].id = jumpto;
+                    this.jumps[j].answer = jumpanswer;
+                    this.jumps[j].response = response;
+                    this.jumps[j].score = score;
+                }
+                jumps[i] = {
+                    answer: jumpanswer,
+                    jumpto: jumpto,
+                    response: response,
+                    score: score
+                };
+                i++;
+                j++;
+            }
+
+            var pagetitle = $('#mod_lesson_title_' + this.id).val();
+            var pagecontent = $('#mod_lesson_contents_' + this.id).val();
+            this.title = pagetitle;
+            this.contents = pagecontent;
+
+            var record = {
+                page: {
+                    id: this.id,
+                    title: pagetitle,
+                    contents: pagecontent
+                },
+                answer: {
+                    lessonid: lesson.id,
+                    pageid: this.id,
+                    jumps: jumps
+
+                }
+            };
+
+            var json = JSON.stringify(record);
+            var pageid = this.id;
+
+            // More ajax to save us all.
+            $.ajax({
+                    method: "POST",
+                    url: ajaxlocation,
+                    dataType: "json",
+                    data: {
+                        action: "updatelessonpage",
+                        lessonid: lessonid,
+                        jsondata: json
+                    }
+            }).done(function(newobject) {
+                $('#mod_lesson_page_element_' + pageid + '_body').html(pagetitle);
+                $('.mod_lesson_page_editor').remove();
+                $('#mod_lesson_editor_addjump_btn').unbind('click');
+                // Need to Refresh the jumps.
+                drawalllines();
+            });
         }
     };
 
@@ -185,6 +270,9 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
         },
         get_edit_form: function(jumpoptions) {
             return branchtable_lessonPage.prototype.get_edit_form.call(this, jumpoptions);
+        },
+        save_edit_form: function() {
+            lessonPage.prototype.save_edit_form.call(this);
         }
     }
 
@@ -218,7 +306,37 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
             lessonPage.prototype.update_jumps.call(this, jumpdata);
         },
         get_edit_form: function(jumpoptions) {
-            return branchtable_lessonPage.prototype.get_edit_form.call(this, jumpoptions);
+            // return branchtable_lessonPage.prototype.get_edit_form.call(this, jumpoptions);
+            var editform = lessonPage.prototype.get_default_edit_form.call(this);
+            var i = 1;
+            editform += '<div id="mod_lesson_editor_answers">';
+            for (jumpid in this.jumps) {
+                editform += '<div class="mod_lesson_editor_answer">';
+                if (i == 1) {
+                    editform += '<h4>Correct response</h4>';
+                } else if (i == 2) {
+                    editform += '<h4>Wrong response</h4>';
+                } else {
+                    editform += '<h4>Extra response that should be removed</h4>';
+                }
+                editform += '<div>Answer</div>';
+                editform += '<div><input type="text" id="mod_lesson_answer_' + i + '" value="' + this.jumps[jumpid].answer + '"/></div>';
+                editform += '<div>Response</div>';
+                editform += '<div><textarea id="mod_lesson_response_' + i + '">' + this.jumps[jumpid].response + '</textarea></div>';
+                editform += pageJump(this.jumps[jumpid].id, this.id, jumpoptions, i);
+                editform += '<div>Score</div>';
+                editform += '<div><input type="text" id="mod_lesson_score_' + i + '" value="' + this.jumps[jumpid].score + '"/></div>';
+                editform += '</div>';
+                i++;
+            }
+            editform += '</div>';
+            editform += '<div><button type="button" id="mod_lesson_editor_save_btn">Save</button>';
+            editform += '<button type="button" id="mod_lesson_editor_cancel_btn">Cancel</button>';
+            editform += '</div></div>';
+            return editform;
+        },
+        save_edit_form: function() {
+            lessonPage.prototype.save_edit_form.call(this);
         }
     }
 
@@ -238,8 +356,55 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
             lessonPage.prototype.update_jumps.call(this, jumpdata);
         },
         get_edit_form: function(jumpoptions) {
-            return branchtable_lessonPage.prototype.get_edit_form.call(this, jumpoptions);
-        }
+            // return branchtable_lessonPage.prototype.get_edit_form.call(this, jumpoptions);
+            var editform = lessonPage.prototype.get_default_edit_form.call(this);
+            var i = 1;
+            editform += '<div id="mod_lesson_editor_answers">';
+            for (jumpid in this.jumps) {
+                editform += '<div class="mod_lesson_editor_answer">';
+                editform += '<h4>Answer ' + i + '</h4>';
+                editform += '<div>Answer</div>';
+                editform += '<div><input type="text" id="mod_lesson_answer_' + i + '" value="' + this.jumps[jumpid].answer + '"/></div>';
+                editform += '<div>Response</div>';
+                editform += '<div><textarea id="mod_lesson_response_' + i + '">' + this.jumps[jumpid].response + '</textarea></div>';
+                editform += pageJump(this.jumps[jumpid].id, this.id, jumpoptions, i);
+                editform += '<div>Score</div>';
+                editform += '<div><input type="text" id="mod_lesson_score_' + i + '" value="' + this.jumps[jumpid].score + '"/></div>';
+                editform += '</div>';
+                i++;
+            }
+            editform += '</div>';
+            editform += '<div><button type="button" id="mod_lesson_editor_save_btn">Save</button>';
+            editform += '<button type="button" id="mod_lesson_editor_cancel_btn">Cancel</button>';
+            editform += '<button type="button" id="mod_lesson_editor_addjump_btn">Add another jump</button>';
+            editform += '</div></div>';
+            return editform;
+        },
+        save_edit_form: function() {
+            lessonPage.prototype.save_edit_form.call(this);
+        },
+        add_additional_jump: function(event) {
+            // console.log(event);
+            var jumpoptions = event.data.jumpoptions;
+            // Get the last jump count.
+            var i = 1;
+            while ($('#mod_lesson_answer_' + i).length) {
+                i++;
+            }
+            // Check should be done for maximum number of jumps.
+            var editform = '<div class="mod_lesson_editor_answer">';
+            editform += '<h4>Answer ' + i + '</h4>';
+            editform += '<div>Answer</div>';
+            editform += '<div><input type="text" id="mod_lesson_answer_' + i + '" value=""/></div>';
+            editform += '<div>Response</div>';
+            editform += '<div><textarea id="mod_lesson_response_' + i + '"></textarea></div>';
+            editform += pageJump(0, this.id, jumpoptions, i);
+            editform += '<div>Score</div>';
+            editform += '<div><input type="text" id="mod_lesson_score_' + i + '" value=""/></div>';
+            editform += '</div>';
+            $('#mod_lesson_editor_answers').append(editform);
+            // return editform;
+        },
     }
 
     // Short answer
@@ -259,6 +424,9 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
         },
         get_edit_form: function(jumpoptions) {
             return branchtable_lessonPage.prototype.get_edit_form.call(this, jumpoptions);
+        },
+        save_edit_form: function() {
+            lessonPage.prototype.save_edit_form.call(this);
         }
     }
 
@@ -294,17 +462,43 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
         get_edit_form: function(jumpoptions) {
             var editform = lessonPage.prototype.get_default_edit_form.call(this);
             var i = 1;
+            editform += '<div id="mod_lesson_editor_answers">';
             for (jumpid in this.jumps) {
+                editform += '<div class="mod_lesson_editor_answer">';
                 editform += '<h4>Content ' + i + '</h4>';
                 editform += '<div>Jump name</div>';
-                editform += '<div><input type="text" id="jumpname" /></div>';
+                editform += '<div><input type="text" id="mod_lesson_answer_' + i + '" value="' + this.jumps[jumpid].answer + '"/></div>';
                 editform += pageJump(this.jumps[jumpid].id, this.id, jumpoptions, i);
+                editform += '</div>';
                 i++;
             }
-            editform += '<div><button type="button" id="mod_lesson_editor_save_btn">Save</button>';
-            editform += '<button type="button" id="mod_lesson_editor_cancel_btn">Cancel</button></div>';
             editform += '</div>';
+            editform += '<div><button type="button" id="mod_lesson_editor_save_btn">Save</button>';
+            editform += '<button type="button" id="mod_lesson_editor_cancel_btn">Cancel</button>';
+            editform += '<button type="button" id="mod_lesson_editor_addjump_btn">Add another jump</button>';
+            editform += '</div></div>';
             return editform;
+        },
+        add_additional_jump: function(event) {
+            // console.log(event);
+            var jumpoptions = event.data.jumpoptions;
+            // Get the last jump count.
+            var i = 1;
+            while ($('#mod_lesson_answer_' + i).length) {
+                i++;
+            }
+            // Check should be done for maximum number of jumps.
+            var editform = '<div class="mod_lesson_editor_answer">';
+            editform += '<h4>Content ' + i + '</h4>';
+            editform += '<div>Jump name</div>';
+            editform += '<div><input type="text" id="mod_lesson_answer_' + i + '" value=""/></div>';
+            editform += pageJump(0, this.id, jumpoptions, i);
+            editform += '</div>';
+            $('#mod_lesson_editor_answers').append(editform);
+            // return editform;
+        },
+        save_edit_form: function() {
+            lessonPage.prototype.save_edit_form.call(this);
         }
     }
 
@@ -325,6 +519,9 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
         },
         get_edit_form: function(jumpoptions) {
             return branchtable_lessonPage.prototype.get_edit_form.call(this, jumpoptions);
+        },
+        save_edit_form: function() {
+            lessonPage.prototype.save_edit_form.call(this);
         }
     }
 
@@ -345,6 +542,9 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
         },
         get_edit_form: function(jumpoptions) {
             return branchtable_lessonPage.prototype.get_edit_form.call(this, jumpoptions);
+        },
+        save_edit_form: function() {
+            lessonPage.prototype.save_edit_form.call(this);
         }
     }
 
@@ -364,7 +564,13 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
             lessonPage.prototype.update_jumps.call(this, jumpdata);
         },
         get_edit_form: function(jumpoptions) {
-            return branchtable_lessonPage.prototype.get_edit_form.call(this, jumpoptions);
+            return numerical_lessonPage.prototype.get_edit_form.call(this, jumpoptions);
+        },
+        save_edit_form: function() {
+            lessonPage.prototype.save_edit_form.call(this);
+        },
+        add_additional_jump: function(jumpoptions) {
+            numerical_lessonPage.prototype.add_additional_jump.call(this, jumpoptions);
         }
     }
 
@@ -389,7 +595,7 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
     var pageJump = function(jumpid, pageid, jumpoptions, number) {
         var html;
         html = '<div>Jump</div>';
-        html += '<select id="mod_lesson_jump_select_' + pageid + '_' + number + '">';
+        html += '<select id="mod_lesson_jump_select_' + number + '">';
         // $.each(jumpoptions ,function(index, jumpoption) {
         for (index in jumpoptions) {
             if (jumpid == index) {
@@ -407,15 +613,12 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
 
     var drawline = function(pagefrom, pageto) {
         if (pageto === 0) {
-            // console.log('page to equals zero');
             return;
         }
         if (!document.getElementById('mod_lesson_page_element_' + pagefrom)) {
-            // console.log('no page from');
             return;
         }
         if (!document.getElementById('mod_lesson_page_element_' + pageto)) {
-            // console.log('no page to ' + pageto);
             return;
         }
 
@@ -438,7 +641,6 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
     };
 
     var drawalllines = function() {
-        // console.log('drawinglines');
         $('.lessonline').remove();
         for (lpid in lesson.pages) {
             var currentobject = lesson.pages[lpid];
@@ -460,6 +662,11 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
         }
     };
 
+    // var add_jump_to_editor = function(event) {
+    //     console.log('starting the jump thing!');
+    //     var jumpoptions = event.data.jumpoptions;
+    //     lesson.pages[event.data.pageid].add_additional_jump(jumpoptions);
+    // }
 
     var attachElement = function(event, ui) {
         var elementid = ui.helper.attr('id');
@@ -525,7 +732,6 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
             formatClusters();
         }
         
-        console.log(lesson);
     };
 
     var detachElement = function(event, ui) {
@@ -556,7 +762,6 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
                 if  (childcount > 3) {
                     newwidth = childwidth * 3;
                     additionalheight = (Math.ceil(childcount / 3) * childheight) + 10;
-                    // console.log('additional height: ' + additionalheight);
                     newheight = 100 + additionalheight;
                 } else {
                     var newchildcount = childcount;
@@ -612,7 +817,6 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
             if (currentpage.qtype === 20 && currentpage.in_subcluster()) {
                 // We have a subcluster. Now count how many children it has.
                 var childcount = currentpage.childrenids.length;
-                // console.log('child count ' + childcount);
                 if (childcount === 0) {
                     childcount = 1;
                 }
@@ -625,10 +829,10 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
                 
                 if  (childcount > 3) {
                     newwidth = childwidth * 3;
-                    newheight = subclusterheight + (Math.ceil(childcount / 3) * childheight);
+                    newheight = 100 + (Math.ceil(childcount / 3) * childheight) + 10;
                 } else {
                     newwidth = childwidth * childcount;
-                    newheight = subclusterheight + (childheight * 1);
+                    newheight = 100 + (childheight * 1);
                 }
 
                 // Adjust the subcluster width.
@@ -672,7 +876,6 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
         $(".mod_lesson_menu_item").draggable({
              stop: createLessonObject
         });
-        // console.log('put another content object in the menu');
     };
 
     var createLessonObject = function(event, ui) {
@@ -722,7 +925,6 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
         
         if (!ui.helper.hasClass('mod_lesson_page_element')) {
             var lastoffset = ui.helper.offset();
-            // console.log(lastoffset);
             ui.helper.addClass('mod_lesson_page_element');
             ui.helper.removeClass('mod_lesson_menu_item');
 
@@ -783,7 +985,6 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
                         lesson.add_lessonpage(endofclusterid, endofclusterdata);
                         lesson.pages[newobject.id].nextpageid = endofclusterid;
                     }
-                    // console.log(lesson);
 
                     if (newobject.qtype !== "31") {
                         ui.helper.detach();
@@ -837,8 +1038,6 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
     var openEditor = function(event) {
         event.preventDefault();
         event.stopPropagation();
-        // console.log($(this).closest('.mod_lesson_page_element_body').context);
-        // console.log($(this).parents('.mod_lesson_page_element').attr('id'));
         var elementid = $(this).parents('.mod_lesson_page_element').attr('id');
         var pageids = elementid.split('_');
         var pageid = pageids[4];
@@ -850,6 +1049,8 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
             // Create a page for editing the content.
             var pageeditor = lesson.pages[pageid].get_edit_form(joptions);
             $('.mod_lesson_pages').append(pageeditor);
+            $('#mod_lesson_editor_addjump_btn').click({jumpoptions: joptions}, lesson.pages[pageid].add_additional_jump);
+            // $('#mod_lesson_editor_save_btn').click(lesson.pages[pageid].save_edit_form());
             $('#mod_lesson_editor_save_btn').click({pageid: pageid}, saveTheCheerleader);
             $('#mod_lesson_editor_cancel_btn').click(function() {
                 $('.mod_lesson_page_editor').remove();
@@ -861,25 +1062,9 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
      * Save edited lesson page content.
      */
     var saveTheCheerleader = function(event) {
-        var record = {
-            id: event.data.pageid,
-            title: $('#mod_lesson_title_' + event.data.pageid).val()
-        };
+        var pageid = event.data.pageid;
+        lesson.pages[pageid].save_edit_form();
 
-        // More ajax to save us all.
-        $.ajax({
-                method: "POST",
-                url: ajaxlocation,
-                dataType: "json",
-                data: {
-                    action: "updatelessonpage",
-                    lessonid: lessonid,
-                    lessondata: record
-                }
-        }).done(function(newobject) {
-            $('#mod_lesson_page_element_' + record.id + '_body').html(record.title);
-            $('.mod_lesson_page_editor').remove();
-        });
     };
 
     var openObjectMenu = function(event) {
@@ -941,7 +1126,6 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
                     delete lesson.pages[pagedata.endofclusterid];
                 }
                 delete lesson.pages[pageid];
-                console.log(lesson);
 
             })
 
@@ -1061,7 +1245,6 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
     };
 
     var saveLocation = function(event, ui) {
-        // console.log(ui.helper.position());
         var lastposition = ui.helper.position();
         var elementid = this.id;
         var pageids = elementid.split('_');
@@ -1085,7 +1268,6 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
         })
             .done(function() {
                 // Not doing anything at the moment.
-                // console.log('success');
             });
     };
 
@@ -1107,8 +1289,6 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
     };
 
     var setLessonData = function(lessonid, pageid) {
-        // console.log(lessonid);
-        // console.log(pageid);
         var tmepthing = $.Deferred();
 
         var lessondata = {
@@ -1165,7 +1345,6 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
                 $(".mod_lesson_menu").droppable({
                     out: replacecontent,
                     drop: function(event, ui) {
-                        // console.log(ui.draggable);
                         ui.draggable.remove();
                     }
                 });
