@@ -7,3 +7,5 @@ to ensure that only the required keys are pressed. However, if you are using a c
 keyConfig object you must validate the shortcut yourself. This is particularly important
 for non-English keyboard users. For more information read the documentation of
 EditorPluginButtons::_addKeyboardListener() and MDL-47133.
+* A flag has been added (enable_filemanagement) to remove the filemanagement button. This
+  is currently stopping the unexpected deletion of files when using the collaborative wiki.
