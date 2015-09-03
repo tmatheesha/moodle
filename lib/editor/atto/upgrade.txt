@@ -1,5 +1,10 @@
 This files describes API changes in the editor_atto code.
 
+=== 2.8.7 ===
+
+* A flag has been added (enable_filemanagement) to remove the filemanagement button. This
+  is currently stopping the unexpected deletion of files when using the collaborative wiki.
+
 === 2.8.2 ===
 
 * When adding a shortcut to the button of a plugin, atto will add a layer of validation
