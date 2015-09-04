@@ -119,8 +119,10 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
             }
         }
 
-        if (lessonobjectdata.hasOwnProperty("subclusterchildrenids")) {
+        if ("subclusterchildrenids" in lessonobjectdata) {
             this.childrenids = lessonobjectdata["subclusterchildrenids"];
+        } else {
+            this.childrenids = [];
         }
 
     };
@@ -662,11 +664,6 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
         }
     };
 
-    // var add_jump_to_editor = function(event) {
-    //     console.log('starting the jump thing!');
-    //     var jumpoptions = event.data.jumpoptions;
-    //     lesson.pages[event.data.pageid].add_additional_jump(jumpoptions);
-    // }
 
     var attachElement = function(event, ui) {
         var elementid = ui.helper.attr('id');
@@ -684,6 +681,55 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
 
         lesson.pages[pageid].location = 'cluster';
 
+        var extrasauce = null;
+
+        // Checks for content page (difficulty starts here)
+        if (lesson.pages[pageid].qtype == 20) {
+            lesson.pages[pageid].location = 'subcluster';
+
+            // Check first to see if there is already an end of branch record before creating another one.
+            // Create the end of branch page.
+            record = {
+                qtype: "21",
+                lessonid: lesson.id,
+                title: "Default title",
+                contents: "",
+                positionx: 0,
+                positiony: 0,
+                prevpageid: pageid,
+                nextpageid: 0
+            };
+
+            // ajax call
+            var endofbranch = $.Deferred();
+
+
+            var promise = $.ajax({
+                method: "POST",
+                url: ajaxlocation,
+                dataType: "json",
+                data: {
+                    action: "createcontent",
+                    lessonid: lessonid,
+                    lessondata: record
+                }
+            });
+
+            promise.done(function(lessonpage) {
+                endofbranch.resolve(lessonpage);
+            });
+
+            promise.fail(function(e) {
+                console.log(e);
+            });
+            // return endofbranch.promise();
+            // console.log(endofbranch.promise());
+            extrasauce = endofbranch.promise();
+            // return;
+
+            // return a promise
+        }
+
         // Find location in cluster for item.
         // See if there are any childelements.
         var afterid = null;
@@ -693,44 +739,69 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
             afterid = lesson.pages[parentid].id;
         }
 
-        // Check that this item isn't already in the array.
-        if ($.inArray(pageid, lesson.pages[parentid].childrenids) == -1) {
-            lesson.pages[parentid].childrenids.push(pageid);
-        }
+        // Put a when in here.
+        $.when(pageid, extrasauce).done(function(var1, var2) {
+            // console.log(var1);
+            // console.log(var2);
 
-        var previousid = lesson.pages[pageid].previouspageid;
-        var nextid = lesson.pages[pageid].nextpageid;
-        if (previousid !== "0") {
-            lesson.pages[previousid].nextpageid = nextid;
-        }
-        if (nextid !== "0") {
-            lesson.pages[nextid].previouspageid = previousid;
-        }
+            var pageids = [var1];
+            if (var2 !== null) {
 
-        lessondata = {
-            pageid: pageid,
-            after: afterid
-        }
+                // Create whole object for internal use.
+                lesson.add_lessonpage(var2.id, var2);
+                lesson.pages[var2.prevpageid].nextpageid = var2.id;
+                lesson.pages[var2.id].qtypestr = "End of branch";
+                lesson.pages[var2.id].location = "subcluster";
+                lesson.pages[var2.id].subclusterid = var1;
+                lesson.pages[var2.id].nextpageid = parentid;
 
-        // Try some ajax here.
-        $.ajax({
-            method: "POST",
-            url: ajaxlocation,
-            dataType: "json",
-            data: {
-                action: "movepage",
-                lessonid: lesson.id,
-                lessondata: lessondata
+                pageids.push(var2.id);
             }
-        })
-            .done(function(newobject) {
+            // console.log(pageids);
 
+            for (index in pageids) {
+                // Check that this item isn't already in the array.
+                if ($.inArray(pageids[index], lesson.pages[parentid].childrenids) == -1) {
+                    lesson.pages[parentid].childrenids.push(pageids[index]);
+                }
+
+                var previousid = lesson.pages[pageids[index]].previouspageid;
+                var nextid = lesson.pages[pageids[index]].nextpageid;
+                if (previousid !== "0") {
+                    lesson.pages[previousid].nextpageid = nextid;
+                }
+                if (nextid !== "0") {
+                    lesson.pages[nextid].previouspageid = previousid;
+                }
+            }
+
+            movepageids = pageids.join();
+
+            lessondata = {
+                pageid: movepageids,
+                after: afterid
+            }
+
+            // Try some ajax here.
+            $.ajax({
+                method: "POST",
+                url: ajaxlocation,
+                dataType: "json",
+                data: {
+                    action: "movepage",
+                    lessonid: lesson.id,
+                    lessondata: lessondata
+                }
             })
-        if (!ischild) {
-            ui.helper.detach();
-            $(this).append(ui.helper);
-            formatClusters();
-        }
+                .done(function(newobject) {
+                    formatClusters();
+                    formatSubClusters();
+
+                })
+        });
+        // console.log(lesson);
+        ui.helper.detach();
+        $(this).append(ui.helper);
         
     };
 
@@ -788,7 +859,6 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
                     var startx = originalx;
                     var starty = $("#mod_lesson_page_element_" + lessonpageid).offset().top + 80;
                     for (var key in currentobject.childrenids) {
-                        
                         if ((key % 3) === 0 && key !== "0") {
                             starty = starty + 110;
                             $("#mod_lesson_page_element_" + currentobject.childrenids[key]).offset({
@@ -859,8 +929,9 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
 
                 }
                 // Change the title of the sub cluster from "Content" to "Sub cluster".
-                $("#mod_lesson_page_element_" + lessonpageid + "_header").html("Sub cluster");
-
+                var subclusterheader = "Sub cluster";
+                subclusterheader += '<img src="../../theme/image.php?theme=clean&component=core&image=t%2Fedit" class="mod_lesson_page_object_menu"></div></header>';
+                $("#mod_lesson_page_element_" + lessonpageid + "_header").html(subclusterheader);
                 $("#mod_lesson_page_element_" + lessonpageid).droppable({
                     drop: attachElement,
                     out: detachElement
@@ -956,7 +1027,7 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
                 .done(function(newobject) {
                     if (newobject.qtype !== "31") {
                         ui.helper.attr('id', 'mod_lesson_page_element_' + newobject.id);
-                        var htmlelement = '<header id="mod_lesson_page_element_' + newobject.id + '">' + pagetype;
+                        var htmlelement = '<header id="mod_lesson_page_element_' + newobject.id + '_header">' + pagetype;
                         htmlelement += '<img src="../../theme/image.php?theme=clean&component=core&image=t%2Fedit" class="mod_lesson_page_object_menu"></div></header>';
                         htmlelement += '<div class="mod_lesson_page_element_body" id="mod_lesson_page_element_' + newobject.id + '_body">' + newobject.title + '</div>';
                         $("#mod_lesson_page_element_" + newobject.id).html(htmlelement);
@@ -1110,6 +1181,15 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
                 }
             }
         }
+        if (lesson.pages[pageid].qtype == 20) {
+            // Find the matching end of subcluster if it exists.
+            for (index in lesson.pages) {
+                if (parseInt(lesson.pages[index].subclusterid) == pageid) {
+                    pagedata.endofclusterid = lesson.pages[index].id;
+                }
+            }
+        }
+
         $.ajax({
             method: "POST",
             url: ajaxlocation,
@@ -1122,7 +1202,8 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
             }
         })
             .done(function() {
-                if (lesson.pages[pageid].qtype == 30) {
+                // if (lesson.pages[pageid].qtype == 30) {
+                if (pagedata.endofclusterid.length) {
                     delete lesson.pages[pagedata.endofclusterid];
                 }
                 delete lesson.pages[pageid];

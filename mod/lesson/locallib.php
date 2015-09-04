@@ -1923,7 +1923,6 @@ class lesson extends lesson_base {
 
         $pagetomove = clone($pages[$pageid]);
         unset($pages[$pageid]);
-
         $pageids = array();
         if ($after === 0) {
             $pageids['p0'] = $pageid;
@@ -1975,7 +1974,8 @@ class lesson extends lesson_base {
             $event = \mod_lesson\event\page_moved::create($eventparams);
             $event->trigger();
         }
-
+        // If we leave this data cached then the next move will be inaccurate.
+        $this->loadedallpages = false;
     }
 }
 
