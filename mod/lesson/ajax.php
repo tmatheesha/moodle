@@ -123,13 +123,17 @@ if ($action == 'saveposition') {
         $endofcluster = lesson_page::load($lessondata['endofclusterid'], $lesson);
         $endofcluster->delete();
     }
+    if ($lessonpage->get_typeid() == 20 && isset($lessondata['endofclusterid'])) {
+        $endofcluster = lesson_page::load($lessondata['endofclusterid'], $lesson);
+        $endofcluster->delete();
+    }
+    // Load again?
+    $lessonpage = lesson_page::load($pageid, $lesson);
     $lessonpage->delete();
 
     // Delete lesson page
     echo json_encode('deleted');
-    // $manager = lesson_page_type_manager::get($lesson);
-    // $manager->load_all_pages();
-    // $manager->check_page_order();
+
     die();
 } else if ($action == 'linklessonpages') {
 
@@ -292,8 +296,12 @@ if ($action == 'saveposition') {
     die();
 } else if ($action == 'movepage') {
 
+    $pageids = explode(',', $lessondata['pageid']);
+    $pageids = array_reverse($pageids);
     $lesson = lesson::load($lessonid);
-    $lesson->resort_pages($lessondata['pageid'], $lessondata['after']);
+    foreach ($pageids as $pageid) {
+        $lesson->resort_pages($pageid, $lessondata['after']);
+    }
 
     echo json_encode('success');
     die();
