@@ -197,7 +197,7 @@ if ($fullusernames == 'language' || empty($fullusernames)) {
     $usernameheader = explode(' ', get_string('fullnamedisplay', null, $a));
 } else {
     // If everything is as expected then put them in the order specified by the alternative full name format setting.
-    $usernameheader = order_in_string($allusernames, $fullusernames);
+    $usernameheader = order_in_string($allusernames, $fullusernames, true);
 }
 
 // Loop through each name and return the language string.
