@@ -1187,7 +1187,7 @@ class flexible_table {
                 if ($nameformat == 'language') {
                     $nameformat = get_string('fullnamedisplay');
                 }
-                $requirednames = order_in_string(get_all_user_name_fields(), $nameformat);
+                $requirednames = order_in_string(get_all_user_name_fields(), $nameformat, true);
 
                 if (!empty($requirednames)) {
                     if ($this->is_sortable($column)) {

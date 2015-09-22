@@ -1,6 +1,12 @@
 This files describes API changes in core libraries and APIs,
 information provided here is intended especially for developers.
 
+
+=== 2.8.9 ===
+
+* order_in_string() now has an extra parameter which should be set to true if you are using this function to find the sort order of
+  user names. This will ensure that the values are returned properly when values such as 'lastnamefirstname' are used.
+
 === 2.8.8 ===
 
 * The actionmenu hideMenu() function now expects an EventFacade object to be passed to it,

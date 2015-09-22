@@ -3801,12 +3801,17 @@ function username_load_fields_from_object($addtoobject, $secondobject, $prefix =
  *
  * @param array $values Values to be found in the string format
  * @param string $stringformat The string which may contain values being searched for.
+ * @param bool $usenames This should always be true if we are getting the order of names.
  * @return array An array of values in order according to placement in the string format.
  */
-function order_in_string($values, $stringformat) {
+function order_in_string($values, $stringformat, $usenames = false) {
     $valuearray = array();
     foreach ($values as $value) {
         $pattern = "/$value\b/";
+        if ($usenames) {
+            // The pattern needs to be able to match a value that has no spaces such as lastnamefirstname.
+            $pattern = "/$value(?!phonetic)/";
+        }
         // Using preg_match as strpos() may match values that are similar e.g. firstname and firstnamephonetic.
         if (preg_match($pattern, $stringformat)) {
             $replacement = "thing";
