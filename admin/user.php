@@ -205,7 +205,7 @@
     }
 
     // Order in string will ensure that the name columns are in the correct order.
-    $usernames = order_in_string($allusernamefields, $fullnamesetting);
+    $usernames = order_in_string($allusernamefields, $fullnamesetting, true);
     $fullnamedisplay = array();
     foreach ($usernames as $name) {
         // Use the link from $$column for sorting on the user's name.

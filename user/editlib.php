@@ -472,7 +472,7 @@ function useredit_get_required_name_fields() {
     }
 
     // Order all of the name fields in the postion they are written in the fullnamedisplay setting.
-    $necessarynames = order_in_string($necessarynames, $nameformat);
+    $necessarynames = order_in_string($necessarynames, $nameformat, true);
     return $necessarynames;
 }
 
@@ -495,7 +495,7 @@ function useredit_get_enabled_name_fields() {
     }
 
     // Order all of the name fields in the postion they are written in the fullnamedisplay setting.
-    $enabledadditionalusernames = order_in_string($enabledadditionalusernames, $CFG->fullnamedisplay);
+    $enabledadditionalusernames = order_in_string($enabledadditionalusernames, $CFG->fullnamedisplay, true);
     return $enabledadditionalusernames;
 }
 
