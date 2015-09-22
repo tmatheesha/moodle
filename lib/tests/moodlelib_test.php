@@ -2579,6 +2579,30 @@ class core_moodlelib_testcase extends advanced_testcase {
         $formatstring = 'start seconds away second firstquater first firsthalf';
         $expectedarray = array('19' => 'second', '38' => 'first', '44' => 'firsthalf');
         $this->assertEquals($expectedarray, order_in_string($valuearray, $formatstring));
+
+        // Now try with getting the sort order of names (normal).
+        $valuearray = array('firstname', 'lastname', 'firstnamephonetic', 'lastnamephonetic');
+        $formatstring = 'lastname firstname';
+        $expectedarray = array('0' => 'lastname', '9' => 'firstname');
+        $this->assertEquals($expectedarray, order_in_string($valuearray, $formatstring, true));
+
+        // Now try with getting the sort order of names (no space).
+        $valuearray = array('firstname', 'lastname', 'firstnamephonetic', 'lastnamephonetic');
+        $formatstring = 'lastnamefirstname';
+        $expectedarray = array('0' => 'lastname', '8' => 'firstname');
+        $this->assertEquals($expectedarray, order_in_string($valuearray, $formatstring, true));
+
+        // Try with firstnamephonetic in the format string (normal).
+        $valuearray = array('firstname', 'lastname', 'firstnamephonetic', 'lastnamephonetic');
+        $formatstring = 'firstnamephonetic firstname';
+        $expectedarray = array('0' => 'firstnamephonetic', '18' => 'firstname');
+        $this->assertEquals($expectedarray, order_in_string($valuearray, $formatstring, true));
+
+        // Try with firstnamephonetic in the format string (no space).
+        $valuearray = array('firstname', 'lastname', 'firstnamephonetic', 'lastnamephonetic');
+        $formatstring = 'firstnamephoneticfirstname';
+        $expectedarray = array('0' => 'firstnamephonetic', '17' => 'firstname');
+        $this->assertEquals($expectedarray, order_in_string($valuearray, $formatstring, true));
     }
 
     public function test_complete_user_login() {
