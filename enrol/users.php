@@ -230,6 +230,7 @@ $filterform->set_data(array('search' => $search, 'ifilter' => $filter, 'role' =>
 $table->set_fields($fields, $renderer);
 
 $canassign = has_capability('moodle/role:assign', $manager->get_context());
+$manager->set_namekey($usernameheader[0]);
 $users = $manager->get_users_for_display($manager, $table->sort, $table->sortdirection, $table->page, $table->perpage);
 foreach ($users as $userid=>&$user) {
     $user['picture'] = $OUTPUT->render($user['picture']);
