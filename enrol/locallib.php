@@ -105,6 +105,12 @@ class course_enrolment_manager {
      */
     protected $moodlepage = null;
 
+    /**
+     * The array key when showing the users full name.
+     * @var string
+     */
+    protected $namekey = 'firstname';
+
     /**#@+
      * These variables are used to cache the information this class uses
      * please never use these directly instead use their get_ counterparts.
@@ -353,6 +359,15 @@ class course_enrolment_manager {
             $this->otherusers[$key] = $DB->get_records_sql($sql, $params, $page*$perpage, $perpage);
         }
         return $this->otherusers[$key];
+    }
+
+    /**
+     * Set the key for the name section in the user display.
+     *
+     * @param string $key The array key to use when displaying the user's name.
+     */
+    public function set_namekey($key) {
+        $this->namekey = $key;
     }
 
     /**
@@ -1101,10 +1116,11 @@ class course_enrolment_manager {
             'userid'           => $user->id,
             'courseid'         => $this->get_course()->id,
             'picture'          => new user_picture($user),
-            'firstname'        => fullname($user, has_capability('moodle/site:viewfullnames', $this->get_context())),
+            $this->namekey     => fullname($user, has_capability('moodle/site:viewfullnames', $this->get_context())),
             'lastaccess'       => get_string('never'),
             'lastcourseaccess' => get_string('never'),
         );
+
         foreach ($extrafields as $field) {
             $details[$field] = $user->{$field};
         }
