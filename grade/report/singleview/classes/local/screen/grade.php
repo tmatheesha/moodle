@@ -337,6 +337,8 @@ class grade extends tablelike implements selectable_items, filterable_items {
                     preg_match('/_(\d+)_(\d+)/', $field, $oldoverride);
                     $oldoverride = 'oldoverride' . $oldoverride[0];
                     if (empty($data->$oldoverride)) {
+                        $data->$field = (!isset($grade->finalgrade)) ? $null : $grade->finalgrade;
+                    } else {
                         $data->$field = (!isset($grade->rawgrade)) ? $null : $grade->rawgrade;
                     }
                 }

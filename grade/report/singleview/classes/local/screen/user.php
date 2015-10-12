@@ -340,7 +340,7 @@ class user extends tablelike implements selectable_items {
                     continue;
                 }
                 $grade = grade_grade::fetch(array(
-                    'itemid' => $this->itemid,
+                    'itemid' => $gradeitemid,
                     'userid' => $userid
                 ));
 
@@ -350,9 +350,21 @@ class user extends tablelike implements selectable_items {
                 preg_match('/_(\d+)_(\d+)/', $field, $oldoverride);
                 $oldoverride = 'oldoverride' . $oldoverride[0];
                 if (empty($data->$oldoverride)) {
-                    $data->$field = (!isset($grade->rawgrade)) ? $null : $grade->rawgrade;
+                    if ($gradeitem->itemtype === 'mod') {
+                        // Mod Grade items should use the rawgrade.
+                        $data->$field = (!isset($grade->rawgrade)) ? $null : $grade->rawgrade;
+                    } else if ($gradeitem->itemtype === 'manual' && !$gradeitem->is_calculated()) {
+                        // Manual items use the final grade if they are not a calculated item.
+                        $data->$field = (!isset($grade->finalgrade)) ? $null : $grade->finalgrade;
+                    } else {
+                        // Unset this calculated grade item from $data.
+                        $fieldnames = array('oldfinalgrade_', 'oldfeedback_', 'oldoverride_', 'oldexclude_', 'finalgrade_');
+                        foreach ($fieldnames as $fieldname) {
+                            $fieldname = $fieldname . $gradeitem->id . '_' . $this->itemid;
+                            unset($data->$fieldname);
+                        }
+                    }
                 }
-
             }
 
             foreach ($data as $varname => $value) {
