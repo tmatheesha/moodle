@@ -95,7 +95,7 @@ class gradereport_singleview extends grade_report {
 
         $screenclass = "\\gradereport_singleview\\local\\screen\\${itemtype}";
 
-        $this->screen = new $screenclass($courseid, $itemid, $this->currentgroup);
+        $this->screen = new $screenclass($courseid, $itemid, $this->currentgroup, $this->get_items_per_page());
 
         // Load custom or predifined js.
         $this->screen->js();
@@ -108,6 +108,15 @@ class gradereport_singleview extends grade_report {
     public function output() {
         global $OUTPUT;
         return $OUTPUT->container($this->screen->html(), 'reporttable');
+    }
+
+    /**
+     * Retrieve the records to display per page.
+     *
+     * @return int Number of records to display per page.
+     */
+    public function get_items_per_page() {
+        return $this->get_pref('singleviewperpage');
     }
 }
 

@@ -38,7 +38,6 @@ $defaulttype = $userid ? 'user' : 'select';
 $itemid   = optional_param('itemid', $userid, PARAM_INT);
 $itemtype = optional_param('item', $defaulttype, PARAM_TEXT);
 $page = optional_param('page', 0, PARAM_INT);
-$perpage = optional_param('perpage', 100, PARAM_INT);
 
 $courseparams = array('id' => $courseid);
 $PAGE->set_url(new moodle_url('/grade/report/singleview/index.php', $courseparams));
@@ -89,8 +88,7 @@ $pageparams = array(
     'item' => $itemtype,
     'userid' => $userid,
     'group' => $groupid,
-    'page' => $page,
-    'perpage' => $perpage
+    'page' => $page
 );
 
 $currentpage = new moodle_url('/grade/report/singleview/index.php', $pageparams);

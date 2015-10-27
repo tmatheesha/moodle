@@ -70,8 +70,9 @@ abstract class screen {
      * @param int $courseid The course id
      * @param int $itemid The item id
      * @param int $groupid The group id
+     * @param int $perpage Results to display per page.
      */
-    public function __construct($courseid, $itemid, $groupid = null) {
+    public function __construct($courseid, $itemid, $groupid = null, $perpage = 50) {
         global $DB;
 
         $this->courseid = $courseid;
@@ -82,10 +83,7 @@ abstract class screen {
         $this->course = $DB->get_record('course', array('id' => $courseid));
 
         $this->page = optional_param('page', 0, PARAM_INT);
-        $this->perpage = optional_param('perpage', 100, PARAM_INT);
-        if ($this->perpage > 100) {
-            $this->perpage = 100;
-        }
+        $this->perpage = $perpage;
 
         $this->init(empty($itemid));
     }

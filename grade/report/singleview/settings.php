@@ -15,15 +15,22 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Standard version file
+ * Defines site config settings for the grade single view report
  *
- * @package   gradereport_singleview
- * @copyright 2014 Moodle Pty Ltd (http://moodle.com)
- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package    gradereport_singleview
+ * @copyright  2015 Adrian Greeve <adrian@moodle.com>
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die();
+defined('MOODLE_INTERNAL') || die;
 
-$plugin->component = 'gradereport_singleview'; // Full name of the plugin (used for diagnostics).
-$plugin->version  = 2015051101;
-$plugin->requires = 2015050500;
+if ($ADMIN->fulltree) {
+
+    // Add settings for this module to the $settings object (it's already defined).
+    $settings->add(new admin_setting_configtext('grade_report_singleviewperpage',
+        new lang_string('singleviewperpage', 'gradereport_singleview'),
+        new lang_string('singleviewperpage_help', 'gradereport_singleview'),
+        50
+    ));
+
+}
