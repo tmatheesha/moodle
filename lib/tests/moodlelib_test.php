@@ -958,6 +958,29 @@ class core_moodlelib_testcase extends advanced_testcase {
                 shorten_text($text, 1));
     }
 
+    public function test_shorten_text_html_comments_break_in_middle() {
+        // ..........................1234567890123.....
+        $text = '<p><!--[if !IE]><!-->Somthing here<!--<![endif]--></p>';
+        $expectedresult = '<p><!--[if !IE]><!-->Somthing...<!--<![endif]--></p>';
+        $this->assertSame($expectedresult, shorten_text($text, 11));
+    }
+
+    public function test_shorten_text_html_comments_all_html() {
+        // .......................................................................................
+        $text = '<p><!--[if !IE]><!-->
+        <param name="controller" value="true" />
+        <!--<![endif]--></p>';
+        $expectedresult = '<p><!--[if !IE]><!--><param name="controller" value="true" /><!--<![endif]--></p>';
+        $this->assertSame($expectedresult, shorten_text($text, 11));
+    }
+
+    public function test_shorten_text_close_open_tags() {
+        // ..........................1234567890123.
+        $text = '<p><!--[if !IE]><!-->Somthing here';
+        $expectedresult = '<p><!--[if !IE]><!-->Somthing...<!--<![endif]--></p>';
+        $this->assertSame($expectedresult, shorten_text($text, 11));
+    }
+
     public function test_usergetdate() {
         global $USER, $CFG, $DB;
         $this->resetAfterTest();
