@@ -1,4 +1,4 @@
-define(['jqueryui', 'jquery'], function(jqui, $) {
+define(['jqueryui', 'jquery', 'core/forms', 'core/templates'], function(jqui, $, forms, templates) {
 
     var lessonobjects = null;
     var lessonobjectid = 9999;
@@ -161,7 +161,7 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
          * This needs to be extended by the child classes.
          */
         get_default_edit_form: function() {
-            var editform = '<div class="mod_lesson_page_editor">';
+            var editform = '<div class="mod_lesson_page_editor"><form action="">';
             editform += '<h3>Edit this ' + this.qtypestring + ' </h3>';
             editform += pageTitle(this.id, this.title);
             editform += pageContents(this.id, this.contents);
@@ -171,6 +171,12 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
             var jumps = {};
             var i = 1;
             var j = 0;
+
+            var formdata = $('form').serializeArray();
+            // forms.populateForm(formdata);
+            // forms.handleErrors('stuff');
+            // console.log(formdata);
+
             // Iterate over lesson page answers.
             while ($('#mod_lesson_answer_' + i).length) {
                 var jumpanswer = $('#mod_lesson_answer_' + i).val();
@@ -327,14 +333,14 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
                 editform += '<div><textarea id="mod_lesson_response_' + i + '">' + this.jumps[jumpid].response + '</textarea></div>';
                 editform += pageJump(this.jumps[jumpid].id, this.id, jumpoptions, i);
                 editform += '<div>Score</div>';
-                editform += '<div><input type="text" id="mod_lesson_score_' + i + '" value="' + this.jumps[jumpid].score + '"/></div>';
+                editform += '<div><input type="text" name="score_' + i + '" id="mod_lesson_score_' + i + '" value="' + this.jumps[jumpid].score + '"/></div>';
                 editform += '</div>';
                 i++;
             }
             editform += '</div>';
             editform += '<div><button type="button" id="mod_lesson_editor_save_btn">Save</button>';
             editform += '<button type="button" id="mod_lesson_editor_cancel_btn">Cancel</button>';
-            editform += '</div></div>';
+            editform += '</div></div></form>';
             return editform;
         },
         save_edit_form: function() {
@@ -371,7 +377,7 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
                 editform += '<div><textarea id="mod_lesson_response_' + i + '">' + this.jumps[jumpid].response + '</textarea></div>';
                 editform += pageJump(this.jumps[jumpid].id, this.id, jumpoptions, i);
                 editform += '<div>Score</div>';
-                editform += '<div><input type="text" id="mod_lesson_score_' + i + '" value="' + this.jumps[jumpid].score + '"/></div>';
+                editform += '<div><input type="text" name="score_' + i + '" id="mod_lesson_score_' + i + '" value="' + this.jumps[jumpid].score + '"/></div>';
                 editform += '</div>';
                 i++;
             }
@@ -379,7 +385,7 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
             editform += '<div><button type="button" id="mod_lesson_editor_save_btn">Save</button>';
             editform += '<button type="button" id="mod_lesson_editor_cancel_btn">Cancel</button>';
             editform += '<button type="button" id="mod_lesson_editor_addjump_btn">Add another jump</button>';
-            editform += '</div></div>';
+            editform += '</div></div></form>';
             return editform;
         },
         save_edit_form: function() {
@@ -402,7 +408,7 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
             editform += '<div><textarea id="mod_lesson_response_' + i + '"></textarea></div>';
             editform += pageJump(0, this.id, jumpoptions, i);
             editform += '<div>Score</div>';
-            editform += '<div><input type="text" id="mod_lesson_score_' + i + '" value=""/></div>';
+            editform += '<div><input type="text" name="score_' + i + '" id="mod_lesson_score_' + i + '" value=""/></div>';
             editform += '</div>';
             $('#mod_lesson_editor_answers').append(editform);
             // return editform;
@@ -469,7 +475,7 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
                 editform += '<div class="mod_lesson_editor_answer">';
                 editform += '<h4>Content ' + i + '</h4>';
                 editform += '<div>Jump name</div>';
-                editform += '<div><input type="text" id="mod_lesson_answer_' + i + '" value="' + this.jumps[jumpid].answer + '"/></div>';
+                editform += '<div><input name="jump_name_' + i + '" type="text" id="mod_lesson_answer_' + i + '" value="' + this.jumps[jumpid].answer + '"/></div>';
                 editform += pageJump(this.jumps[jumpid].id, this.id, jumpoptions, i);
                 editform += '</div>';
                 i++;
@@ -478,7 +484,7 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
             editform += '<div><button type="button" id="mod_lesson_editor_save_btn">Save</button>';
             editform += '<button type="button" id="mod_lesson_editor_cancel_btn">Cancel</button>';
             editform += '<button type="button" id="mod_lesson_editor_addjump_btn">Add another jump</button>';
-            editform += '</div></div>';
+            editform += '</div></div></form>';
             return editform;
         },
         add_additional_jump: function(event) {
@@ -493,7 +499,7 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
             var editform = '<div class="mod_lesson_editor_answer">';
             editform += '<h4>Content ' + i + '</h4>';
             editform += '<div>Jump name</div>';
-            editform += '<div><input type="text" id="mod_lesson_answer_' + i + '" value=""/></div>';
+            editform += '<div><input name="jump_name_' + i + '" type="text" id="mod_lesson_answer_' + i + '" value=""/></div>';
             editform += pageJump(0, this.id, jumpoptions, i);
             editform += '</div>';
             $('#mod_lesson_editor_answers').append(editform);
@@ -583,21 +589,21 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
     var pageTitle = function(pageid, title) {
         var html;
         html = '<div>Page Title</div>';
-        html += '<div><input type="input" class="mod_lesson_title" id="mod_lesson_title_' + pageid + '" value="' + title + '" /></div>';
+        html += '<div><input type="input" name="title" class="mod_lesson_title" id="mod_lesson_title_' + pageid + '" value="' + title + '" /></div>';
         return html;
     };
 
     var pageContents = function(pageid, contents) {
         var html;
         html = '<div>Page Content</div>';
-        html += '<div><textarea id="mod_lesson_contents_' + pageid + '">' + contents + '</textarea></div>';
+        html += '<div><textarea name="contents" id="mod_lesson_contents_' + pageid + '">' + contents + '</textarea></div>';
         return html;
     };
 
     var pageJump = function(jumpid, pageid, jumpoptions, number) {
         var html;
         html = '<div>Jump</div>';
-        html += '<select id="mod_lesson_jump_select_' + number + '">';
+        html += '<select name="jump_' + number + '" id="mod_lesson_jump_select_' + number + '">';
         // $.each(jumpoptions ,function(index, jumpoption) {
         for (index in jumpoptions) {
             if (jumpid == index) {
@@ -1117,15 +1123,30 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
         closeObjectMenus();
 
         $.when(getJumpOptions(pageid)).done(function(joptions){
-            // Create a page for editing the content.
-            var pageeditor = lesson.pages[pageid].get_edit_form(joptions);
-            $('.mod_lesson_pages').append(pageeditor);
-            $('#mod_lesson_editor_addjump_btn').click({jumpoptions: joptions}, lesson.pages[pageid].add_additional_jump);
-            // $('#mod_lesson_editor_save_btn').click(lesson.pages[pageid].save_edit_form());
-            $('#mod_lesson_editor_save_btn').click({pageid: pageid}, saveTheCheerleader);
-            $('#mod_lesson_editor_cancel_btn').click(function() {
-                $('.mod_lesson_page_editor').remove();
+            var formdata = {
+                lessonpagetype: lesson.pages[pageid].qtypestring,
+                pageid: pageid,
+                title: lesson.pages[pageid].title,
+                contents: lesson.pages[pageid].contents
+            };
+            $.when(templates.render('mod_lesson/page_editor', formdata)).done(function(pageeditor) {
+                $('.mod_lesson_pages').append(pageeditor); 
+                $('#mod_lesson_editor_addjump_btn').click({jumpoptions: joptions}, lesson.pages[pageid].add_additional_jump);
+                // $('#mod_lesson_editor_save_btn').click(lesson.pages[pageid].save_edit_form());
+                $('#mod_lesson_editor_save_btn').click({pageid: pageid}, saveTheCheerleader);
+                $('#mod_lesson_editor_cancel_btn').click(function() {
+                    $('.mod_lesson_page_editor').remove();
+                });
             });
+            // // Create a page for editing the content.
+            // var pageeditor = lesson.pages[pageid].get_edit_form(joptions);
+            // $('.mod_lesson_pages').append(pageeditor);
+            // $('#mod_lesson_editor_addjump_btn').click({jumpoptions: joptions}, lesson.pages[pageid].add_additional_jump);
+            // // $('#mod_lesson_editor_save_btn').click(lesson.pages[pageid].save_edit_form());
+            // $('#mod_lesson_editor_save_btn').click({pageid: pageid}, saveTheCheerleader);
+            // $('#mod_lesson_editor_cancel_btn').click(function() {
+            //     $('.mod_lesson_page_editor').remove();
+            // });
         });
     };
 
