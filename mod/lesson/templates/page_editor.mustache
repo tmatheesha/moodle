@@ -17,38 +17,18 @@
 {{!
     @template mod_lesson/page_editor
 
-    Moodle columns-1to1to1 template.
-
-    The purpose of this template is to render a template with 3 columns.
-    On mobile the columns stack underneath each other.
-
-    Classes required for JS:
-    * none
-
-    Data attributes required for JS:
-    * none
-
-    Context variables required for this template:
-    * col1content Column 1 contents.
-    * col2content Column 2 contents.
-    * col3content Column 3 contents.
-
-    Example context (json):
-    {
-        "col1content": "<div class='alert alert-error'>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aliquam pellentesque id urna sit amet tempor.</div>",
-        "col2content": "<div class='alert alert-success'>Donec lacus nisl, molestie eget sodales non, sodales et nibh. Praesent dignissim placerat sodales.</div>",
-        "col3content": "<div class='alert alert-info'>Praesent sit amet ante odio. In mollis nisl at mi bibendum venenatis.</div>"
-    }
-
 }}
 
 <div class="mod_lesson_page_editor">
 <form action="">
 <h3>Edit this {{lessonpagetype}} </h3>
-    <div>Page Title</div>
-    <div><input type="input" name="title" class="mod_lesson_title" id="mod_lesson_title_{{pageid}}" value="{{title}}" /></div>
+    {{#title}}
+        {{>core/form-element-text}}
+    {{/title}}
     <div>Page Content</div>
-    <div><textarea name="contents" id="mod_lesson_contents_{{pageid}}">{{contents}}</textarea></div>
+    {{#select}}    
+        {{>core/form-element-select}}
+    {{/select}}    
     <div>
         <button type="button" id="mod_lesson_editor_save_btn">Save</button>
         <button type="button" id="mod_lesson_editor_cancel_btn">Cancel</button>

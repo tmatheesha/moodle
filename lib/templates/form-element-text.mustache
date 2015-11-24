@@ -1,0 +1,17 @@
+<div id="fitem_{{id}}" class="fitem fitem_text {{#required}}required{{/required}} {{#advanced}}advanced{{/advanced}}"  data-field-type="text">
+    <div class="fitemtitle">
+        <label {{#hiddenLabel}}class="accesshide"{{/hiddenLabel}} for="{{id}}">
+            {{label}}
+            {{#required}}{{>core/form-required}}{{/required}}
+            {{#advanced}}{{>core/form-advanced}}{{/advanced}}
+        </label>
+        {{{helpButton}}}
+    </div>
+    <div class="felement ftext {{#error}}error{{/error}}">
+        {{#error}}
+        <span class="error" tabindex="0">{{{error}}}</span>
+        <br/>
+        {{/error}}
+        <input type="text" name="{{name}}" id="{{id}}" {{#required}}required{{/required}} {{#size}}size="{{size}}"{{/size}} value="{{text}}" />
+    </div>
+</div>

@@ -15,16 +15,34 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Version information
+ * External mod_book functions unit tests
  *
- * @package mod_lesson
- * @copyright  1999 onwards Martin Dougiamas  {@link http://moodle.com}
+ * @package    mod_book
+ * @category   external
+ * @copyright  2015 Juan Leyva <juan@moodle.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @since      Moodle 3.0
  */
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2015111601;       // The current module version (Date: YYYYMMDDXX)
-$plugin->requires  = 2015111000;    // Requires this Moodle version
-$plugin->component = 'mod_lesson'; // Full name of the plugin (used for diagnostics)
-$plugin->cron      = 0;
+global $CFG;
+
+require_once($CFG->dirroot . '/webservice/tests/helpers.php');
+
+/**
+ * External mod_book functions unit tests
+ *
+ * @package    mod_book
+ * @category   external
+ * @copyright  2015 Juan Leyva <juan@moodle.com>
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @since      Moodle 3.0
+ */
+class mod_book_external_testcase extends externallib_advanced_testcase {
+
+    public function test_my_thing_works() {
+        $thing = mod_lesson_external::add_page(2, 4, 'This title');
+        print_object($thing);
+    }
+}

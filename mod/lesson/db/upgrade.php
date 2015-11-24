@@ -348,7 +348,7 @@ function xmldb_lesson_upgrade($oldversion) {
 
     // Moodle v3.0.0 release upgrade line.
     // Put any upgrade step following this.
-    if ($oldversion < 2015072001) {
+    if ($oldversion < 2015111601) {
         // Define field positionx to be added to lesson_pages.
         $table = new xmldb_table('lesson_pages');
         $field = new xmldb_field('positionx', XMLDB_TYPE_INTEGER, '11', null, null, null, '0', 'contentsformat');
@@ -368,7 +368,7 @@ function xmldb_lesson_upgrade($oldversion) {
         }
 
         // Lesson savepoint reached.
-        upgrade_mod_savepoint(true, 2015072001, 'lesson');
+        upgrade_mod_savepoint(true, 2015111601, 'lesson');
     }
 
     return true;

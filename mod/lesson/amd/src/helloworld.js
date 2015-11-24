@@ -1,4 +1,5 @@
-define(['jqueryui', 'jquery', 'core/forms', 'core/templates'], function(jqui, $, forms, templates) {
+define(['jqueryui', 'jquery', 'core/forms', 'core/templates', 'core/form', 'core/form-text', 'core/form-select', 'core/ajax'],
+    function(jqui, $, formfactory, templates, form, text, selectElement, ajax) {
 
     var lessonobjects = null;
     var lessonobjectid = 9999;
@@ -167,94 +168,117 @@ define(['jqueryui', 'jquery', 'core/forms', 'core/templates'], function(jqui, $,
             editform += pageContents(this.id, this.contents);
             return editform;
         },
-        save_edit_form: function() {
-            var jumps = {};
-            var i = 1;
-            var j = 0;
+        save_edit_form: function(formobject) {
 
-            var formdata = $('form').serializeArray();
-            // forms.populateForm(formdata);
-            // forms.handleErrors('stuff');
+            // Perhaps this could all be included in a save method for the form.
+            var formdata = formfactory.getFormData();
+            formdata["lessonid"] = lesson.id;
+            formdata["pageid"] = this.id;
+            delete formdata["Jump_1"];
             // console.log(formdata);
 
-            // Iterate over lesson page answers.
-            while ($('#mod_lesson_answer_' + i).length) {
-                var jumpanswer = $('#mod_lesson_answer_' + i).val();
-                var jumpto = $('#mod_lesson_jump_select_' + i).val();
-                var response = '';
-                var score = 0;
-                if ($('#mod_lesson_response_' + i).length) {
-                    response = $('#mod_lesson_response_' + i).val();
-                    // console.log('responjse: ' + response);
-                }
-                if ($('#mod_lesson_score_' + i).length) {
-                    score = $('#mod_lesson_score_' + i).val();
-                }
+            var promises = ajax.call([{
+                methodname: 'mod_lesson_add_page',
+                args: formdata
+            }]);
 
-                if (Object.keys(this.jumps).length <= j) {
-                    // Need to add new jumps
-                    this.jumps[j] = {
-                        id: jumpto,
-                        answer: jumpanswer,
-                        response: response,
-                        score: score
-                    };
-                } else {
-                    // Update old jumps
-                    this.jumps[j].id = jumpto;
-                    this.jumps[j].answer = jumpanswer;
-                    this.jumps[j].response = response;
-                    this.jumps[j].score = score;
-                }
-                jumps[i] = {
-                    answer: jumpanswer,
-                    jumpto: jumpto,
-                    response: response,
-                    score: score
-                };
-                i++;
-                j++;
-            }
+            $.when.apply($.when, promises).then(function(response) {
+                // console.log(response);
+                if (response.warnings.length != "0") {
 
-            var pagetitle = $('#mod_lesson_title_' + this.id).val();
-            var pagecontent = $('#mod_lesson_contents_' + this.id).val();
-            this.title = pagetitle;
-            this.contents = pagecontent;
-
-            var record = {
-                page: {
-                    id: this.id,
-                    title: pagetitle,
-                    contents: pagecontent
-                },
-                answer: {
-                    lessonid: lesson.id,
-                    pageid: this.id,
-                    jumps: jumps
+                    // formobject.handleErrors(response.warnings);
+                    formfactory.handleErrors(response.warnings, formobject);
 
                 }
-            };
-
-            var json = JSON.stringify(record);
-            var pageid = this.id;
-
-            // More ajax to save us all.
-            $.ajax({
-                    method: "POST",
-                    url: ajaxlocation,
-                    dataType: "json",
-                    data: {
-                        action: "updatelessonpage",
-                        lessonid: lessonid,
-                        jsondata: json
-                    }
-            }).done(function(newobject) {
-                $('#mod_lesson_page_element_' + pageid + '_body').html(pagetitle);
-                $('.mod_lesson_page_editor').remove();
-                $('#mod_lesson_editor_addjump_btn').unbind('click');
-                // Need to Refresh the jumps.
-                drawalllines();
             });
+
+            // var jumps = {};
+            // var i = 1;
+            // var j = 0;
+
+            // var formdata = $('form').serializeArray();
+            // // formfactory.populateForm(formdata);
+            // // formfactory.handleErrors('stuff');
+            // // console.log(formdata);
+
+            // // Iterate over lesson page answers.
+            // while ($('#mod_lesson_answer_' + i).length) {
+            //     var jumpanswer = $('#mod_lesson_answer_' + i).val();
+            //     var jumpto = $('#mod_lesson_jump_select_' + i).val();
+            //     var response = '';
+            //     var score = 0;
+            //     if ($('#mod_lesson_response_' + i).length) {
+            //         response = $('#mod_lesson_response_' + i).val();
+            //         // console.log('responjse: ' + response);
+            //     }
+            //     if ($('#mod_lesson_score_' + i).length) {
+            //         score = $('#mod_lesson_score_' + i).val();
+            //     }
+
+            //     if (Object.keys(this.jumps).length <= j) {
+            //         // Need to add new jumps
+            //         this.jumps[j] = {
+            //             id: jumpto,
+            //             answer: jumpanswer,
+            //             response: response,
+            //             score: score
+            //         };
+            //     } else {
+            //         // Update old jumps
+            //         this.jumps[j].id = jumpto;
+            //         this.jumps[j].answer = jumpanswer;
+            //         this.jumps[j].response = response;
+            //         this.jumps[j].score = score;
+            //     }
+            //     jumps[i] = {
+            //         answer: jumpanswer,
+            //         jumpto: jumpto,
+            //         response: response,
+            //         score: score
+            //     };
+            //     i++;
+            //     j++;
+            // }
+
+            // var pagetitle = $('#mod_lesson_title_' + this.id).val();
+            // var pagecontent = $('#mod_lesson_contents_' + this.id).val();
+            // this.title = pagetitle;
+            // this.contents = pagecontent;
+
+            // var record = {
+            //     page: {
+            //         id: this.id,
+            //         title: pagetitle,
+            //         contents: pagecontent
+            //     },
+            //     answer: {
+            //         lessonid: lesson.id,
+            //         pageid: this.id,
+            //         jumps: jumps
+
+            //     }
+            // };
+
+            // var json = JSON.stringify(record);
+            // var pageid = this.id;
+
+            // // More ajax to save us all.
+            // $.ajax({
+            //         method: "POST",
+            //         url: ajaxlocation,
+            //         dataType: "json",
+            //         data: {
+            //             action: "updatelessonpage",
+            //             lessonid: lessonid,
+            //             jsondata: json
+            //         }
+            // }).done(function(newobject) {
+            //     $('#mod_lesson_page_element_' + pageid + '_body').html(pagetitle);
+            //     $('.mod_lesson_page_editor').remove();
+            //     $('#mod_lesson_editor_addjump_btn').unbind('click');
+            //     // Need to Refresh the jumps.
+            //     drawalllines();
+            // });
         }
     };
 
@@ -279,8 +303,8 @@ define(['jqueryui', 'jquery', 'core/forms', 'core/templates'], function(jqui, $,
         get_edit_form: function(jumpoptions) {
             return branchtable_lessonPage.prototype.get_edit_form.call(this, jumpoptions);
         },
-        save_edit_form: function() {
-            lessonPage.prototype.save_edit_form.call(this);
+        save_edit_form: function(formobject) {
+            lessonPage.prototype.save_edit_form.call(this, formobject);
         }
     }
 
@@ -343,8 +367,8 @@ define(['jqueryui', 'jquery', 'core/forms', 'core/templates'], function(jqui, $,
             editform += '</div></div></form>';
             return editform;
         },
-        save_edit_form: function() {
-            lessonPage.prototype.save_edit_form.call(this);
+        save_edit_form: function(formobject) {
+            lessonPage.prototype.save_edit_form.call(this, formobject);
         }
     }
 
@@ -388,8 +412,8 @@ define(['jqueryui', 'jquery', 'core/forms', 'core/templates'], function(jqui, $,
             editform += '</div></div></form>';
             return editform;
         },
-        save_edit_form: function() {
-            lessonPage.prototype.save_edit_form.call(this);
+        save_edit_form: function(formobject) {
+            lessonPage.prototype.save_edit_form.call(this, formobject);
         },
         add_additional_jump: function(event) {
             // console.log(event);
@@ -433,8 +457,8 @@ define(['jqueryui', 'jquery', 'core/forms', 'core/templates'], function(jqui, $,
         get_edit_form: function(jumpoptions) {
             return branchtable_lessonPage.prototype.get_edit_form.call(this, jumpoptions);
         },
-        save_edit_form: function() {
-            lessonPage.prototype.save_edit_form.call(this);
+        save_edit_form: function(formobject) {
+            lessonPage.prototype.save_edit_form.call(this, formobject);
         }
     }
 
@@ -505,8 +529,8 @@ define(['jqueryui', 'jquery', 'core/forms', 'core/templates'], function(jqui, $,
             $('#mod_lesson_editor_answers').append(editform);
             // return editform;
         },
-        save_edit_form: function() {
-            lessonPage.prototype.save_edit_form.call(this);
+        save_edit_form: function(formobject) {
+            lessonPage.prototype.save_edit_form.call(this, formobject);
         }
     }
 
@@ -528,8 +552,8 @@ define(['jqueryui', 'jquery', 'core/forms', 'core/templates'], function(jqui, $,
         get_edit_form: function(jumpoptions) {
             return branchtable_lessonPage.prototype.get_edit_form.call(this, jumpoptions);
         },
-        save_edit_form: function() {
-            lessonPage.prototype.save_edit_form.call(this);
+        save_edit_form: function(formobject) {
+            lessonPage.prototype.save_edit_form.call(this, formobject);
         }
     }
 
@@ -551,8 +575,8 @@ define(['jqueryui', 'jquery', 'core/forms', 'core/templates'], function(jqui, $,
         get_edit_form: function(jumpoptions) {
             return branchtable_lessonPage.prototype.get_edit_form.call(this, jumpoptions);
         },
-        save_edit_form: function() {
-            lessonPage.prototype.save_edit_form.call(this);
+        save_edit_form: function(formobject) {
+            lessonPage.prototype.save_edit_form.call(this, formobject);
         }
     }
 
@@ -574,8 +598,8 @@ define(['jqueryui', 'jquery', 'core/forms', 'core/templates'], function(jqui, $,
         get_edit_form: function(jumpoptions) {
             return numerical_lessonPage.prototype.get_edit_form.call(this, jumpoptions);
         },
-        save_edit_form: function() {
-            lessonPage.prototype.save_edit_form.call(this);
+        save_edit_form: function(formobject) {
+            lessonPage.prototype.save_edit_form.call(this, formobject);
         },
         add_additional_jump: function(jumpoptions) {
             numerical_lessonPage.prototype.add_additional_jump.call(this, jumpoptions);
@@ -1123,17 +1147,89 @@ define(['jqueryui', 'jquery', 'core/forms', 'core/templates'], function(jqui, $,
         closeObjectMenus();
 
         $.when(getJumpOptions(pageid)).done(function(joptions){
+            // console.log(joptions);
+
+            // var frm = new form();
+            // frm.addFieldset('general', 'General');
+            // textfield = new text();
+            // textfield.set_name('title');
+            // textfield.set_id('mod_lesson_title_' + pageid);
+            // textfield.set_label('Page Title');
+            // textfield.set_required();
+            // textfield.set_text(lesson.pages[pageid].title);
+            // frm.addElement(textfield);
+            // selectfield = new selectElement();
+            // selectfield.set_name('Jump_1');
+            // selectfield.set_label('Jumps');
+            // selectfield.set_id("mod_lesson_jump_1_" + pageid);
+            // selectfield.set_options(joptions);
+            // frm.addElement(selectfield);
+            // $.when(frm.printForm()).then(function(tempformstuff) {
+            //     $('.mod_lesson_pages').append(tempformstuff); 
+            //     // $('#mod_lesson_editor_addjump_btn').click({jumpoptions: joptions}, lesson.pages[pageid].add_additional_jump);
+            //     $('#mod_lesson_editor_save_btn').click(function() {
+            //         // Could do client side validation here.
+            //         if ($("#mod_lesson_title_" + pageid).val() == "") {
+            //             var textelement = $("#fitem_mod_lesson_title_" + pageid);
+            //             frm.handleError('title', textelement, 'text', 'Title should not be empty');
+            //         } else {
+            //             lesson.pages[pageid].save_edit_form(frm);
+            //         }
+            //     });
+            //     $('#mod_lesson_editor_cancel_btn').click(function() {
+            //         $('.mod_lesson_page_editor').remove();
+            //     });
+            // });
+
+            // formfactory.create();
+            // formfactory.addElement('text', 'title', lesson.pages[pageid].title, "Page Title");
+            // formfactory.makeRequired('text');
+            // formfactory.addElement('select', 'jump_1', 'Jumps', 'Jumps');
+            // var tmep = formfactory.getFormData();
+            // console.log(tmep);
+
             var formdata = {
                 lessonpagetype: lesson.pages[pageid].qtypestring,
                 pageid: pageid,
-                title: lesson.pages[pageid].title,
-                contents: lesson.pages[pageid].contents
+                // title: lesson.pages[pageid].title,
+                title: {
+                    id: "mod_lesson_title_" + pageid,
+                    label: "Page Title",
+                    name: "title",
+                    text: lesson.pages[pageid].title,
+                    required: 1
+                },
+                contents: lesson.pages[pageid].contents,
+                select: {
+                    id: pageid,
+                    label: "Jumps",
+                    name: "Jump_1",
+                    options: formfactory.formatOptions(joptions),
+                    // required: 1,
+                    helpButton: "<button type=\"button\">Help is here</button>"
+
+                }
             };
             $.when(templates.render('mod_lesson/page_editor', formdata)).done(function(pageeditor) {
                 $('.mod_lesson_pages').append(pageeditor); 
                 $('#mod_lesson_editor_addjump_btn').click({jumpoptions: joptions}, lesson.pages[pageid].add_additional_jump);
                 // $('#mod_lesson_editor_save_btn').click(lesson.pages[pageid].save_edit_form());
-                $('#mod_lesson_editor_save_btn').click({pageid: pageid}, saveTheCheerleader);
+                // $('#mod_lesson_editor_save_btn').click({pageid: pageid}, saveTheCheerleader);
+                $('#mod_lesson_editor_save_btn').click(function() {
+                    // Do client side validation.
+                    var titleelement = $("#mod_lesson_title_" + pageid);
+                    if (titleelement.val() == "") {
+                        var errors = {
+                            errors: {
+                                name: "title",
+                                message: "The lesson page title should not be empty"
+                            }
+                        };
+                        formfactory.handleErrors(errors, formdata);
+                    } else {
+                        lesson.pages[pageid].save_edit_form(formdata);
+                    }
+                });
                 $('#mod_lesson_editor_cancel_btn').click(function() {
                     $('.mod_lesson_page_editor').remove();
                 });

@@ -1290,6 +1290,7 @@ $services = array(
             'mod_glossary_get_entries_by_term',
             'mod_glossary_get_entries_to_approve',
             'mod_glossary_get_entry_by_id',
+            'mod_lesson_add_page',
             ),
         'enabled' => 0,
         'restrictedusers' => 0,
