@@ -3031,9 +3031,36 @@ class assign {
      * @param moodleform $mform
      * @return string
      */
-    protected function view_single_grade_page($mform) {
-        global $DB, $CFG;
+    public function view_single_grade_page($mform, $rownum = 0) {
+        global $PAGE;
+        $o = '';
+        $instance = $this->get_instance();
+        $header = new assign_header($instance,
+                                    $this->get_context(),
+                                    false,
+                                    $this->get_course_module()->id,
+                                    get_string('grading', 'assign'));
+        $o .= $this->get_renderer()->render($header);
+        $id = $this->context->instanceid;
+        $rownum = required_param('rownum', PARAM_INT);
 
+
+        $userid = 3;
+
+
+
+
+        $o .= '<div id="add-action-here"></div>';
+        $PAGE->requires->js_call_amd('mod_assign/form-fun', 'init', array($id, $rownum));
+        // $o .= $this->do_that_stuff($mform, $rownum);
+        $o .= $this->view_footer();
+        return $o;
+    }
+
+    public function do_that_stuff($mform, $rownum = 0) {
+        global $DB, $CFG, $PAGE, $OUTPUT;
+
+        $PAGE->set_requirements_to_ajax();
         $o = '';
         $instance = $this->get_instance();
 
@@ -3042,16 +3069,19 @@ class assign {
         // Need submit permission to submit an assignment.
         require_capability('mod/assign:grade', $this->context);
 
-        $header = new assign_header($instance,
-                                    $this->get_context(),
-                                    false,
-                                    $this->get_course_module()->id,
-                                    get_string('grading', 'assign'));
-        $o .= $this->get_renderer()->render($header);
+        // $header = new assign_header($instance,
+        //                             $this->get_context(),
+        //                             false,
+        //                             $this->get_course_module()->id,
+        //                             get_string('grading', 'assign'));
+        // $o .= $this->get_renderer()->render($header);
 
         // If userid is passed - we are only grading a single student.
-        $rownum = required_param('rownum', PARAM_INT);
-        $useridlistid = optional_param('useridlistid', $this->get_useridlist_key_id(), PARAM_ALPHANUM);
+
+        if (empty($rownum)) {
+            $rownum = required_param('rownum', PARAM_INT);
+        }
+        $useridlistid = optional_param('useridlistid', time(), PARAM_INT);
         $userid = optional_param('userid', 0, PARAM_INT);
         $attemptnumber = optional_param('attemptnumber', -1, PARAM_INT);
 
@@ -3215,8 +3245,9 @@ class assign {
 
         \mod_assign\event\grading_form_viewed::create_from_user($this, $user)->trigger();
 
-        $o .= $this->view_footer();
+        // $o .= $this->view_footer();
         return $o;
+
     }
 
     /**

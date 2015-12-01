@@ -544,7 +544,7 @@ class core_renderer extends renderer_base {
         if (!empty($CFG->additionalhtmlhead)) {
             $output .= "\n".$CFG->additionalhtmlhead;
         }
-
+        // print_object($output);
         return $output;
     }
 
