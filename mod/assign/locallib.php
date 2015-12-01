@@ -2987,7 +2987,9 @@ class assign {
      * @return string
      */
     protected function view_single_grade_page($mform) {
-        global $DB, $CFG;
+        global $DB, $CFG, $PAGE;
+
+        $PAGE->set_requirements_to_ajax();
 
         $o = '';
         $instance = $this->get_instance();
