@@ -1121,21 +1121,13 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
             var pageeditor = lesson.pages[pageid].get_edit_form(joptions);
             $('.mod_lesson_pages').append(pageeditor);
             $('#mod_lesson_editor_addjump_btn').click({jumpoptions: joptions}, lesson.pages[pageid].add_additional_jump);
-            // $('#mod_lesson_editor_save_btn').click(lesson.pages[pageid].save_edit_form());
-            $('#mod_lesson_editor_save_btn').click({pageid: pageid}, saveTheCheerleader);
+            $('#mod_lesson_editor_save_btn').click(function() {
+                lesson.pages[pageid].save_edit_form();
+            });
             $('#mod_lesson_editor_cancel_btn').click(function() {
                 $('.mod_lesson_page_editor').remove();
             });
         });
-    };
-
-    /**
-     * Save edited lesson page content.
-     */
-    var saveTheCheerleader = function(event) {
-        var pageid = event.data.pageid;
-        lesson.pages[pageid].save_edit_form();
-
     };
 
     var openObjectMenu = function(event) {
@@ -1292,6 +1284,40 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
         });
     };
 
+    var expandCluster = function() {
+        // Always have to fetch that page ID.
+        var lessonpageobject = $(this).parents('.mod_lesson_page_element');
+        var elementid = lessonpageobject.attr('id');
+        var pageid = elementid.split('_')[4];
+        // console.log(lessonpageobject);
+        // lessonpageobject.css({width: "300px", height: "300px"});
+        lessonpageobject.animate({
+            width: "700px",
+            height: "500px"
+        }, 500, function() {
+            drawalllines();
+        });
+        
+
+    };
+
+    var contractCluster = function() {
+        // Always have to fetch that page ID.
+        var lessonpageobject = $(this).parents('.mod_lesson_page_element');
+        var elementid = lessonpageobject.attr('id');
+        var pageid = elementid.split('_')[4];
+        // console.log(lessonpageobject);
+        // lessonpageobject.css({width: "300px", height: "300px"});
+        lessonpageobject.animate({
+            width: "300px",
+            height: "175px"
+        }, 500, function() {
+            drawalllines();
+        });
+        
+
+    };
+
     var resetListeners = function() {
 
         $(".mod_lesson_page_element").draggable({
@@ -1307,9 +1333,17 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
         //     dblclick: openEditor
         // });
 
+        $(".mod_lesson_page_object_expand").on({
+            click: expandCluster
+        });
+
+        $(".mod_lesson_page_object_contract").on({
+            click: contractCluster
+        });
+
         $(".mod_lesson_page_object_menu").on({
             click: openObjectMenu
-        });        
+        });             
 
         $(".mod_lesson_menu_item").draggable({
             stop: createLessonObject
@@ -1336,6 +1370,27 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
             positiony: Math.round(lastposition.top)
         };
 
+        if (lessonobjectdata.positionx < 0) {
+            lessonobjectdata.positionx = 0;
+            var lessonelement = $("#mod_lesson_page_element_" + pageid);
+            var parentelement = lessonelement.parent();
+            lessonelement.position({
+                my: "left top",
+                at: "left+" + lessonobjectdata.positionx + " top+" + lessonobjectdata.positiony,
+                of: parentelement
+            });
+        }
+        if (lessonobjectdata.positiony < 40) {
+            lessonobjectdata.positiony = 40;
+            var lessonelement = $("#mod_lesson_page_element_" + pageid);
+            var parentelement = lessonelement.parent();
+            lessonelement.position({
+                my: "left top",
+                at: "left+" + lessonobjectdata.positionx + " top+" + lessonobjectdata.positiony,
+                of: parentelement
+            });
+        }
+
         // Try some ajax here.
         $.ajax({
             method: "POST",
@@ -1360,6 +1415,12 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
                 var newy = lessonobjects[elementid].y;
                 var lessonelement = $("#mod_lesson_page_element_" + elementid);
                 var parentelement = lessonelement.parent();
+                if (newx < 0) {
+                    newx = 0;
+                }
+                if (newy < 40) {
+                    newy = 40;
+                }
                 lessonelement.position({
                     my: "left top",
                     at: "left+" + newx + " top+" + newy,
@@ -1429,6 +1490,22 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
                         ui.draggable.remove();
                     }
                 });
+
+                // $(".mod_lesson_pages").bind('mousewheel', function(event) {
+                //     event.preventDefault();
+                //     event.stopPropagation();
+                //     if (event.originalEvent.wheelDelta >= 0) {
+                //         var things = $(".mod_lesson_pages").find("*").css("font-size", "small");
+                //         var pageelements = $(".mod_lesson_page_element").css({"width": "240px", "height": "100px"});
+                //         // console.log('scroll up');
+                //     } else {
+                //         // console.log('scroll down');
+                //         var things = $(".mod_lesson_pages").find("*").css("font-size", "xx-small");
+                //         var pageelements = $(".mod_lesson_page_element").css({"width": "120px", "height": "75px"});
+                //     }
+                //     drawalllines();
+                // });
+
             });
         }
     };

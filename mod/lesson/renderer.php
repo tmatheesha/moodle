@@ -676,6 +676,10 @@ class mod_lesson_renderer extends plugin_renderer_base {
             if ($pageid == $lesson->firstpageid) {
                 $commonelements .= ' (Start)';
             }
+            if ($qtypes[$page->qtype] == 'Cluster') {
+                $commonelements .= html_writer::tag('img', null, array('src' => $this->pix_url('t/switch_minus'), 'class' => 'mod_lesson_page_object_contract'));
+                $commonelements .= html_writer::tag('img', null, array('src' => $this->pix_url('t/switch_plus'), 'class' => 'mod_lesson_page_object_expand'));
+            }
             $commonelements .= html_writer::tag('img', null, array('src' => $this->pix_url('t/edit'), 'class' => 'mod_lesson_page_object_menu'));
             $commonelements .= html_writer::end_tag('header');
             $commonelements .= html_writer::start_div('mod_lesson_page_element_body', array('id' => 'mod_lesson_page_element_' . $pageid . '_body'));

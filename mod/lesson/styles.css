@@ -197,6 +197,18 @@
     resize: vertical;
 }
 
+.mod_lesson_page_object_expand {
+    position: absolute;
+    top: 10px;
+    right: 25px;
+}
+
+.mod_lesson_page_object_contract {
+    position: absolute;
+    top: 10px;
+    right: 40px;
+}
+
 /*.mod_lesson_page_editor div:last-child {
     text-align: center;
 }*/
