@@ -648,9 +648,61 @@ class mod_lesson_renderer extends plugin_renderer_base {
         $output .= html_writer::end_div();
         $output .= html_writer::end_div();
 
+        // print_object($this->lesson_page_stuff($lesson, $firstpageid));
+
         $PAGE->requires->js_call_amd('mod_lesson/helloworld', 'init', array($lesson->id, $firstpageid));
         return $output;
         
+    }
+
+    private function lesson_page_stuff(lesson $lesson, $pageid) {
+        // $manager = lesson_page_type_manager::get($lesson);
+        $pages = $lesson->load_all_pages();
+        $temparray = array();
+        $skipids = array();
+        foreach ($pages as $key => $page) {
+            if (in_array($key, $skipids)) {
+                continue;
+            }
+            $temparray[$key] = new stdClass();
+            $temparray[$key]->id = $page->id;
+            $temparray[$key]->qtype = $page->qtype;
+            $temparray[$key]->title = $page->title;
+            list($children, $childskipids) = $this->damn_unavoidable_recursive_function($lesson, $page);
+            if (!empty($children)) {
+                $temparray[$key]->children = $children;
+                $skipids = array_merge($skipids, $childskipids);
+            }
+        }
+
+        return $temparray;
+    }
+
+    private function damn_unavoidable_recursive_function(lesson $lesson, lesson_page $page, $first = true) {
+        $returnarray = array();
+        $skipids = array();
+        if ($page->qtype == LESSON_PAGE_CLUSTER || (!$first && $page->qtype == LESSON_PAGE_BRANCHTABLE)) {
+            $end = LESSON_PAGE_ENDOFCLUSTER;
+            if ($page->qtype == LESSON_PAGE_BRANCHTABLE) { $end = LESSON_PAGE_ENDOFBRANCH; }
+            $subpages = $lesson->get_sub_pages_of($page->id, array($end));
+            if (empty($subpages)) { return; }
+            foreach ($subpages as $subpage) {
+                if (in_array($subpage->id, $skipids)) {
+                    continue;
+                }
+                $returnarray[$subpage->id] = new stdClass();
+                $returnarray[$subpage->id]->id = $subpage->id;
+                $returnarray[$subpage->id]->qtype = $subpage->qtype;
+                $returnarray[$subpage->id]->title = $subpage->title;
+                $skipids[] = $subpage->id;
+                list($children, $childskipids) = $this->damn_unavoidable_recursive_function($lesson, $subpage, false);
+                if (!empty($children)) {
+                    $returnarray[$subpage->id]->children = $children;
+                    $skipids = array_merge($skipids, $childskipids);
+                }
+            }
+        }
+        return array($returnarray, $skipids);
     }
 
     private function lesson_page_loop(lesson $lesson, &$pageid, $clusterflag = false) {

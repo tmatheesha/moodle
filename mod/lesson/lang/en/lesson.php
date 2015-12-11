@@ -223,6 +223,7 @@ $string['havenotgradedyet'] = 'Have not graded yet.';
 $string['here'] = 'here';
 $string['highscore'] = 'High score';
 $string['hightime'] = 'High time';
+$string['interactive'] = 'Interactive';
 $string['checkbranchtable'] = 'Check content page';
 $string['checkedthisone'] = 'Checked this one.';
 $string['checknavigation'] = 'Check navigation';

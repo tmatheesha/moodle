@@ -84,7 +84,7 @@ switch ($currenttab) {
         $row    = array();
         $row[]  = new tabobject('collapsed', "$CFG->wwwroot/mod/lesson/edit.php?id=$cm->id&amp;mode=collapsed", get_string('collapsed', 'lesson'));
         $row[]  = new tabobject('full', "$CFG->wwwroot/mod/lesson/edit.php?id=$cm->id&amp;mode=full", get_string('full', 'lesson'));
-        $row[]  = new tabobject('js', "$CFG->wwwroot/mod/lesson/edit.php?id=$cm->id&amp;mode=javascript", 'Javascript');
+        $row[]  = new tabobject('js', "$CFG->wwwroot/mod/lesson/edit.php?id=$cm->id&amp;mode=javascript", get_string('interactive', 'lesson'));
         $tabs[] = $row;
         break;
 }

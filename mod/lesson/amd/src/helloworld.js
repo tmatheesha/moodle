@@ -5,6 +5,8 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
     var lessonid = 0;
     var ajaxlocation = 'ajax.php';
     var lesson = null;
+    var scale = 0.9;
+    var newlesson = true;
 
     var Lesson = function(data) {
         /**
@@ -135,7 +137,7 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
             return false;
         },
         in_subcluster: function() {
-            if (this.location == "subcluster") {
+            if (this.location === "subcluster") {
                 return true;
             }
             return false;
@@ -267,6 +269,9 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
         in_cluster: function() {
             return lessonPage.prototype.in_cluster.call(this);
         },
+        in_subcluster: function() {
+            return false;
+        },
         update_jumps: function(jumpdata) {
             lessonPage.prototype.update_jumps.call(this, jumpdata);
         },
@@ -286,6 +291,9 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
     endofcluster_lessonPage.prototype = {
         in_cluster: function() {
             return lessonPage.prototype.in_cluster.call(this);
+        },
+        in_subcluster: function() {
+            return false;
         },
         update_jumps: function(jumpdata) {
             lessonPage.prototype.update_jumps.call(this, jumpdata);
@@ -440,6 +448,9 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
     endofbranch_lessonPage.prototype = {
         in_cluster: function() {
             return lessonPage.prototype.in_cluster.call(this);
+        },
+        in_subcluster: function() {
+            return lessonPage.prototype.in_subcluster.call(this);
         },
         update_jumps: function(jumpdata) {
             lessonPage.prototype.update_jumps.call(this, jumpdata);
@@ -624,11 +635,24 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
             return;
         }
 
-        var fromoffset = $('#mod_lesson_page_element_' + pagefrom).offset();
-        var tooffset = $('#mod_lesson_page_element_' + pageto).offset();
+        // console.log($('.mod_lesson_pages').scrollTop());
+        var scrolltopoffset = $('.mod_lesson_pages').scrollTop();
+        var scrollleftoffset = $('.mod_lesson_pages').scrollLeft();
+        // console.log($('.mod_lesson_pages').scrollLeft());
+
+        var fromoffset = $('#mod_lesson_page_element_' + pagefrom).position();
+        // console.log(fromoffset);
+        var tooffset = $('#mod_lesson_page_element_' + pageto).position();
+        fromoffset.top = fromoffset.top + (scrolltopoffset * 1) + 15;
+        tooffset.top = tooffset.top + (scrolltopoffset * 1) + 15;
+
+        fromoffset.left = fromoffset.left + (scrollleftoffset * 1);
+        tooffset.left = tooffset.left + (scrollleftoffset * 1);
+
 
         var fromx = fromoffset.left + $('#mod_lesson_page_element_' + pagefrom).width();
         var fromy = fromoffset.top + $('#mod_lesson_page_element_' + pagefrom).height();
+        // fromy = fromy + scrollleftoffset + 15;
 
         var length = Math.sqrt(((tooffset.left - fromx) * (tooffset.left - fromx)) +
                 ((tooffset.top - fromy) * (tooffset.top - fromy)));
@@ -639,7 +663,7 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
         htmlline += " -moz-transform:rotate(" + angle + "deg); -webkit-transform:rotate(" + angle + "deg);";
         htmlline += " -o-transform:rotate(" + angle + "deg); -ms-transform:rotate(" + angle + "deg);";
         htmlline += " transform:rotate(" + angle + "deg);' />";
-        $('body').append(htmlline);
+        $('.mod_lesson_pages').append(htmlline);
     };
 
     var drawalllines = function() {
@@ -657,7 +681,7 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
                     drawline(currentobject.clusterid, nextpageid);
                 } else if (nextpageid === "-9") {
                     drawline(currentobject.id, currentobject.id + '1');
-                } else if (!currentobject.in_cluster()) {
+                } else if (!currentobject.in_cluster() && !currentobject.in_subcluster()) {
                     drawline(currentobject.id, nextpageid);
                 }
             }
@@ -825,40 +849,41 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
                 
                 var childwidth = 270;
                 var childheight = 100;
-                // var clusterwidth = $("#mod_lesson_page_element_" + lessonpageid).width();
+                // // var clusterwidth = $("#mod_lesson_page_element_" + lessonpageid).width();
                 var clusterheight = $("#mod_lesson_page_element_" + lessonpageid).height();
                 var newwidth = 0;
                 var newheight = 0;
                 
-                if  (childcount > 3) {
-                    newwidth = childwidth * 3;
-                    additionalheight = (Math.ceil(childcount / 3) * childheight) + 10;
-                    newheight = 100 + additionalheight;
-                } else {
-                    var newchildcount = childcount;
-                    if (childcount == 0) {
-                        newchildcount = 1;
-                    }
-                    newwidth = childwidth * newchildcount;
+                // if  (childcount > 3) {
+                //     newwidth = childwidth * 3;
+                //     additionalheight = (Math.ceil(childcount / 3) * childheight) + 10;
+                //     newheight = 100 + additionalheight;
+                // } else {
+                    // var newchildcount = childcount;
+                    // if (childcount == 0) {
+                    //     newchildcount = 1;
+                    // }
+                    newwidth = childwidth;
                     if (clusterheight == 200) {
                         // Height does not need to be adjusted.
                         newheight = clusterheight;
                     } else {
                         newheight = clusterheight + (childheight * 1);
                     }
-                }
+                // }
                 
 
-                // Adjust the cluster width.
+                // // Adjust the cluster width.
                 $("#mod_lesson_page_element_" + lessonpageid).width(newwidth);
-                // Adjust the cluster height.
+                // // Adjust the cluster height.
                 $("#mod_lesson_page_element_" + lessonpageid).height(newheight);
-                // Position children in the cluster.
+                // // Position children in the cluster.
                 if (childcount) {
                     var originalx = $("#mod_lesson_page_element_" + lessonpageid).offset().left + 10;
                     var startx = originalx;
                     var starty = $("#mod_lesson_page_element_" + lessonpageid).offset().top + 80;
                     for (var key in currentobject.childrenids) {
+                        // $("#mod_lesson_page_element_" + currentobject.childrenids[key]).remove();
                         if ((key % 3) === 0 && key !== "0") {
                             starty = starty + 110;
                             $("#mod_lesson_page_element_" + currentobject.childrenids[key]).offset({
@@ -872,6 +897,9 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
                         }
 
                     }
+                    // $("#mod_lesson_page_element_" + lessonpageid).append('<div><p>Contains ' + childcount + ' page/s.</p></div>');
+                } else {
+                    // $("#mod_lesson_page_element_" + lessonpageid).append('<div>Empty</div>');
                 }
                 $("#mod_lesson_page_element_" + lessonpageid).droppable({
                     drop: attachElement,
@@ -1287,14 +1315,16 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
     var expandCluster = function() {
         // Always have to fetch that page ID.
         var lessonpageobject = $(this).parents('.mod_lesson_page_element');
-        var elementid = lessonpageobject.attr('id');
-        var pageid = elementid.split('_')[4];
+        // var elementid = lessonpageobject.attr('id');
+        // var pageid = elementid.split('_')[4];
         // console.log(lessonpageobject);
         // lessonpageobject.css({width: "300px", height: "300px"});
         lessonpageobject.animate({
             width: "700px",
-            height: "500px"
+            height: "500px",
+            overflow: "scroll"
         }, 500, function() {
+            lessonpageobject.css('z-index', '2');
             drawalllines();
         });
         
@@ -1310,8 +1340,10 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
         // lessonpageobject.css({width: "300px", height: "300px"});
         lessonpageobject.animate({
             width: "300px",
-            height: "175px"
+            height: "175px",
+            overflow: "scroll"
         }, 500, function() {
+            lessonpageobject.css('z-index', '0');
             drawalllines();
         });
         
@@ -1349,9 +1381,9 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
             stop: createLessonObject
         });
 
-        $('.mod_lesson_pages').scroll(function() {
-            drawalllines();
-        });
+        // $('.mod_lesson_pages').scroll(function() {
+        //     drawalllines();
+        // });
 
         $('.mod_lesson_page_element_body').on({
             dblclick: editTitle
@@ -1364,16 +1396,19 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
         var elementid = this.id;
         var pageids = elementid.split('_');
         var pageid = pageids[4];
+        var scrolltopoffset = $('.mod_lesson_pages').scrollTop();
+        var scrollleftoffset = $('.mod_lesson_pages').scrollLeft();
         var lessonobjectdata = {
             pageid: pageid,
-            positionx: Math.round(lastposition.left),
-            positiony: Math.round(lastposition.top)
+            positionx: Math.round(lastposition.left + (scrollleftoffset * 1)),
+            positiony: Math.round(lastposition.top + (scrolltopoffset * 1))
         };
 
         if (lessonobjectdata.positionx < 0) {
             lessonobjectdata.positionx = 0;
             var lessonelement = $("#mod_lesson_page_element_" + pageid);
             var parentelement = lessonelement.parent();
+            // Don't use this.
             lessonelement.position({
                 my: "left top",
                 at: "left+" + lessonobjectdata.positionx + " top+" + lessonobjectdata.positiony,
@@ -1384,6 +1419,7 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
             lessonobjectdata.positiony = 40;
             var lessonelement = $("#mod_lesson_page_element_" + pageid);
             var parentelement = lessonelement.parent();
+            // Don't use this.
             lessonelement.position({
                 my: "left top",
                 at: "left+" + lessonobjectdata.positionx + " top+" + lessonobjectdata.positiony,
@@ -1408,24 +1444,32 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
     };
 
     var setLessonPages = function() {
+        var parentelement = $(".mod_lesson_pages");
+
         for (elementid in lessonobjects) {
-            // End of cluster elements have been removed from this form.
-            if (lessonobjects[elementid].qtype !== "31" && lessonobjects[elementid].qtype !== "21") {
-                var newx = lessonobjects[elementid].x;
-                var newy = lessonobjects[elementid].y;
-                var lessonelement = $("#mod_lesson_page_element_" + elementid);
-                var parentelement = lessonelement.parent();
-                if (newx < 0) {
-                    newx = 0;
+            if (newlesson) {
+
+            } else {
+                // End of cluster elements have been removed from this form.
+                if (lessonobjects[elementid].qtype !== "31" && lessonobjects[elementid].qtype !== "21") {
+                    var newx = parseInt(lessonobjects[elementid].x);
+                    var newy = parseInt(lessonobjects[elementid].y);
+                    var lessonelement = $("#mod_lesson_page_element_" + elementid);
+                    // var parentelement = lessonelement.parent();
+                    // console.log(lessonobjects[elementid]);
+                    // console.log(lessonelement.offsetTop);
+
+                    if (newx < 0) {
+                        newx = 0;
+                    }
+                    if (newy < 0) {
+                        newy = 0;
+                    }
+                    newx = newx + 'px';
+                    newy = newy + 'px';
+                    // newy = (newy - 50) + 'px';
+                    lessonelement.css({position: "absolute", top: newy, left: newx});
                 }
-                if (newy < 40) {
-                    newy = 40;
-                }
-                lessonelement.position({
-                    my: "left top",
-                    at: "left+" + newx + " top+" + newy,
-                    of: parentelement
-                });
             }
         }
     };
@@ -1458,31 +1502,47 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
         return tmepthing.promise();
     };
 
+    var checkPagePositions = function() {
+        for (index in lesson.pages) {
+            if (lesson.pages[index].positionx > 0 || lesson.pages[index].positiony > 0) {
+                newlesson = false;
+                return;
+            }
+        }
+    };
+
     return {
 
         init: function(llessonid, pageid) {
             lessonid = llessonid;
             $.when(setLessonData(llessonid, pageid)).done(function(data) {
                 lessonobjects = data;
-                console.log(lessonobjects);
+                // console.log(lessonobjects);
 
                 lesson = new Lesson(lessonobjects);
-                console.log(lesson);
+                // console.log(lesson);
 
                 // Add end of lesson objects.
                 // addEOL();
+                checkPagePositions();
+                if (newlesson) {
+                    console.log('lesson is new');
+                } else {
+                    console.log('lesson is old');
+                }
+                setLessonPages();
                 // Format clusters.
                 formatClusters();
                 formatSubClusters();
 
                 // Position all elements.
-                setLessonPages();
 
                 // Draw lines between all of the objects.
                 drawalllines();
 
                 // addMenu();
                 resetListeners();
+                // setLessonPages();
 
                 $(".mod_lesson_menu").droppable({
                     out: replacecontent,
@@ -1495,14 +1555,13 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
                 //     event.preventDefault();
                 //     event.stopPropagation();
                 //     if (event.originalEvent.wheelDelta >= 0) {
-                //         var things = $(".mod_lesson_pages").find("*").css("font-size", "small");
-                //         var pageelements = $(".mod_lesson_page_element").css({"width": "240px", "height": "100px"});
-                //         // console.log('scroll up');
+                //         scale = scale - 0.1;
                 //     } else {
-                //         // console.log('scroll down');
-                //         var things = $(".mod_lesson_pages").find("*").css("font-size", "xx-small");
-                //         var pageelements = $(".mod_lesson_page_element").css({"width": "120px", "height": "75px"});
+                //         scale = scale + 0.1;
                 //     }
+                //     // var things = $(".mod_lesson_pages").css({"-webkit-transform": "scale(" + scale + ")"});
+                //     var things = $(".mod_lesson_pages").css({"zoom": scale, "-moz-transform": "scale(" + scale + ")"});
+                //     // var things = $(".mod_lesson_pages").find("*").css({"zoom": scale, "-moz-transform": "scale(" + scale + ")"});
                 //     drawalllines();
                 // });
 

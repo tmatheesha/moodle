@@ -107,8 +107,9 @@
 
 .mod_lesson_pages {
     height: 500px;
-    overflow: scroll;
+    overflow: auto;
     resize: vertical;
+    position: relative;
 }
 
 .mod_lesson_main .mod_lesson_page_element {
@@ -122,6 +123,7 @@
     margin: 1em 0;
     width: 240px;
     height: 100px;
+    overflow: auto;
 }
 /*.mod_lesson_main .mod_lesson_page_element > * {
     padding: 0.25em 0.5em;
@@ -137,10 +139,11 @@
 
 .mod_lesson_main .mod_lesson_page_element_body {
     padding: 5px 10px;
+    /*overflow: auto;*/
 }
 
 .path-mod-lesson .lessonline {
-    z-index: -1;
+    z-index: -2;
     padding: 0;
     margin: 0;
     height: 1px;
@@ -156,6 +159,7 @@
     min-height: 50px;
     padding: 0 20px;
     user-select: none;
+    z-index: 3;
 }
 
 .mod_lesson_menu_item {
