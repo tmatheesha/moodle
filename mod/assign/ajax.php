@@ -30,14 +30,18 @@ require_once($CFG->dirroot . '/mod/assign/locallib.php');
 $action = optional_param('action', '', PARAM_ALPHANUM);
 $assignid = optional_param('id', '', PARAM_ALPHANUM); // Definitely need this.
 $rownum = optional_param('rownum', '', PARAM_ALPHANUM);
+$userid = optional_param('userid', 0, PARAM_INT);
 
 list ($course, $cm) = get_course_and_cm_from_cmid($assignid, 'assign');
 $context = context_module::instance($cm->id);
 $assign = new assign($context, $cm, $course);
+if ($userid == 0) {
+    $userid = null;
+}
 
 if ($action == 'getmform') {
 
-    $mform = $assign->do_that_stuff('', $rownum);
+    $mform = $assign->do_that_stuff('', $rownum, $userid);
     $jsfooter = $PAGE->requires->get_end_code();
     $output = array($mform, $jsfooter);
 

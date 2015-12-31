@@ -3057,7 +3057,7 @@ class assign {
         return $o;
     }
 
-    public function do_that_stuff($mform, $rownum = 0) {
+    public function do_that_stuff($mform, $rownum = 0, $userid = null) {
         global $DB, $CFG, $PAGE, $OUTPUT;
 
         $PAGE->set_requirements_to_ajax();
@@ -3082,7 +3082,9 @@ class assign {
             $rownum = required_param('rownum', PARAM_INT);
         }
         $useridlistid = optional_param('useridlistid', time(), PARAM_INT);
-        $userid = optional_param('userid', 0, PARAM_INT);
+        if (!isset($userid)) {
+            $userid = optional_param('userid', 0, PARAM_INT);
+        }
         $attemptnumber = optional_param('attemptnumber', -1, PARAM_INT);
 
         $cache = cache::make_from_params(cache_store::MODE_SESSION, 'mod_assign', 'useridlist');
