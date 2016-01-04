@@ -338,8 +338,10 @@ class component_installer {
         // Moving to a safe place.
         @rename($destinationcomponent, $destinationcomponent.'_old');
 
+        $fp = get_file_packer('application/zip');
+        $unzipresult = $fp->extract_to_pathname($zipfile, $destinationdir);
     /// Unzip new version
-        if (!unzip_file($zipfile, $destinationdir, false)) {
+        if (!$unzipresult) {
         /// Error so, go back to the older
             @remove_dir($destinationcomponent);
             @rename ($destinationcomponent.'_old', $destinationcomponent);
