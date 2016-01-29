@@ -778,6 +778,8 @@ function grade_format_gradevalue_letter($value, $grade_item) {
     $value = grade_grade::standardise_score($value, $grade_item->grademin, $grade_item->grademax, 0, 100);
     $value = bounded_number(0, $value, 100); // just in case
     foreach ($letters as $boundary => $letter) {
+        // The boundary is a percentage out of 100 so use 0 as the min and 100 as the max.
+        $boundary = grade_grade::standardise_score($boundary, 0, 100, 0, 100);
         if ($value >= $boundary) {
             return format_string($letter);
         }
