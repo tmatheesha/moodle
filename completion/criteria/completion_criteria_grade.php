@@ -216,6 +216,10 @@ class completion_criteria_grade extends completion_criteria {
              ON gg.itemid = gi.id
             AND gg.userid = ra.userid
             LEFT JOIN
+                {grade_settings} gs
+             ON gi.courseid = gs.courseid
+            AND gs.name = \'decimalpoints\'
+            LEFT JOIN
                 {course_completion_crit_compl} cc
              ON cc.criteriaid = cr.id
             AND cc.userid = ra.userid
@@ -224,7 +228,7 @@ class completion_criteria_grade extends completion_criteria {
             AND con.contextlevel = '.CONTEXT_COURSE.'
             AND c.enablecompletion = 1
             AND cc.id IS NULL
-            AND gg.finalgrade >= cr.gradepass
+            AND round(gg.finalgrade, ' . $DB->sql_cast_char2int('gs.value', true) . ') >= cr.gradepass
         ';
 
         // Loop through completions, and mark as complete
