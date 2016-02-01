@@ -799,4 +799,20 @@ class core_upgradelib_testcase extends advanced_testcase {
         $this->assertEquals(array(103, 104), array_values($DB->get_fieldset_select('tag_instance', 'tagid',
                 'itemtype = ? AND itemid = ? ORDER BY tagid', array('course', 3))));
     }
+
+    public function test_upgrade_rounded_grade_grades() {
+        // Create some courses
+
+        // Create a course with a grade grade that doesn't have any changes to default rounding.
+        // Course completion tracking is enabled.
+        // Rounding will increase the final grade.
+
+        // Create a course with a grade grade that doesn't have any changes to default rounding.
+        // Course completion tracking is not enabled.
+        // Rounding will increase the final grade.
+
+        // Create a course with a grade grade that does have custom rounding.
+        // Course completion tracking is not enabled.
+        // Rounding will increase the final grade.
+    }
 }
