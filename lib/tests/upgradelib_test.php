@@ -29,6 +29,7 @@ global $CFG;
 require_once($CFG->libdir.'/upgradelib.php');
 require_once($CFG->dirroot . '/completion/criteria/completion_criteria.php');
 require_once($CFG->dirroot . '/completion/criteria/completion_criteria_grade.php');
+require_once($CFG->dirroot . '/completion/criteria/completion_criteria_date.php');
 
 
 /**
@@ -802,6 +803,11 @@ class core_upgradelib_testcase extends advanced_testcase {
                 'itemtype = ? AND itemid = ? ORDER BY tagid', array('course', 3))));
     }
 
+    /**
+     * Test that the upgrade script correctly flags courses to be frozen due to rounded grades affecting
+     * the final grade if displayed with letters, or the completion of a course if course grade is a
+     * completion criterion.
+     */
     public function test_upgrade_rounded_grade_grades() {
         global $CFG, $DB;
         $this->resetAfterTest(true);
@@ -812,49 +818,77 @@ class core_upgradelib_testcase extends advanced_testcase {
         // Enable course completion tracking.
         $CFG->enablecompletion = 1;
         // Create a course and enable completion tracking.
-        $course = $this->getDataGenerator()->create_course(array('enablecompletion' => true));
+        $courses[] = $this->getDataGenerator()->create_course(array('enablecompletion' => true));
+        $courses[] = $this->getDataGenerator()->create_course();
+        $courses[] = $this->getDataGenerator()->create_course();
+        $courses[] = $this->getDataGenerator()->create_course();
+        $courses[] = $this->getDataGenerator()->create_course();
+        $courses[] = $this->getDataGenerator()->create_course(array('enablecompletion' => true));
 
-        $criteria = new completion_criteria_grade(array('course' => $course->id, 'gradepass' => 70.00));
+        foreach ($courses as $course) {
+            $assignrow = $this->getDataGenerator()->create_module('assign', array('course' => $course->id, 'name' => 'Test!'));
+            $gi = grade_item::fetch(
+                    array('itemtype' => 'mod',
+                          'itemmodule' => 'assign',
+                          'iteminstance' => $assignrow->id,
+                          'courseid' => $course->id));
+
+            $gradegrade = new grade_grade();
+            $gradegrade->itemid = $gi->id;
+            $gradegrade->userid = $user->id;
+            $gradegrade->rawgrade = 55.5563;
+            $gradegrade->finalgrade = 55.5563;
+            $gradegrade->rawgrademax = 100;
+            $gradegrade->rawgrademin = 0;
+            $gradegrade->timecreated = time();
+            $gradegrade->timemodified = time();
+            $gradegrade->insert();
+        }
+
+        $criteria = new completion_criteria_grade(array('course' => $courses[0]->id, 'gradepass' => 70.00));
+        $criteria->insert();
+        $criteria = new completion_criteria_date(array('course' => $courses[5]->id, 'timeend' => time()));
         $criteria->insert();
 
-        $coursegradeitem = grade_item::fetch_course_item($course->id);
-        $coursecontext = context_course::instance($course->id);
+        grade_set_setting($courses[2]->id, 'displaytype', GRADE_DISPLAY_TYPE_LETTER);
+        grade_set_setting($courses[3]->id, 'displaytype', GRADE_DISPLAY_TYPE_LETTER);
+        grade_set_setting($courses[4]->id, 'displaytype', GRADE_DISPLAY_TYPE_LETTER);
+        grade_set_setting($courses[3]->id, 'decimalpoints', '0');
+        grade_set_setting($courses[4]->id, 'decimalpoints', '3');
 
-        $assignrow = $this->getDataGenerator()->create_module('assign', array(
-                     'course' => $course->id, 'name' => 'Test!'));
-         // $assign = new assign(context_module::instance($assignrow->cmid), false, false);
-
-        $gi = grade_item::fetch(array('itemtype' => 'mod', 'itemmodule' => 'assign', 'iteminstance' => $assignrow->id, 'courseid' => $course->id));
-
-        $gradegrade = new grade_grade();
-        $gradegrade->itemid = $gi->id;
-        $gradegrade->userid = $user->id;
-        $gradegrade->rawgrade = 55.556;
-        $gradegrade->finalgrade = 55.556;
-        $gradegrade->rawgrademax = 100;
-        $gradegrade->rawgrademin = 0;
-        $gradegrade->timecreated = time();
-        $gradegrade->timemodified = time();
-        $gradegrade->insert();
-
-        // $thing = $DB->get_records('grade_grades');
-        // print_object($thing);
-        $other = upgrade_rounded_grade_items();
-        // print_object($other);
-
+        upgrade_rounded_grade_items();
         // Create a course with a grade grade that doesn't have any changes to default rounding.
         // Course completion tracking is enabled.
         // Rounding will increase the final grade.
-
+        // Course is not using letter grades.
+        $this->assertEquals(20160202, $CFG->{'gradebook_calculations_freeze_' . $courses[0]->id});
         // Create a course with a grade grade that doesn't have any changes to default rounding.
         // Course completion tracking is not enabled.
         // Rounding will increase the final grade.
-
+        // Course is not using letter grades. (not affected).
+        $this->assertTrue(empty($CFG->{'gradebook_calculations_freeze_' . $courses[1]->id}));
+        // Create a course with a grade grade that doesn't have any changes to default rounding.
+        // Course completion tracking is not enabled.
+        // Rounding will increase the final grade.
+        // Course is using letter grades.
+        $this->assertEquals(20160202, $CFG->{'gradebook_calculations_freeze_' . $courses[2]->id});
         // Create a course with a grade grade that does have custom rounding.
         // Course completion tracking is not enabled.
         // Rounding will increase the final grade.
+        // Course is using letter grades.
+        $this->assertEquals(20160202, $CFG->{'gradebook_calculations_freeze_' . $courses[3]->id});
+        // Create a course with a grade grade that does have custom rounding.
+        // Course completion tracking is not enabled.
+        // Rounding will not increase the final grade. (not affected).
+        // Course is using letter grades.
+        $this->assertTrue(empty($CFG->{'gradebook_calculations_freeze_' . $courses[4]->id}));
+        // Create a course with a grade grade that doesn't have any changes to default rounding.
+        // Course completion tracking is enabled, but the completion criterion is not grade. (not affected).
+        // Rounding will increase the final grade.
+        // Course is not using letter grades.
+        $this->assertTrue(empty($CFG->{'gradebook_calculations_freeze_' . $courses[5]->id}));
 
 
-        // Need to test 57 letter grade problem.
+        // @TODO Need to test 57 letter grade problem.
     }
 }

@@ -689,31 +689,83 @@ function upgrade_course_tags() {
     $DB->execute("DELETE FROM {tag_instance} WHERE itemtype = ? AND tiuserid <> 0", array('course'));
 }
 
+/**
+ * Marks all courses that require rounded grade items be updated.
+ *
+ * Used during upgrade and in course restore process.
+ *
+ * This upgrade script is needed because it has been decided that if a grade is rounded up, and it will changed a letter
+ * grade or satisfy a course completion grade criteria, then it should be set as so, and the letter will be awarded and or
+ * the course completion grade will be awarded.
+ *
+ * @param int $courseid Specify a course ID to run this script on just one course.
+ */
 function upgrade_rounded_grade_items($courseid = null) {
     global $DB, $CFG;
 
-    // @TODO Check that the global enable completion tracking is also enabled.
+    $coursesql = '';
+    $params = array();
+    if (!empty($courseid)) {
+        $coursesql = 'AND c.id = :courseid';
+        $params['courseid'] = $courseid;
+    }
 
-    $sql = "SELECT gg.id, gg.finalgrade, c.id as courseid
+    $sql = "SELECT gg.id, gg.finalgrade, c.id AS courseid, c.enablecompletion AS coursecompletion, gss.value AS decimalpoints,
+                   gs.value AS displaytype
               FROM {grade_grades} gg
               JOIN {grade_items} gi ON gi.id = gg.itemid
               JOIN {course} c ON c.id = gi.courseid
-              LEFT JOIN {course_completion_criteria} ccc ON ccc.course = gi.courseid
-              LEFT JOIN {grade_settings} gs ON gi.courseid = gs.courseid AND (gs.name = 'displaytype' AND gs.value IN ('3', '31', '32'))
+         LEFT JOIN {grade_settings} gs ON gi.courseid = gs.courseid AND (gs.name = 'displaytype' AND gs.value IN ('3', '31', '32'))
+         LEFT JOIN {grade_settings} gss ON gi.courseid = gss.courseid AND gss.name = 'decimalpoints'
+         LEFT JOIN {course_completion_criteria} ccc ON gi.courseid = ccc.course AND ccc.criteriatype = 6
              WHERE NOT (gg.finalgrade IS NULL)
-               AND ((((
-                    SELECT value
-                      FROM {config}
-                     WHERE name = 'grade_displaytype'
-                ) IN ('3', '31', '32'))
-                OR (gs.name = 'displaytype' AND gs.value IN ('3', '31', '32'))) OR (c.enablecompletion = 1 AND ccc.criteriatype = 6))
-             ORDER BY gg.id";
+               AND (gs.value IN ('3', '31', '32') OR (c.enablecompletion = 1 AND ccc.criteriatype = 6))
+               $coursesql";
 
-    $potentialfinalgrades = $DB->get_recordset_sql($sql);
-    foreach ($potentialfinalgrades as $key => $value) {
-        print_object($value);
+    $collectedcourseids = array();
+    $potentialfinalgrades = $DB->get_recordset_sql($sql, $params);
+    foreach ($potentialfinalgrades as $value) {
+        // If we already have this course ID then move on to the next record.
+        if (!in_array($value->courseid, $collectedcourseids)) {
+            // Check to see if course completion tracking is enabled on the site.
+            if ($value->coursecompletion == 1 && empty($value->displaytype) && empty($CFG->enablecompletion)) {
+                continue;
+            }
+            // Retrieve the current decimalpoint value for this course.
+            $decimalpoints = ($value->decimalpoints) ? $value->decimalpoints : $CFG->grade_decimalpoints;
+            // If the rounded value is different to the truncated value then there is a potential for a grade to be changed.
+            // Five is the limit that Moodle decimal points go to.
+            if (round($value->finalgrade, $decimalpoints) != substr($value->finalgrade, 0, $decimalpoints - 5)) {
+                // We have a winner.
+                $collectedcourseids[] = $value->courseid;
+                // Flag this course as being frozen.
+                $gradebookfreeze = get_config('core', 'gradebook_calculations_freeze_' . $value->courseid);
+                if (!$gradebookfreeze) {
+                    // Remember to set the freeze number to between the current build number and less than the next build number.
+                    set_config('gradebook_calculations_freeze_' . $value->courseid, 20160202);
+                }
+            } else {
+                // Check for 57 letter grade issue.
+                if (!empty($value->displaytype)) {
+                    $coursecontext = context_course::instance($value->courseid);
+                    $letters = grade_get_letters($coursecontext);
+                    foreach ($letters as $boundary => $notused) {
+                        $standardisedboundary = grade_grade::standardise_score($boundary, 0, 100, 0, 100);
+                        if ($boundary != $standardisedboundary) {
+                            // We have a course with a possible score standardisation problem. Flag for freeze.
+                            $collectedcourseids[] = $value->courseid;
+                            // Flag this course as being frozen.
+                            $gradebookfreeze = get_config('core', 'gradebook_calculations_freeze_' . $value->courseid);
+                            if (!$gradebookfreeze) {
+                                // Remember to set the freeze number to between the current build number and less than the next
+                                // build number.
+                                set_config('gradebook_calculations_freeze_' . $value->courseid, 20160202);
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
     $potentialfinalgrades->close();
-    return $potentialfinalgrades;
-
 }
