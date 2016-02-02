@@ -692,20 +692,28 @@ function upgrade_course_tags() {
 function upgrade_rounded_grade_items($courseid = null) {
     global $DB, $CFG;
 
-    $sql = "SELECT gg.finalgrade, c.id
-              FROM mdl_grade_grades gg, mdl_grade_items gi, mdl_course c, mdl_grade_settings gs, mdl_course_completion_criteria ccc
-             WHERE gi.id = gg.itemid
-               AND gi.courseid = c.id
-               AND gs.courseid = gi.courseid
-               AND gi.courseid = ccc.course
+    // @TODO Check that the global enable completion tracking is also enabled.
+
+    $sql = "SELECT gg.id, gg.finalgrade, c.id as courseid
+              FROM {grade_grades} gg
+              JOIN {grade_items} gi ON gi.id = gg.itemid
+              JOIN {course} c ON c.id = gi.courseid
+              LEFT JOIN {course_completion_criteria} ccc ON ccc.course = gi.courseid
+              LEFT JOIN {grade_settings} gs ON gi.courseid = gs.courseid AND (gs.name = 'displaytype' AND gs.value IN ('3', '31', '32'))
+             WHERE NOT (gg.finalgrade IS NULL)
                AND ((((
                     SELECT value
-                      FROM mdl_config
+                      FROM {config}
                      WHERE name = 'grade_displaytype'
-                    ) = '3')
-                OR (gs.name = 'displaytype' AND gs.value in ('3', '31', '32'))) OR (c.enablecompletion = 1 AND ccc.criteriatype = 6))
-               AND NOT (gg.finalgrade IS NULL)";
+                ) IN ('3', '31', '32'))
+                OR (gs.name = 'displaytype' AND gs.value IN ('3', '31', '32'))) OR (c.enablecompletion = 1 AND ccc.criteriatype = 6))
+             ORDER BY gg.id";
 
     $potentialfinalgrades = $DB->get_recordset_sql($sql);
+    foreach ($potentialfinalgrades as $key => $value) {
+        print_object($value);
+    }
+    $potentialfinalgrades->close();
+    return $potentialfinalgrades;
 
 }

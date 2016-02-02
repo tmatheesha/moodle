@@ -27,6 +27,8 @@ defined('MOODLE_INTERNAL') || die();
 
 global $CFG;
 require_once($CFG->libdir.'/upgradelib.php');
+require_once($CFG->dirroot . '/completion/criteria/completion_criteria.php');
+require_once($CFG->dirroot . '/completion/criteria/completion_criteria_grade.php');
 
 
 /**
@@ -801,7 +803,44 @@ class core_upgradelib_testcase extends advanced_testcase {
     }
 
     public function test_upgrade_rounded_grade_grades() {
-        // Create some courses
+        global $CFG, $DB;
+        $this->resetAfterTest(true);
+
+        // Create a user.
+        $user = $this->getDataGenerator()->create_user();
+
+        // Enable course completion tracking.
+        $CFG->enablecompletion = 1;
+        // Create a course and enable completion tracking.
+        $course = $this->getDataGenerator()->create_course(array('enablecompletion' => true));
+
+        $criteria = new completion_criteria_grade(array('course' => $course->id, 'gradepass' => 70.00));
+        $criteria->insert();
+
+        $coursegradeitem = grade_item::fetch_course_item($course->id);
+        $coursecontext = context_course::instance($course->id);
+
+        $assignrow = $this->getDataGenerator()->create_module('assign', array(
+                     'course' => $course->id, 'name' => 'Test!'));
+         // $assign = new assign(context_module::instance($assignrow->cmid), false, false);
+
+        $gi = grade_item::fetch(array('itemtype' => 'mod', 'itemmodule' => 'assign', 'iteminstance' => $assignrow->id, 'courseid' => $course->id));
+
+        $gradegrade = new grade_grade();
+        $gradegrade->itemid = $gi->id;
+        $gradegrade->userid = $user->id;
+        $gradegrade->rawgrade = 55.556;
+        $gradegrade->finalgrade = 55.556;
+        $gradegrade->rawgrademax = 100;
+        $gradegrade->rawgrademin = 0;
+        $gradegrade->timecreated = time();
+        $gradegrade->timemodified = time();
+        $gradegrade->insert();
+
+        // $thing = $DB->get_records('grade_grades');
+        // print_object($thing);
+        $other = upgrade_rounded_grade_items();
+        // print_object($other);
 
         // Create a course with a grade grade that doesn't have any changes to default rounding.
         // Course completion tracking is enabled.
@@ -814,5 +853,8 @@ class core_upgradelib_testcase extends advanced_testcase {
         // Create a course with a grade grade that does have custom rounding.
         // Course completion tracking is not enabled.
         // Rounding will increase the final grade.
+
+
+        // Need to test 57 letter grade problem.
     }
 }
