@@ -186,7 +186,7 @@ class completion_criteria_grade extends completion_criteria {
      * Find user's who have completed this criteria
      */
     public function cron() {
-        global $DB;
+        global $DB, $CFG;
 
         // Get all users who meet this criteria
         $sql = '
@@ -195,7 +195,9 @@ class completion_criteria_grade extends completion_criteria {
                 cr.id AS criteriaid,
                 ra.userid AS userid,
                 gg.finalgrade AS gradefinal,
-                gg.timemodified AS timecompleted
+                gg.timemodified AS timecompleted,
+                gs.value AS decimalpoints,
+                cr.gradepass AS passinggrade
             FROM
                 {course_completion_criteria} cr
             INNER JOIN
@@ -228,14 +230,21 @@ class completion_criteria_grade extends completion_criteria {
             AND con.contextlevel = '.CONTEXT_COURSE.'
             AND c.enablecompletion = 1
             AND cc.id IS NULL
-            AND round(gg.finalgrade, ' . $DB->sql_cast_char2int('gs.value', true) . ') >= cr.gradepass
         ';
 
         // Loop through completions, and mark as complete
         $rs = $DB->get_recordset_sql($sql);
         foreach ($rs as $record) {
-            $completion = new completion_criteria_completion((array) $record, DATA_OBJECT_FETCH_BY_KEY);
-            $completion->mark_complete($record->timecompleted);
+            // Get the decimal points used for this record.
+            $decimalpoints = (!empty($record->decimalpoints) ? $record->decimalpoints : $CFG->grade_decimalpoints);
+            // If the rounded value is greater than or equal to the passing grade then mark as complete.
+            if (round($record->gradefinal, $decimalpoints) >= $record->passinggrade) {
+                // Remove fields used for comparisons and not being inserted into the database.
+                unset($record->decimalpoints);
+                unset($record->passinggrade);
+                $completion = new completion_criteria_completion((array) $record, DATA_OBJECT_FETCH_BY_KEY);
+                $completion->mark_complete($record->timecompleted);
+            }
         }
         $rs->close();
     }
