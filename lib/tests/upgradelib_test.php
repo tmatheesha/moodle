@@ -824,6 +824,9 @@ class core_upgradelib_testcase extends advanced_testcase {
         $courses[] = $this->getDataGenerator()->create_course();
         $courses[] = $this->getDataGenerator()->create_course();
         $courses[] = $this->getDataGenerator()->create_course(array('enablecompletion' => true));
+        $courses[] = $this->getDataGenerator()->create_course(array('enablecompletion' => true));
+        $courses[] = $this->getDataGenerator()->create_course(array('enablecompletion' => true));
+        $courses[] = $this->getDataGenerator()->create_course();
 
         foreach ($courses as $course) {
             $assignrow = $this->getDataGenerator()->create_module('assign', array('course' => $course->id, 'name' => 'Test!'));
@@ -848,13 +851,39 @@ class core_upgradelib_testcase extends advanced_testcase {
         $criteria = new completion_criteria_grade(array('course' => $courses[0]->id, 'gradepass' => 70.00));
         $criteria->insert();
         $criteria = new completion_criteria_date(array('course' => $courses[5]->id, 'timeend' => time()));
+        $criteria = new completion_criteria_date(array('course' => $courses[6]->id, 'timeend' => time()));
         $criteria->insert();
 
         grade_set_setting($courses[2]->id, 'displaytype', GRADE_DISPLAY_TYPE_LETTER);
         grade_set_setting($courses[3]->id, 'displaytype', GRADE_DISPLAY_TYPE_LETTER);
         grade_set_setting($courses[4]->id, 'displaytype', GRADE_DISPLAY_TYPE_LETTER);
+        grade_set_setting($courses[6]->id, 'displaytype', GRADE_DISPLAY_TYPE_LETTER);
+        grade_set_setting($courses[7]->id, 'displaytype', GRADE_DISPLAY_TYPE_LETTER);
+        grade_set_setting($courses[8]->id, 'displaytype', GRADE_DISPLAY_TYPE_LETTER);
         grade_set_setting($courses[3]->id, 'decimalpoints', '0');
         grade_set_setting($courses[4]->id, 'decimalpoints', '3');
+        grade_set_setting($courses[7]->id, 'decimalpoints', '3');
+        grade_set_setting($courses[8]->id, 'decimalpoints', '3');
+
+        $context = context_course::instance($courses[8]->id);
+        // Alter the boundaries so that one of them is 57.
+        $newlettersscale = array(
+            array('contextid' => $context->id, 'lowerboundary' => 90.00000, 'letter' => 'A'),
+            array('contextid' => $context->id, 'lowerboundary' => 85.00000, 'letter' => 'A-'),
+            array('contextid' => $context->id, 'lowerboundary' => 80.00000, 'letter' => 'B+'),
+            array('contextid' => $context->id, 'lowerboundary' => 75.00000, 'letter' => 'B'),
+            array('contextid' => $context->id, 'lowerboundary' => 70.00000, 'letter' => 'B-'),
+            array('contextid' => $context->id, 'lowerboundary' => 65.00000, 'letter' => 'C+'),
+            array('contextid' => $context->id, 'lowerboundary' => 57.00000, 'letter' => 'C'),
+            array('contextid' => $context->id, 'lowerboundary' => 50.00000, 'letter' => 'C-'),
+            array('contextid' => $context->id, 'lowerboundary' => 40.00000, 'letter' => 'D+'),
+            array('contextid' => $context->id, 'lowerboundary' => 25.00000, 'letter' => 'D'),
+            array('contextid' => $context->id, 'lowerboundary' => 0.00000, 'letter' => 'F'),
+        );
+        foreach ($newlettersscale as $record) {
+            // There is no API to do this, so we have to manually insert into the database.
+            $DB->insert_record('grade_letters', $record);
+        }
 
         upgrade_rounded_grade_items();
         // Create a course with a grade grade that doesn't have any changes to default rounding.
@@ -887,8 +916,16 @@ class core_upgradelib_testcase extends advanced_testcase {
         // Rounding will increase the final grade.
         // Course is not using letter grades.
         $this->assertTrue(empty($CFG->{'gradebook_calculations_freeze_' . $courses[5]->id}));
-
+        // Create a course with a grade grade that doesn't have any changes to default rounding.
+        // Course completion tracking is enabled, but the completion criterion is not grade.
+        // Rounding will increase the final grade.
+        // Course is using letter grades.
+        $this->assertEquals(20160202, $CFG->{'gradebook_calculations_freeze_' . $courses[6]->id});
 
         // @TODO Need to test 57 letter grade problem.
+        // With no alterations to the letter boundaries there should be no freeze of this course.
+        $this->assertTrue(empty($CFG->{'gradebook_calculations_freeze_' . $courses[7]->id}));
+        // With an alteration to the letter boundaries. There should be a course freeze.
+        $this->assertEquals(20160202, $CFG->{'gradebook_calculations_freeze_' . $courses[8]->id});
     }
 }
