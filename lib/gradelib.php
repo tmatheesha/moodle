@@ -778,13 +778,22 @@ function grade_format_gradevalue_letter($value, $grade_item) {
     $value = grade_grade::standardise_score($value, $grade_item->grademin, $grade_item->grademax, 0, 100);
     $value = bounded_number(0, $value, 100); // just in case
 
-    // If rounding is set up then use the rounded value for the letter comparison.
-    $decimals = $grade_item->get_decimals();
-    $value = format_float($value, $decimals);
+    $gradebookcalculationsfreeze = get_config('core', 'gradebook_calculations_freeze_' . $grade_item->courseid);
+    if ($gradebookcalculationsfreeze && (int)$gradebookcalculationsfreeze <= 20160205) {
+        // Do nothing.
+    } else {
+        // If rounding is set up then use the rounded value for the letter comparison.
+        $decimals = $grade_item->get_decimals();
+        $value = format_float($value, $decimals);
+    }
 
     foreach ($letters as $boundary => $letter) {
-        // The boundary is a percentage out of 100 so use 0 as the min and 100 as the max.
-        $boundary = grade_grade::standardise_score($boundary, 0, 100, 0, 100);
+        if ($gradebookcalculationsfreeze && (int)$gradebookcalculationsfreeze <= 20160205) {
+            // Do nothing.
+        } else {
+            // The boundary is a percentage out of 100 so use 0 as the min and 100 as the max.
+            $boundary = grade_grade::standardise_score($boundary, 0, 100, 0, 100);
+        }
         if ($value >= $boundary) {
             return format_string($letter);
         }

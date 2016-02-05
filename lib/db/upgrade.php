@@ -4916,29 +4916,29 @@ function xmldb_main_upgrade($oldversion) {
         upgrade_main_savepoint(true, 2016020201.00);
     }
 
-    if ($oldversion < 2016020400.01) {
-        // MDL-21746. This issue fixes multiple problems with rounding, letter boundaries, and course completion.
-        // If any of the following happen then the course will be flagged for freezing.
-        // If a course is using letter boundaries and the rounding of a grade will cause it to increase.
-        // The course has course completion tracking enabled, there is a grade requirement for course completion, and the rounding
-        // of a grade will course it to increase.
-        // The letter boundaries have been changed and the standardization of the letter boundary doesn't match the original
-        // number.
- 
-        // If the changes are accepted and a regrade is done on the gradebook then some grades may change significantly.
-        // This is here to freeze the gradebook in affected courses.
- 
-        // This script is included in each major version upgrade process so make sure we don't run it twice.
-        if (empty($CFG->upgrade_roundedgradeitems)) {
-            upgrade_rounded_grade_items();
- 
-            // To skip running the same script on the upgrade to the next major release.
-            set_config('upgrade_roundedgradeitems', 1);
-        }
+    // if ($oldversion < 2016020400.01) {
+    //     // MDL-21746. This issue fixes multiple problems with rounding, letter boundaries, and course completion.
+    //     // If any of the following happen then the course will be flagged for freezing.
+    //     // If a course is using letter boundaries and the rounding of a grade will cause it to increase.
+    //     // The course has course completion tracking enabled, there is a grade requirement for course completion, and the rounding
+    //     // of a grade will course it to increase.
+    //     // The letter boundaries have been changed and the standardization of the letter boundary doesn't match the original
+    //     // number.
 
-        // Main savepoint reached.
-        upgrade_main_savepoint(true, 2016020400.01);
-    }
+    //     // If the changes are accepted and a regrade is done on the gradebook then some grades may change significantly.
+    //     // This is here to freeze the gradebook in affected courses.
+
+    //     // This script is included in each major version upgrade process so make sure we don't run it twice.
+    //     if (empty($CFG->upgrade_roundedgradeitems)) {
+    //         upgrade_rounded_grade_items();
+
+    //         // To skip running the same script on the upgrade to the next major release.
+    //         set_config('upgrade_roundedgradeitems', 1);
+    //     }
+
+    //     // Main savepoint reached.
+    //     upgrade_main_savepoint(true, 2016020400.01);
+    // }
 
     return true;
 }

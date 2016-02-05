@@ -968,6 +968,8 @@ class grade_grade extends grade_object {
      * @return bool
      */
     public function is_passed($grade_item = null) {
+        global $CFG;
+
         if (empty($grade_item)) {
             if (!isset($this->grade_item)) {
                 $this->load_grade_item();
@@ -991,7 +993,13 @@ class grade_grade extends grade_object {
             return null;
         }
 
-        return $this->finalgrade >= $this->grade_item->gradepass;
+        if (isset($this->grade_item->decimals)) {
+            $decimal = $this->grade_item->decimals;
+        } else {
+            $decimal = grade_get_setting($this->grade_item->courseid, 'decimalpoints', $CFG->grade_decimalpoints);
+        }
+
+        return round($this->finalgrade, $decimal) >= $this->grade_item->gradepass;
     }
 
     /**

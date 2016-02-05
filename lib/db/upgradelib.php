@@ -710,16 +710,18 @@ function upgrade_rounded_grade_items($courseid = null) {
         $params['courseid'] = $courseid;
     }
 
-    $sql = "SELECT gg.id, gg.finalgrade, c.id AS courseid, c.enablecompletion AS coursecompletion, gss.value AS decimalpoints,
-                   gs.value AS displaytype
+    $sql = "SELECT DISTINCT gg.id, gg.finalgrade, c.id AS courseid, c.enablecompletion AS coursecompletion, gss.value AS decimalpoints,
+                   gs.value AS displaytype, gi.decimals, gi.gradepass
               FROM {grade_grades} gg
               JOIN {grade_items} gi ON gi.id = gg.itemid
               JOIN {course} c ON c.id = gi.courseid
          LEFT JOIN {grade_settings} gs ON gi.courseid = gs.courseid AND (gs.name = 'displaytype' AND gs.value IN ('3', '31', '32'))
          LEFT JOIN {grade_settings} gss ON gi.courseid = gss.courseid AND gss.name = 'decimalpoints'
-         LEFT JOIN {course_completion_criteria} ccc ON gi.courseid = ccc.course AND ccc.criteriatype = 6
+         LEFT JOIN {course_completion_criteria} ccc ON gi.courseid = ccc.course AND ccc.criteriatype IN (4,6)
              WHERE NOT (gg.finalgrade IS NULL)
-               AND (gs.value IN ('3', '31', '32') OR (c.enablecompletion = 1 AND ccc.criteriatype = 6))
+               AND (gs.value IN ('3', '31', '32')
+                    OR (c.enablecompletion = 1 AND ccc.criteriatype IN (4,6))
+                    OR gi.gradepass <> 0.00000)
                $coursesql";
 
     $collectedcourseids = array();
