@@ -742,7 +742,7 @@ function upgrade_rounded_grade_items($courseid = null) {
                 $gradebookfreeze = get_config('core', 'gradebook_calculations_freeze_' . $value->courseid);
                 if (!$gradebookfreeze) {
                     // Remember to set the freeze number to between the current build number and less than the next build number.
-                    set_config('gradebook_calculations_freeze_' . $value->courseid, 20160202);
+                    set_config('gradebook_calculations_freeze_' . $value->courseid, 20160205);
                 }
             } else {
                 // Check for 57 letter grade issue.
@@ -759,7 +759,7 @@ function upgrade_rounded_grade_items($courseid = null) {
                             if (!$gradebookfreeze) {
                                 // Remember to set the freeze number to between the current build number and less than the next
                                 // build number.
-                                set_config('gradebook_calculations_freeze_' . $value->courseid, 20160202);
+                                set_config('gradebook_calculations_freeze_' . $value->courseid, 20160205);
                             }
                         }
                     }
