@@ -827,6 +827,7 @@ class core_upgradelib_testcase extends advanced_testcase {
         $courses[] = $this->getDataGenerator()->create_course(array('enablecompletion' => true));
         $courses[] = $this->getDataGenerator()->create_course(array('enablecompletion' => true));
         $courses[] = $this->getDataGenerator()->create_course();
+        $courses[] = $this->getDataGenerator()->create_course();
 
         foreach ($courses as $course) {
             $assignrow = $this->getDataGenerator()->create_module('assign', array('course' => $course->id, 'name' => 'Test!'));
@@ -890,7 +891,7 @@ class core_upgradelib_testcase extends advanced_testcase {
         // Course completion tracking is enabled.
         // Rounding will increase the final grade.
         // Course is not using letter grades.
-        $this->assertEquals(20160202, $CFG->{'gradebook_calculations_freeze_' . $courses[0]->id});
+        $this->assertEquals(20160205, $CFG->{'gradebook_calculations_freeze_' . $courses[0]->id});
         // Create a course with a grade grade that doesn't have any changes to default rounding.
         // Course completion tracking is not enabled.
         // Rounding will increase the final grade.
@@ -900,12 +901,12 @@ class core_upgradelib_testcase extends advanced_testcase {
         // Course completion tracking is not enabled.
         // Rounding will increase the final grade.
         // Course is using letter grades.
-        $this->assertEquals(20160202, $CFG->{'gradebook_calculations_freeze_' . $courses[2]->id});
+        $this->assertEquals(20160205, $CFG->{'gradebook_calculations_freeze_' . $courses[2]->id});
         // Create a course with a grade grade that does have custom rounding.
         // Course completion tracking is not enabled.
         // Rounding will increase the final grade.
         // Course is using letter grades.
-        $this->assertEquals(20160202, $CFG->{'gradebook_calculations_freeze_' . $courses[3]->id});
+        $this->assertEquals(20160205, $CFG->{'gradebook_calculations_freeze_' . $courses[3]->id});
         // Create a course with a grade grade that does have custom rounding.
         // Course completion tracking is not enabled.
         // Rounding will not increase the final grade. (not affected).
@@ -920,12 +921,12 @@ class core_upgradelib_testcase extends advanced_testcase {
         // Course completion tracking is enabled, but the completion criterion is not grade.
         // Rounding will increase the final grade.
         // Course is using letter grades.
-        $this->assertEquals(20160202, $CFG->{'gradebook_calculations_freeze_' . $courses[6]->id});
+        $this->assertEquals(20160205, $CFG->{'gradebook_calculations_freeze_' . $courses[6]->id});
 
         // @TODO Need to test 57 letter grade problem.
         // With no alterations to the letter boundaries there should be no freeze of this course.
         $this->assertTrue(empty($CFG->{'gradebook_calculations_freeze_' . $courses[7]->id}));
         // With an alteration to the letter boundaries. There should be a course freeze.
-        $this->assertEquals(20160202, $CFG->{'gradebook_calculations_freeze_' . $courses[8]->id});
+        $this->assertEquals(20160205, $CFG->{'gradebook_calculations_freeze_' . $courses[8]->id});
     }
 }

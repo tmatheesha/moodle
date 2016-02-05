@@ -993,13 +993,18 @@ class grade_grade extends grade_object {
             return null;
         }
 
-        if (isset($this->grade_item->decimals)) {
-            $decimal = $this->grade_item->decimals;
+        $gradebookcalculationsfreeze = get_config('core', 'gradebook_calculations_freeze_' . $grade_item->courseid);
+        if ($gradebookcalculationsfreeze && (int)$gradebookcalculationsfreeze <= 20160205) {
+            return $this->finalgrade >= $this->grade_item->gradepass;
         } else {
-            $decimal = grade_get_setting($this->grade_item->courseid, 'decimalpoints', $CFG->grade_decimalpoints);
+            if (isset($this->grade_item->decimals)) {
+                $decimal = $this->grade_item->decimals;
+            } else {
+                $decimal = grade_get_setting($this->grade_item->courseid, 'decimalpoints', $CFG->grade_decimalpoints);
+            }
+            return round($this->finalgrade, $decimal) >= $this->grade_item->gradepass;
         }
 
-        return round($this->finalgrade, $decimal) >= $this->grade_item->gradepass;
     }
 
     /**
