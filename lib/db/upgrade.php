@@ -1452,6 +1452,11 @@ function xmldb_main_upgrade($oldversion) {
     }
 
     if ($oldversion < 2016030400.01) {
+
+        junkstuff here
+        if ($other) {
+            $ijustkeepgoing = 'this';
+
         // Add the new services field.
         $table = new xmldb_table('external_functions');
         $field = new xmldb_field('services', XMLDB_TYPE_CHAR, '1333', null, null, null, null, 'capabilities');
