@@ -89,31 +89,42 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
         var responseeditor = "response_editor[" + i + "]";
         var lessonscore = "score[" + i + "]";
 
-        while (lessonobjectdata.hasOwnProperty(jumpname)) {
-            this.jumps[i] = {
-                id: parseInt(lessonobjectdata[jumpname]),
-                answer: lessonobjectdata[answereditor].text,
-                response: lessonobjectdata[responseeditor].text,
-                score: lessonobjectdata[lessonscore] // Might need grade here as well.
-            }
-            i += 1;
-            jumpname = "jumpto[" + i + "]";
-            answereditor = "answer_editor[" + i + "]";
-            responseeditor = "response_editor[" + i + "]";
-            lessonscore = "score[" + i + "]";
+        // while (lessonobjectdata.hasOwnProperty(jumpname)) {
+        //     this.jumps[i] = {
+        //         id:
+        //         jumpto: parseInt(lessonobjectdata[jumpname]),
+        //         answer: lessonobjectdata[answereditor].text,
+        //         response: lessonobjectdata[responseeditor].text,
+        //         score: lessonobjectdata[lessonscore] // Might need grade here as well.
+        //     }
+        //     i += 1;
+        //     jumpname = "jumpto[" + i + "]";
+        //     answereditor = "answer_editor[" + i + "]";
+        //     responseeditor = "response_editor[" + i + "]";
+        //     lessonscore = "score[" + i + "]";
+        // }
+        for (var index in lessonobjectdata.answers) {
+            this.jumps[parseInt(lessonobjectdata.answers[index].id)] = {
+                id: parseInt(lessonobjectdata.answers[index].id),
+                jumpto: parseInt(lessonobjectdata.answers[index].jumpto),
+                answer: lessonobjectdata.answers[index].answer,
+                response: lessonobjectdata.answers[index].response,
+                score: lessonobjectdata.answers[index].score
+            };
+            i++;
         }
 
         if (Object.keys(this.jumps).length === 0) {
             // Create default jumps.
             this.jumps[0] = {
-                id: -1,
+                jumpto: -1,
                 answer: "Next page",
                 response: "",
                 score: 0
             }
             if (this.qtype < 11) {
                 this.jumps[1] = {
-                    id: 0,
+                    jumpto: 0,
                     answer: "This page",
                     response: "",
                     score: 0
@@ -150,8 +161,9 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
             // Create new jumps from data.
             var i = 0;
             for (jumpid in jumpdata) {
-                this.jumps[i] = {
-                    id: parseInt(jumpdata[jumpid].jumpto),
+                this.jumps[parseInt(jumpdata[jumpid].id)] = {
+                    id: parseInt(jumpdata[jumpid].id),
+                    jumpto: parseInt(jumpdata[jumpid].jumpto),
                     answer: jumpdata[jumpid].answer,
                     response: jumpdata[jumpid].response,
                     score: jumpdata[jumpid].score,
@@ -190,14 +202,14 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
                 if (Object.keys(this.jumps).length <= j) {
                     // Need to add new jumps
                     this.jumps[j] = {
-                        id: jumpto,
+                        jumpto: jumpto,
                         answer: jumpanswer,
                         response: response,
                         score: score
                     };
                 } else {
                     // Update old jumps
-                    this.jumps[j].id = jumpto;
+                    this.jumps[j].jumpto = jumpto;
                     this.jumps[j].answer = jumpanswer;
                     this.jumps[j].response = response;
                     this.jumps[j].score = score;
@@ -263,6 +275,7 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
         } else {
             this.childrenids = [];
         }
+        var endofclusterid = 0;
     };
 
     cluster_lessonPage.prototype = {
@@ -280,6 +293,20 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
         },
         save_edit_form: function() {
             lessonPage.prototype.save_edit_form.call(this);
+        },
+        get_end_of_clusterid: function() {
+            if (typeof(this.endofclusterid) != 'undefined') {
+                return this.endofclusterid;
+            } else {
+                // Loop through each of the pages and find a end of cluster page with a cluster id that matches this page id.
+                for (var index in lesson.pages) {
+                    if (lesson.pages[index].qtypestring == 'End of cluster' && parseInt(lesson.pages[index].clusterid) == this.id) {
+                        this.endofclusterid = lesson.pages[index].id;
+                        return this.endofclusterid;
+                    }
+                }
+            }
+            console.log('no id found');
         }
     }
 
@@ -333,7 +360,7 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
                 editform += '<div><input type="text" id="mod_lesson_answer_' + i + '" value="' + this.jumps[jumpid].answer + '"/></div>';
                 editform += '<div>Response</div>';
                 editform += '<div><textarea id="mod_lesson_response_' + i + '">' + this.jumps[jumpid].response + '</textarea></div>';
-                editform += pageJump(this.jumps[jumpid].id, this.id, jumpoptions, i);
+                editform += pageJump(this.jumps[jumpid].jumpto, this.id, jumpoptions, i);
                 editform += '<div>Score</div>';
                 editform += '<div><input type="text" id="mod_lesson_score_' + i + '" value="' + this.jumps[jumpid].score + '"/></div>';
                 editform += '</div>';
@@ -377,7 +404,7 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
                 editform += '<div><input type="text" id="mod_lesson_answer_' + i + '" value="' + this.jumps[jumpid].answer + '"/></div>';
                 editform += '<div>Response</div>';
                 editform += '<div><textarea id="mod_lesson_response_' + i + '">' + this.jumps[jumpid].response + '</textarea></div>';
-                editform += pageJump(this.jumps[jumpid].id, this.id, jumpoptions, i);
+                editform += pageJump(this.jumps[jumpid].jumpto, this.id, jumpoptions, i);
                 editform += '<div>Score</div>';
                 editform += '<div><input type="text" id="mod_lesson_score_' + i + '" value="' + this.jumps[jumpid].score + '"/></div>';
                 editform += '</div>';
@@ -481,7 +508,7 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
                 editform += '<h4>Content ' + i + '</h4>';
                 editform += '<div>Jump name</div>';
                 editform += '<div><input type="text" id="mod_lesson_answer_' + i + '" value="' + this.jumps[jumpid].answer + '"/></div>';
-                editform += pageJump(this.jumps[jumpid].id, this.id, jumpoptions, i);
+                editform += pageJump(this.jumps[jumpid].jumpto, this.id, jumpoptions, i);
                 editform += '</div>';
                 i++;
             }
@@ -624,7 +651,7 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
 
 
 
-    var drawline = function(pagefrom, pageto) {
+    var drawline = function(pagefrom, pageto, jumpid) {
         if (pageto === 0) {
             return;
         }
@@ -670,33 +697,49 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
         var circletop = cy - 15;
         // Pretty god damn close.
         var circleleft = ((fromx + tooffset.left) / 2) - 15;
-        var circlediv = "<div class='mod_lesson_jump_circle' id='mod_lesson_jump_circle_" + pagefrom + "'";
-        circlediv += " style='left:" + circleleft + "px; top:" + circletop + "px;' data-toggle='tooltip' title='" + lesson.pages[pagefrom].jumps[0].answer + "'></div>";
+        var jumptext = '';
+
+        // If the current object is a cluster then the jumps come from the end of cluster object.
+        if (lesson.pages[pagefrom].qtypestring == "Cluster") {
+            pagefrom = lesson.pages[pagefrom].get_end_of_clusterid();
+        }
+        jumptext = "Answer: " + lesson.pages[pagefrom].jumps[jumpid].answer;
+
+        var circlediv = "<div class='mod_lesson_jump_circle' id='mod_lesson_jump_circle_" + pagefrom + "_" + jumpid + "'";
+        circlediv += " style='left:" + circleleft + "px; top:" + circletop + "px;' data-toggle='tooltip' title='" + jumptext + "'></div>";
         $('.mod_lesson_pages').append(circlediv);
+
+        // I think that adding an arrow would also be useful.
+
 
     };
 
     var drawalllines = function() {
         $('.lessonline').remove();
+        // Remove listeners for circle click.
         $('.mod_lesson_jump_circle').remove();
         for (lpid in lesson.pages) {
             var currentobject = lesson.pages[lpid];
             for (jumpid in currentobject.jumps) {
-                if (currentobject.jumps[jumpid].id == -1) {
+                if (currentobject.jumps[jumpid].jumpto == -1) {
                     nextpageid = currentobject.nextpageid;
                 } else {
-                    nextpageid = currentobject.jumps[jumpid].id;
+                    nextpageid = currentobject.jumps[jumpid].jumpto;
                 }
 
                 if (currentobject.qtype == 31) {
-                    drawline(currentobject.clusterid, nextpageid);
+                    drawline(currentobject.clusterid, nextpageid, currentobject.jumps[jumpid].id);
                 } else if (nextpageid === "-9") {
-                    drawline(currentobject.id, currentobject.id + '1');
+                    drawline(currentobject.id, currentobject.id + '1', currentobject.jumps[jumpid].id);
                 } else if (!currentobject.in_cluster() && !currentobject.in_subcluster()) {
-                    drawline(currentobject.id, nextpageid);
+                    drawline(currentobject.id, nextpageid, currentobject.jumps[jumpid].id);
                 }
             }
         }
+        // Attach listener for circle click.
+        $('.mod_lesson_jump_circle').on({
+            click: editJump
+        });
     };
 
 
@@ -1330,6 +1373,39 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
         });
     };
 
+    var editJump = function(event) {
+        var elementid = $(this).attr('id');
+        var pageid = elementid.split('_')[4];
+        var jumpid = elementid.split('_')[5];
+        $('.mod_lesson_jumpeditform').remove();
+        // console.log(lesson.pages[pageid].jumps[jumpid]);
+        // console.log(event);
+
+
+        $.when(getJumpOptions(pageid)).done(function(joptions){
+            // Open up a box for editing.
+            var jumpeditform = '<div class="mod_lesson_jumpeditform" id="mod_lesson_jumpeditform_' + jumpid + '">';
+            jumpeditform += '<h3>Jump options edit thing</h3>';
+            jumpeditform += '<div>Answer: <input type="text" value="' + lesson.pages[pageid].jumps[jumpid].answer + '" /></div>';
+            jumpeditform += pageJump(lesson.pages[pageid].jumps[jumpid].jumpto, lesson.pages[pageid].id, joptions, 0);
+            jumpeditform += '<div><button type="button" id="mod_lesson_jumpeditor_save_btn">Save</button>';
+            jumpeditform += '<button type="button" id="mod_lesson_jumpeditor_cancel_btn">Cancel</button>';
+            jumpeditform += '</div>';
+            // Create a page for editing the content.
+            $('.mod_lesson_pages').append(jumpeditform);
+            $('#mod_lesson_jumpeditor_cancel_btn').click(function() {
+                $('.mod_lesson_jumpeditform').remove();
+            });
+            // $('#mod_lesson_editor_save_btn').click(function() {
+            //     lesson.pages[pageid].save_edit_form();
+            // });
+            // $('#mod_lesson_editor_cancel_btn').click(function() {
+            //     $('.mod_lesson_page_editor').remove();
+            // });
+        });
+
+    }
+
     var expandCluster = function() {
         // Always have to fetch that page ID.
         var lessonpageobject = $(this).parents('.mod_lesson_page_element');
@@ -1408,7 +1484,6 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
         });
 
         $("#mod_lesson_reset_button").click(function() {
-            console.log('yeah');
             newlesson = true;
             setLessonPages();
         });

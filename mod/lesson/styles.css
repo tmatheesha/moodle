@@ -279,3 +279,16 @@
     height: 25px;
     border: 1px solid #000;
 }
+
+.mod_lesson_jumpeditform {
+    width: 826px;
+    position: absolute;
+    top: 70px;
+    left: 15px;
+    padding: 20px;
+    background-color: #fff;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    box-shadow: 5px 5px 20px 0px #666;
+    box-sizing: border-box;
+}

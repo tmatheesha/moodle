@@ -223,6 +223,11 @@ if ($action == 'saveposition') {
             $currentclusterid = $pageid;
         }
         $pageproperties = $page->properties();
+        $answers = $page->get_answers();
+        $pageproperties->answers = array();
+        foreach ($answers as $key => $answer) {
+            $pageproperties->answers[] = $answer->properties();
+        }
         $pageproperties->qtypestr = $page->get_typestring();
         $pageproperties->pagetypename = $page->get_idstring();
 
