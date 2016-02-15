@@ -271,3 +271,11 @@
     background-color: #0070A8;
     text-decoration: none;
 }
+
+.mod_lesson_jump_circle {
+    position: absolute;
+    border-radius: 50%;
+    width: 25px;
+    height: 25px;
+    border: 1px solid #000;
+}

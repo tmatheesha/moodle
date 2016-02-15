@@ -664,10 +664,21 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
         htmlline += " -o-transform:rotate(" + angle + "deg); -ms-transform:rotate(" + angle + "deg);";
         htmlline += " transform:rotate(" + angle + "deg);' />";
         $('.mod_lesson_pages').append(htmlline);
+
+        // try to add a circle in the middle of the line.
+        // Top position is good.
+        var circletop = cy - 15;
+        // Pretty god damn close.
+        var circleleft = ((fromx + tooffset.left) / 2) - 15;
+        var circlediv = "<div class='mod_lesson_jump_circle' id='mod_lesson_jump_circle_" + pagefrom + "'";
+        circlediv += " style='left:" + circleleft + "px; top:" + circletop + "px;' data-toggle='tooltip' title='" + lesson.pages[pagefrom].jumps[0].answer + "'></div>";
+        $('.mod_lesson_pages').append(circlediv);
+
     };
 
     var drawalllines = function() {
         $('.lessonline').remove();
+        $('.mod_lesson_jump_circle').remove();
         for (lpid in lesson.pages) {
             var currentobject = lesson.pages[lpid];
             for (jumpid in currentobject.jumps) {
@@ -1580,7 +1591,7 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
             lessonid = llessonid;
             $.when(setLessonData(llessonid, pageid)).done(function(data) {
                 lessonobjects = data;
-                // console.log(lessonobjects);
+                console.log(lessonobjects);
 
                 lesson = new Lesson(lessonobjects);
                 console.log(lesson);
