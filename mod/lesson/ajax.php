@@ -310,4 +310,13 @@ if ($action == 'saveposition') {
 
     echo json_encode('success');
     die();
+} else if ($action == 'getjumprecords') {
+    $lesson = lesson::load($lessonid);
+    $page = lesson_page::load($lessondata['pageid'], $lesson);
+    $whatiwant = array();
+    foreach ($page->get_answers() as $answer) {
+        $whatiwant[] = $answer->properties();
+    }
+    echo json_encode($whatiwant);
+    die();
 }

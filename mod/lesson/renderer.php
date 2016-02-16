@@ -649,6 +649,8 @@ class mod_lesson_renderer extends plugin_renderer_base {
         $output .= html_writer::end_div();
         $output .= html_writer::end_div();
 
+        // Was looking for a better way to implement $this->lesson_page_loop(). I think that the recursion is better
+        // with this function. I don't know why I didn't continue further with it.
         // print_object($this->lesson_page_stuff($lesson, $firstpageid));
 
         $PAGE->requires->js_call_amd('mod_lesson/helloworld', 'init', array($lesson->id, $firstpageid));

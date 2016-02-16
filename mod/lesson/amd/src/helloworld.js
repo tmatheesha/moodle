@@ -83,26 +83,11 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
         }
 
         this.jumps = {};
-        var i = 0;
-        var jumpname = "jumpto[" + i + "]";
-        var answereditor = "answer_editor[" + i + "]";
-        var responseeditor = "response_editor[" + i + "]";
-        var lessonscore = "score[" + i + "]";
+        // var jumpname = "jumpto[" + i + "]";
+        // var answereditor = "answer_editor[" + i + "]";
+        // var responseeditor = "response_editor[" + i + "]";
+        // var lessonscore = "score[" + i + "]";
 
-        // while (lessonobjectdata.hasOwnProperty(jumpname)) {
-        //     this.jumps[i] = {
-        //         id:
-        //         jumpto: parseInt(lessonobjectdata[jumpname]),
-        //         answer: lessonobjectdata[answereditor].text,
-        //         response: lessonobjectdata[responseeditor].text,
-        //         score: lessonobjectdata[lessonscore] // Might need grade here as well.
-        //     }
-        //     i += 1;
-        //     jumpname = "jumpto[" + i + "]";
-        //     answereditor = "answer_editor[" + i + "]";
-        //     responseeditor = "response_editor[" + i + "]";
-        //     lessonscore = "score[" + i + "]";
-        // }
         for (var index in lessonobjectdata.answers) {
             this.jumps[parseInt(lessonobjectdata.answers[index].id)] = {
                 id: parseInt(lessonobjectdata.answers[index].id),
@@ -111,7 +96,6 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
                 response: lessonobjectdata.answers[index].response,
                 score: lessonobjectdata.answers[index].score
             };
-            i++;
         }
 
         if (Object.keys(this.jumps).length === 0) {
@@ -154,21 +138,49 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
             return false;
         },
         update_jumps: function(jumpdata) {
-            // Remove existing jumps.
-            for (index in this.jumps) {
-                delete this.jumps[index];
-            }
-            // Create new jumps from data.
-            var i = 0;
-            for (jumpid in jumpdata) {
-                this.jumps[parseInt(jumpdata[jumpid].id)] = {
-                    id: parseInt(jumpdata[jumpid].id),
-                    jumpto: parseInt(jumpdata[jumpid].jumpto),
-                    answer: jumpdata[jumpid].answer,
-                    response: jumpdata[jumpid].response,
-                    score: jumpdata[jumpid].score,
+            if (typeof(jumpdata) == 'undefined') {
+                var oldthis = this;
+                // Get data from the database.
+                $.ajax({
+                    method: "POST",
+                    url: ajaxlocation,
+                    dataType: "json",
+                    data: {
+                        action: "getjumprecords",
+                        lessonid: lessonid,
+                        lessondata: {'pageid': this.id }
+                    }
+                }).done(function(jumpdata) {
+                    // Remove existing jumps.
+                    for (index in oldthis.jumps) {
+                        delete oldthis.jumps[index];
+                    }
+                    // Create new jumps from data.
+                    for (jumpid in jumpdata) {
+                        oldthis.jumps[parseInt(jumpdata[jumpid].id)] = {
+                            id: parseInt(jumpdata[jumpid].id),
+                            jumpto: parseInt(jumpdata[jumpid].jumpto),
+                            answer: jumpdata[jumpid].answer,
+                            response: jumpdata[jumpid].response,
+                            score: jumpdata[jumpid].score,
+                        }
+                    }
+                });
+            } else {
+                // Remove existing jumps.
+                for (index in this.jumps) {
+                    delete this.jumps[index];
                 }
-                i++;
+                // Create new jumps from data.
+                for (jumpid in jumpdata) {
+                    this.jumps[parseInt(jumpdata[jumpid].id)] = {
+                        id: parseInt(jumpdata[jumpid].id),
+                        jumpto: parseInt(jumpdata[jumpid].jumpto),
+                        answer: jumpdata[jumpid].answer,
+                        response: jumpdata[jumpid].response,
+                        score: jumpdata[jumpid].score,
+                    }
+                }
             }
         },
         /**
@@ -185,10 +197,13 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
             var jumps = {};
             var i = 1;
             var j = 0;
+            var oldthis = this;
             // Iterate over lesson page answers.
-            while ($('#mod_lesson_answer_' + i).length) {
+            // while ($('#mod_lesson_answer_' + i).length) {
+            $('.mod_lesson_editor_answer').each(function() {
                 var jumpanswer = $('#mod_lesson_answer_' + i).val();
                 var jumpto = $('#mod_lesson_jump_select_' + i).val();
+                var jumpid = $(this).attr('id').split('_')[4];
                 var response = '';
                 var score = 0;
                 if ($('#mod_lesson_response_' + i).length) {
@@ -199,9 +214,9 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
                     score = $('#mod_lesson_score_' + i).val();
                 }
 
-                if (Object.keys(this.jumps).length <= j) {
+                if (Object.keys(oldthis.jumps).length <= j) {
                     // Need to add new jumps
-                    this.jumps[j] = {
+                    oldthis.jumps[j] = {
                         jumpto: jumpto,
                         answer: jumpanswer,
                         response: response,
@@ -209,10 +224,10 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
                     };
                 } else {
                     // Update old jumps
-                    this.jumps[j].jumpto = jumpto;
-                    this.jumps[j].answer = jumpanswer;
-                    this.jumps[j].response = response;
-                    this.jumps[j].score = score;
+                    oldthis.jumps[jumpid].jumpto = jumpto;
+                    oldthis.jumps[jumpid].answer = jumpanswer;
+                    oldthis.jumps[jumpid].response = response;
+                    oldthis.jumps[jumpid].score = score;
                 }
                 jumps[i] = {
                     answer: jumpanswer,
@@ -222,7 +237,8 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
                 };
                 i++;
                 j++;
-            }
+            });
+            // }
 
             var pagetitle = $('#mod_lesson_title_' + this.id).val();
             var pagecontent = $('#mod_lesson_contents_' + this.id).val();
@@ -348,7 +364,7 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
             var i = 1;
             editform += '<div id="mod_lesson_editor_answers">';
             for (jumpid in this.jumps) {
-                editform += '<div class="mod_lesson_editor_answer">';
+                editform += '<div class="mod_lesson_editor_answer" id="mod_lesson_editor_answer_' + jumpid + '">';
                 if (i == 1) {
                     editform += '<h4>Correct response</h4>';
                 } else if (i == 2) {
@@ -398,7 +414,7 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
             var i = 1;
             editform += '<div id="mod_lesson_editor_answers">';
             for (jumpid in this.jumps) {
-                editform += '<div class="mod_lesson_editor_answer">';
+                editform += '<div class="mod_lesson_editor_answer" id="mod_lesson_editor_answer_' + jumpid + '">';
                 editform += '<h4>Answer ' + i + '</h4>';
                 editform += '<div>Answer</div>';
                 editform += '<div><input type="text" id="mod_lesson_answer_' + i + '" value="' + this.jumps[jumpid].answer + '"/></div>';
@@ -429,7 +445,7 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
                 i++;
             }
             // Check should be done for maximum number of jumps.
-            var editform = '<div class="mod_lesson_editor_answer">';
+            var editform = '<div class="mod_lesson_editor_answer" id="mod_lesson_editor_answer_0">';
             editform += '<h4>Answer ' + i + '</h4>';
             editform += '<div>Answer</div>';
             editform += '<div><input type="text" id="mod_lesson_answer_' + i + '" value=""/></div>';
@@ -504,7 +520,7 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
             var i = 1;
             editform += '<div id="mod_lesson_editor_answers">';
             for (jumpid in this.jumps) {
-                editform += '<div class="mod_lesson_editor_answer">';
+                editform += '<div class="mod_lesson_editor_answer" id="mod_lesson_editor_answer_' + jumpid + '">';
                 editform += '<h4>Content ' + i + '</h4>';
                 editform += '<div>Jump name</div>';
                 editform += '<div><input type="text" id="mod_lesson_answer_' + i + '" value="' + this.jumps[jumpid].answer + '"/></div>';
@@ -520,7 +536,6 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
             return editform;
         },
         add_additional_jump: function(event) {
-            // console.log(event);
             var jumpoptions = event.data.jumpoptions;
             // Get the last jump count.
             var i = 1;
@@ -528,7 +543,7 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
                 i++;
             }
             // Check should be done for maximum number of jumps.
-            var editform = '<div class="mod_lesson_editor_answer">';
+            var editform = '<div class="mod_lesson_editor_answer" id="mod_lesson_editor_answer_0">';
             editform += '<h4>Content ' + i + '</h4>';
             editform += '<div>Jump name</div>';
             editform += '<div><input type="text" id="mod_lesson_answer_' + i + '" value=""/></div>';
@@ -632,13 +647,13 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
         return html;
     };
 
-    var pageJump = function(jumpid, pageid, jumpoptions, number) {
+    var pageJump = function(jumpto, pageid, jumpoptions, number) {
         var html;
+
         html = '<div>Jump</div>';
         html += '<select id="mod_lesson_jump_select_' + number + '">';
-        // $.each(jumpoptions ,function(index, jumpoption) {
         for (index in jumpoptions) {
-            if (jumpid == index) {
+            if (jumpto == index) {
                 html += '<option value="' + index + '" selected>' + jumpoptions[index] + '</option>';
             } else {
                 html += '<option value="' + index + '">' + jumpoptions[index] + '</option>';
@@ -662,13 +677,12 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
             return;
         }
 
-        // console.log($('.mod_lesson_pages').scrollTop());
         var scrolltopoffset = $('.mod_lesson_pages').scrollTop();
         var scrollleftoffset = $('.mod_lesson_pages').scrollLeft();
-        // console.log($('.mod_lesson_pages').scrollLeft());
+
 
         var fromoffset = $('#mod_lesson_page_element_' + pagefrom).position();
-        // console.log(fromoffset);
+
         var tooffset = $('#mod_lesson_page_element_' + pageto).position();
         fromoffset.top = fromoffset.top + (scrolltopoffset * 1) + 15;
         tooffset.top = tooffset.top + (scrolltopoffset * 1) + 15;
@@ -705,11 +719,24 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
         }
         jumptext = "Answer: " + lesson.pages[pagefrom].jumps[jumpid].answer;
 
+        var circlecolour = '#000000';
+        if (lesson.pages[pagefrom].jumps[jumpid].score > 0) {
+            circlecolour = '#00ff00';
+        }
+
         var circlediv = "<div class='mod_lesson_jump_circle' id='mod_lesson_jump_circle_" + pagefrom + "_" + jumpid + "'";
-        circlediv += " style='left:" + circleleft + "px; top:" + circletop + "px;' data-toggle='tooltip' title='" + jumptext + "'></div>";
+        circlediv += " style='left:" + circleleft + "px; top:" + circletop + "px; border-color: " + circlecolour;
+        circlediv += " ' data-toggle='tooltip' title='" + jumptext + "'><center><img src='../../theme/image.php?theme=clean&component=core&image=t%2Fedit' class='mod_lesson_jump_menu' /></center></div>";
         $('.mod_lesson_pages').append(circlediv);
 
+        angle = angle + 90;
+
         // I think that adding an arrow would also be useful.
+        var arrowdiv = "<div class='mod_lesson_jump_arrow' style='-moz-transform:rotate(" + angle + "deg); -webkit-transform:rotate(" + angle + "deg);";
+        arrowdiv += " -o-transform:rotate(" + angle + "deg); -ms-transform:rotate(" + angle + "deg); transform:rotate(" + angle + "deg);'>";
+        arrowdiv += "<img src='../../theme/image.php?theme=clean&component=core&image=t%2Fdropdown' />";
+        arrowdiv += "</div>";
+        $('#mod_lesson_jump_circle_' + pagefrom + '_' + jumpid).append(arrowdiv);
 
 
     };
@@ -718,6 +745,7 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
         $('.lessonline').remove();
         // Remove listeners for circle click.
         $('.mod_lesson_jump_circle').remove();
+        $('.mod_lesson_jump_arrow').remove();
         for (lpid in lesson.pages) {
             var currentobject = lesson.pages[lpid];
             for (jumpid in currentobject.jumps) {
@@ -744,12 +772,7 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
 
 
     var attachElement = function(event, ui) {
-        // var visible = $(this).is(':visible');
-        // if (visible) {
-        //     console.log('visible');
-        // } else {
-        //     console.log('can not see this');
-        // }
+
         var elementid = ui.helper.attr('id');
         console.log(elementid);
         var pagesections = elementid.split('_');
@@ -808,7 +831,6 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
                 console.log(e);
             });
             // return endofbranch.promise();
-            // console.log(endofbranch.promise());
             extrasauce = endofbranch.promise();
             // return;
 
@@ -826,8 +848,6 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
 
         // Put a when in here.
         $.when(pageid, extrasauce).done(function(var1, var2) {
-            // console.log(var1);
-            // console.log(var2);
 
             var pageids = [var1];
             if (var2 !== null) {
@@ -842,7 +862,6 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
 
                 pageids.push(var2.id);
             }
-            // console.log(pageids);
 
             for (index in pageids) {
                 // Check that this item isn't already in the array.
@@ -884,7 +903,6 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
 
                 })
         });
-        // console.log(lesson);
         ui.helper.detach();
         $(this).append(ui.helper);
         
@@ -1125,6 +1143,8 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
 
                     lesson.add_lessonpage(newobject.id, newobject);
                     lesson.pages[newobject.prevpageid].nextpageid = newobject.id;
+                    // Get jumps for new object and update the object jumps.
+                    lesson.pages[newobject.id].update_jumps();
                     // This is really bad, need to figure out another way to do this.
                     if (newobject.qtype === "30") {
                         // Add the end of cluster object.
@@ -1378,9 +1398,6 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
         var pageid = elementid.split('_')[4];
         var jumpid = elementid.split('_')[5];
         $('.mod_lesson_jumpeditform').remove();
-        // console.log(lesson.pages[pageid].jumps[jumpid]);
-        // console.log(event);
-
 
         $.when(getJumpOptions(pageid)).done(function(joptions){
             // Open up a box for editing.
@@ -1388,6 +1405,8 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
             jumpeditform += '<h3>Jump options edit thing</h3>';
             jumpeditform += '<div>Answer: <input type="text" value="' + lesson.pages[pageid].jumps[jumpid].answer + '" /></div>';
             jumpeditform += pageJump(lesson.pages[pageid].jumps[jumpid].jumpto, lesson.pages[pageid].id, joptions, 0);
+            jumpeditform += '<div>Score</div>';
+            jumpeditform += '<input type="score" value="' + lesson.pages[pageid].jumps[jumpid].score + '" />';
             jumpeditform += '<div><button type="button" id="mod_lesson_jumpeditor_save_btn">Save</button>';
             jumpeditform += '<button type="button" id="mod_lesson_jumpeditor_cancel_btn">Cancel</button>';
             jumpeditform += '</div>';
@@ -1396,12 +1415,6 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
             $('#mod_lesson_jumpeditor_cancel_btn').click(function() {
                 $('.mod_lesson_jumpeditform').remove();
             });
-            // $('#mod_lesson_editor_save_btn').click(function() {
-            //     lesson.pages[pageid].save_edit_form();
-            // });
-            // $('#mod_lesson_editor_cancel_btn').click(function() {
-            //     $('.mod_lesson_page_editor').remove();
-            // });
         });
 
     }
@@ -1415,7 +1428,7 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
         for (index in lesson.pages[pageid].childrenids) {
             $("#mod_lesson_page_element_" + lesson.pages[pageid].childrenids[index]).css('display', 'inline');
         }
-        // console.log(lessonpageobject);
+
         // lessonpageobject.css({width: "300px", height: "300px"});
         lessonpageobject.animate({
             width: "700px",
@@ -1438,7 +1451,6 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
         for (index in lesson.pages[pageid].childrenids) {
             $("#mod_lesson_page_element_" + lesson.pages[pageid].childrenids[index]).css('display', 'none');
         }
-        // console.log(lessonpageobject);
         // lessonpageobject.css({width: "300px", height: "300px"});
         lessonpageobject.animate({
             width: "300px",
@@ -1515,7 +1527,7 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
             lessonobjectdata.positionx = 0;
             var lessonelement = $("#mod_lesson_page_element_" + pageid);
             var parentelement = lessonelement.parent();
-            // Don't use this.
+            // Don't use this. There is positioning done else where without using this jqueryui function.
             lessonelement.position({
                 my: "left top",
                 at: "left+" + lessonobjectdata.positionx + " top+" + lessonobjectdata.positiony,
@@ -1526,7 +1538,7 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
             lessonobjectdata.positiony = 40;
             var lessonelement = $("#mod_lesson_page_element_" + pageid);
             var parentelement = lessonelement.parent();
-            // Don't use this.
+            // Don't use this. There is positioning done else where without using this jqueryui function.
             lessonelement.position({
                 my: "left top",
                 at: "left+" + lessonobjectdata.positionx + " top+" + lessonobjectdata.positiony,
@@ -1566,7 +1578,7 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
 
         for (elementid in lessonobjects) {
             if (newlesson) {
-                // console.log('yeah!');
+
                 if (lessonobjects[elementid].qtype !== "31" && lessonobjects[elementid].qtype !== "21") {
                     var lessonelement = $("#mod_lesson_page_element_" + elementid);
                     lessonelement.css({position: "absolute", top: currenty, left: currentx});
@@ -1599,8 +1611,7 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
                     var newy = parseInt(lessonobjects[elementid].y);
                     var lessonelement = $("#mod_lesson_page_element_" + elementid);
                     // var parentelement = lessonelement.parent();
-                    // console.log(lessonobjects[elementid]);
-                    // console.log(lessonelement.offsetTop);
+
 
                     if (newx < 0) {
                         newx = 0;
@@ -1666,19 +1677,10 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
             lessonid = llessonid;
             $.when(setLessonData(llessonid, pageid)).done(function(data) {
                 lessonobjects = data;
-                console.log(lessonobjects);
 
                 lesson = new Lesson(lessonobjects);
-                console.log(lesson);
 
-                // Add end of lesson objects.
-                // addEOL();
                 checkPagePositions();
-                if (newlesson) {
-                    // console.log('lesson is new');
-                } else {
-                    // console.log('lesson is old');
-                }
                 setLessonPages();
                 // Format clusters.
                 formatClusters();
@@ -1700,6 +1702,8 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
                     }
                 });
 
+                // Uncomment this code to check out an idea for zooming in and out on the lesson.
+                // I think that it's clunky and that there is probably a better solution.
                 // $(".mod_lesson_pages").bind('mousewheel', function(event) {
                 //     event.preventDefault();
                 //     event.stopPropagation();
