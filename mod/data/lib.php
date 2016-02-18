@@ -844,7 +844,11 @@ function data_add_record($data, $groupid=0){
     $context = context_module::instance($cm->id);
 
     $record = new stdClass();
-    $record->userid = $USER->id;
+    if (isset($data->userid)) {
+        $record->userid = $data->userid;
+    } else {
+        $record->userid = $USER->id;
+    }
     $record->dataid = $data->id;
     $record->groupid = $groupid;
     $record->timecreated = $record->timemodified = time();

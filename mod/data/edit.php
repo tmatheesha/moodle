@@ -191,6 +191,9 @@ if ($datarecord = data_submitted() and confirm_sesskey()) {
 
             // Update the parent record.
             $record->timemodified = time();
+            if (isset($datarecord->userid)) {
+                $record->userid = $datarecord->userid;
+            }
             $DB->update_record('data_records', $record);
 
             // Update all content.
@@ -230,6 +233,9 @@ if ($datarecord = data_submitted() and confirm_sesskey()) {
         $generalnotifications = array_merge($generalnotifications, $processeddata->generalnotifications);
         $fieldnotifications = array_merge($fieldnotifications, $processeddata->fieldnotifications);
 
+        if (isset($datarecord->userid)) {
+            $data->userid = $datarecord->userid;
+        }
         // Add instance to data_record.
         if ($processeddata->validated && $recordid = data_add_record($data, $currentgroup)) {
 
@@ -348,6 +354,40 @@ foreach ($generalnotifications as $notification) {
     echo $OUTPUT->notification($notification);
 }
 echo $newtext;
+
+if (has_capability('mod/data:manageentries', $context)) {
+    // Add a new table with advanced editing features.
+    // Should this be in a function? Could perhaps use it with a fragment...
+
+    $PAGE->requires->js_call_amd('mod_data/edit_form', 'init', array());
+
+    // options for select = enrolled users plus the current user
+    $users = get_enrolled_users($context);
+
+    echo '<table>';
+    echo '<tbody><tr>';
+    echo '<td class="template-field cell c0">' . get_string('recordowner', 'data') . '</td>';
+    echo '<td class="template-field cell c1">';
+    echo '<select id="mod_data_records_users" name="userid">';
+    foreach ($users as $user) {
+        if ($rid) {
+            if ($user->id == $record->userid) {
+                echo '<option value=' . $user->id . ' selected>' . fullname($user) . '</option>';
+            } else {
+                echo '<option value=' . $user->id . '>' . fullname($user) . '</option>';
+            }
+        } else {
+            if ($user->id == $USER->id) {
+                echo '<option value=' . $user->id . ' selected>' . fullname($user) . '</option>';
+            } else {
+                echo '<option value=' . $user->id . '>' . fullname($user) . '</option>';
+            }
+        }
+    }
+    echo '</select>';
+    echo '</td></tr></tbody>';
+    echo '</table>';
+}
 
 echo '<div class="mdl-align"><input type="submit" name="saveandview" value="'.get_string('saveandview','data').'" />';
 if ($rid) {

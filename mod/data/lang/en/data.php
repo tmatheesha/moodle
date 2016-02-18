@@ -303,6 +303,7 @@ $string['radiobutton'] = 'Radio buttons';
 $string['recordapproved'] = 'Entry approved';
 $string['recorddeleted'] = 'Entry deleted';
 $string['recorddisapproved'] = 'Entry unapproved';
+$string['recordowner'] = 'Record owner';
 $string['recordsnotsaved'] = 'No entry was saved. Please check the format of the uploaded file.';
 $string['recordssaved'] = 'entries saved';
 $string['requireapproval'] = 'Approval required';
