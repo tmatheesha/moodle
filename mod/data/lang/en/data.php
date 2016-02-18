@@ -52,6 +52,7 @@ Only the tags that are in the "Available tags" list may be used for the current 
 $string['availabletodate'] = 'Available to';
 $string['blank'] = 'Blank';
 $string['buttons'] = 'Actions';
+$string['bulkedit'] = 'Bulk edit';
 $string['bynameondate'] = 'by {$a->name} - {$a->date}';
 $string['cancel'] = 'Cancel';
 $string['cannotaccesspresentsother'] = 'You are not allowed to access presets from other users';

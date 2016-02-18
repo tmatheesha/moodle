@@ -834,9 +834,15 @@ if ($showactivity) {
                         'type' => 'submit',
                         'value' => get_string('deleteselected'),
                     ));
+                echo html_writer::empty_tag('input', array(
+                        'id' => 'mod_data_bulk_edit',
+                        'type' => 'button',
+                        'value' => get_string('bulkedit', 'data')
+                    ));
 
-                $module = array('name' => 'mod_data', 'fullpath' => '/mod/data/module.js');
-                $PAGE->requires->js_init_call('M.mod_data.init_view', null, false, $module);
+                // $module = array('name' => 'mod_data', 'fullpath' => '/mod/data/module.js');
+                // $PAGE->requires->js_init_call('M.mod_data.init_view', null, false, $module);
+                $PAGE->requires->js_call_amd('mod_data/view_page', 'init', array());
             }
 
             echo html_writer::end_tag('form');
