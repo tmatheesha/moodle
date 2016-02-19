@@ -23,15 +23,26 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @since      3.1
  */
-define(['jquery', 'core/form-autocomplete', 'core/str'], function($, autocomplete, str) {
+define(['jquery', 'core/form-autocomplete', 'core/str', 'mod_data/dialogue'], function($, autocomplete, str, dialogue) {
 
     var openBulkEditForm = function() {
         console.log('open that form');
+        // Get all of the record id numbers that have been checked.
+        var recordids = [];
+        $('.recordcheckbox').each(function() {
+            var recordobject = $(this);
+            if (recordobject.prop('checked')) {
+                recordids.push(recordobject.val());
+            }
+        });
+        console.log(recordids);
+        var html = '<div>Number of records to be updated: ' + recordids.length + '</div>';
+        
+        var editform = new dialogue('Bulk edit form', 'Some random content');
     }
 
     return {
         init: function() {
-            // console.log('Time to bulk edit.');
             $('#checkall').click(function() {
                 $('.recordcheckbox').prop('checked', true);
             });

@@ -3969,3 +3969,40 @@ function data_process_submission(stdClass $mod, $fields, stdClass $datarecord) {
 
     return $result;
 }
+
+function mod_data_output_fragment_thing($arguments) {
+    return data_user_thing_change_later($arguments['context']);
+}
+
+function data_user_thing_change_later($context, $record = null) {
+    global $PAGE, $USER;
+    if (has_capability('mod/data:manageentries', $context)) {
+        // Add a new table with advanced editing features.
+        // Should this be in a function? Could perhaps use it with a fragment...
+
+        $PAGE->requires->js_call_amd('mod_data/edit_form', 'init', array());
+
+        // options for select = enrolled users plus the current user
+        $users = get_enrolled_users($context);
+
+        $html = '<select id="mod_data_records_users" name="userid">';
+        foreach ($users as $user) {
+            if (isset($record)) {
+                if ($user->id == $record->userid) {
+                    $html .= '<option value=' . $user->id . ' selected>' . fullname($user) . '</option>';
+                } else {
+                    $html .= '<option value=' . $user->id . '>' . fullname($user) . '</option>';
+                }
+            } else {
+                if ($user->id == $USER->id) {
+                    $html .= '<option value=' . $user->id . ' selected>' . fullname($user) . '</option>';
+                } else {
+                    $html .= '<option value=' . $user->id . '>' . fullname($user) . '</option>';
+                }
+            }
+        }
+        $html .= '</select>';
+
+    }
+    return $html;
+}
