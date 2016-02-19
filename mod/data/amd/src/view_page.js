@@ -23,10 +23,11 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @since      3.1
  */
-define(['jquery', 'core/form-autocomplete', 'core/str', 'mod_data/dialogue', 'core/fragment', 'core/templates', 'core/notification'],
-        function($, autocomplete, str, dialogue, fragment, templates, notification) {
+define(['jquery', 'core/form-autocomplete', 'core/str', 'mod_data/dialogue', 'core/fragment', 'core/templates', 'core/notification', 'core/ajax'],
+        function($, autocomplete, str, dialogue, fragment, templates, notification, ajax) {
 
     var contextid;
+    var editform;
 
     var openBulkEditForm = function() {
         var recordids = [];
@@ -41,32 +42,20 @@ define(['jquery', 'core/form-autocomplete', 'core/str', 'mod_data/dialogue', 'co
         var spintemplate = templates.render('mod_data/spinner', {});
         var formtemplate = templates.render('mod_data/bulk_edit_form', {'recordcount': recordids.length});
         $.when(spintemplate, formtemplate).done(function(spinner, formtemp) {
-            console.log(spintemplate);
-            console.log(formtemp[0]);
-            // This should also be a template.
-            // var temphtml = '<div id="mod_data_bulk_edit_form">' + spinner + '</div>';
-            var editform = new dialogue('Bulk edit form', formtemp[0], loadForm);
-            templates.replaceNodeContents('#mod_data_bulk_edit_form', spinner, '');
-            $('#mod_data_bulk_update_cancel_btn').click(function() {
-                console.log('close damn you!');
-                editform.close();
-            });
-            // editform.close();
+            editform = new dialogue('Bulk edit form', formtemp[0], loadForm);
         });
 
 
     }
 
     var loadForm = function() {
-        // Get all of the record id numbers that have been checked.
-        // var recordids = [];
-        // $('.recordcheckbox').each(function() {
-        //     var recordobject = $(this);
-        //     if (recordobject.prop('checked')) {
-        //         recordids.push(recordobject.val());
-        //     }
-        // });
-        // var pagehtml = '<div>Number of records to be updated: ' + recordids.length + '</div><br>';
+        // templates.replaceNodeContents('#mod_data_bulk_edit_form', spinner, '');
+        $('#mod_data_bulk_update_save_btn').on({
+            click: saveForm
+        });
+        $('#mod_data_bulk_update_cancel_btn').click(function() {
+            editform.close();
+        });
         $.when(fragment.loadFragment('mod_data', 'thing', contextid, '')).done(function(html, javascript) {
             // pagehtml += html;
             templates.replaceNodeContents('#mod_data_bulk_edit_form', html, javascript);
@@ -74,9 +63,45 @@ define(['jquery', 'core/form-autocomplete', 'core/str', 'mod_data/dialogue', 'co
         
     }
 
+    var saveForm = function() {
+        console.log('save stuff then close');
+        var userid = $("[data-mod-data-select='user']").val();
+        var recordids = [];
+        $('.recordcheckbox').each(function() {
+            var recordobject = $(this);
+            if (recordobject.prop('checked')) {
+                recordids.push(recordobject.val());
+            }
+        });
+
+        // Time to send stuff to a web service.
+        var deferred = $.Deferred();
+
+        var promises = ajax.call([{
+            methodname: 'mod_data_update_data_records',
+            args:{
+                userid: userid,
+                recordids: recordids
+            }
+        }], false);
+
+        promises[0].done(function(data) {
+            deferred.resolve(data);
+            // Not sure that this is the way to go.
+            // location.reload(true);
+            editform.close();
+        }).fail(function(ex) {
+            deferred.reject(ex);
+            editform.close();
+        });
+        $('.recordcheckbox').prop('checked', false);
+
+    }
+
     return {
         init: function(context_id) {
             contextid = context_id;
+            editform = null;
             $('#checkall').click(function() {
                 $('.recordcheckbox').prop('checked', true);
             });

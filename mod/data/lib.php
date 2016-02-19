@@ -3985,7 +3985,7 @@ function data_user_thing_change_later($context, $record = null) {
         // options for select = enrolled users plus the current user
         $users = get_enrolled_users($context);
 
-        $html = '<select id="mod_data_records_users" name="userid">';
+        $html = '<select id="mod_data_records_users" data-mod-data-select="user" name="userid">';
         foreach ($users as $user) {
             if (isset($record)) {
                 if ($user->id == $record->userid) {

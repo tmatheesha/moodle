@@ -204,4 +204,46 @@ class mod_data_external extends external_api {
         );
     }
 
+    public function update_data_records_parameters() {
+        return new external_function_parameters (
+            array(
+                'userid' => new external_value(PARAM_INT, 'The user ID', VALUE_REQUIRED),
+                'recordids' => new external_multiple_structure(
+                    new external_value(PARAM_INT, 'record id', VALUE_REQUIRED),
+                    'Array of record ids', VALUE_DEFAULT, array()
+                ),
+            )
+        );
+    }
+
+    public function update_data_records($userid, $recordids) {
+        global $DB;
+        $params = self::validate_parameters(self::update_data_records_parameters(), array(
+                'userid' => $userid,
+                'recordids' => $recordids));
+
+        // There's no API for updating records >_> Need to do that.
+
+        // Need to do the whole context validation thing.
+
+        foreach ($params['recordids'] as $recordid) {
+            $record = new stdClass();
+            $record->id = $recordid;
+            $record->userid = $userid;
+            $DB->update_record('data_records', $record);
+        }
+        $warnings = array();
+        $result = array();
+        $result['warnings'] = $warnings;
+        return $result;
+    }
+
+    public function update_data_records_returns() {
+        return new external_single_structure(
+            array(
+                'warnings' => new external_warnings()
+            )
+        );
+    }
+
 }

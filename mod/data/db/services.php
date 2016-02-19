@@ -33,5 +33,13 @@ $functions = array(
             no courses are provided then all the database instances the user has access to will be returned.',
         'type' => 'read',
         'capabilities' => 'mod/data:viewentry'
+    ),
+    'mod_data_update_data_records' => array(
+        'classname' => 'mod_data_external',
+        'methodname' => 'update_data_records',
+        'description' => 'Update the owner details of mod_data records.',
+        'type' => 'update',
+        'ajax' => true,
+        'capabilities' => 'mod/data:manageentries'
     )
 );
