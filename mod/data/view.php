@@ -842,7 +842,7 @@ if ($showactivity) {
 
                 // $module = array('name' => 'mod_data', 'fullpath' => '/mod/data/module.js');
                 // $PAGE->requires->js_init_call('M.mod_data.init_view', null, false, $module);
-                $PAGE->requires->js_call_amd('mod_data/view_page', 'init', array());
+                $PAGE->requires->js_call_amd('mod_data/view_page', 'init', array($context->id));
             }
 
             echo html_writer::end_tag('form');
