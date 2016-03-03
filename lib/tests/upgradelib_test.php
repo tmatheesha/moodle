@@ -28,7 +28,6 @@ defined('MOODLE_INTERNAL') || die();
 global $CFG;
 require_once($CFG->libdir.'/upgradelib.php');
 
-
 /**
  * Tests various classes and functions in upgradelib.php library.
  */
@@ -575,5 +574,243 @@ class core_upgradelib_testcase extends advanced_testcase {
         // Course 1 is mapped to tags 101 and 102.
         $this->assertEquals(array(103, 104), array_values($DB->get_fieldset_select('tag_instance', 'tagid',
                 'itemtype = ? AND itemid = ? ORDER BY tagid', array('course', 3))));
+    }
+
+    /**
+     * Test that the upgrade script correctly flags courses to be frozen due to rounded grades affecting
+     * the final grade if displayed with letters, or the completion of a course if course grade is a
+     * completion criterion.
+     */
+    public function test_upgrade_rounded_grade_grades() {
+        global $CFG, $DB;
+        $this->resetAfterTest(true);
+
+        // Create a user.
+        $user = $this->getDataGenerator()->create_user();
+
+        // Create some courses.
+        $courses = array();
+        for ($i = 0; $i < 10; $i++) {
+            $courses[] = $this->getDataGenerator()->create_course();
+        }
+
+        $gradegradesinfo = array();
+        $gradegradesinfo[1] = new stdClass();
+        $gradegradesinfo[1]->rawgrade = 55.3423;
+        $gradegradesinfo[1]->finalgrade = 55.3423;
+        $gradegradesinfo[1]->display = 0;
+        $gradegradesinfo[6] = new stdClass();
+        $gradegradesinfo[6]->rawgrade = 57.0000;
+        $gradegradesinfo[6]->finalgrade = 57.0000;
+        $gradegradesinfo[6]->display = GRADE_DISPLAY_TYPE_REAL;
+        $gradegradesinfo[7] = new stdClass();
+        $gradegradesinfo[7]->rawgrade = 57.0000;
+        $gradegradesinfo[7]->finalgrade = 57.0000;
+        $gradegradesinfo[7]->display = 0;
+        $gradegradesinfo[8] = new stdClass();
+        $gradegradesinfo[8]->rawgrade = 57.0000;
+        $gradegradesinfo[8]->finalgrade = 57.0000;
+        $gradegradesinfo[8]->display = GRADE_DISPLAY_TYPE_LETTER;
+        $gradegradesinfo[9] = new stdClass();
+        $gradegradesinfo[9]->rawgrade = 25.0000;
+        $gradegradesinfo[9]->finalgrade = 25.0000;
+        $gradegradesinfo[9]->display = 0;
+
+        $i = 0;
+
+        foreach ($courses as $course) {
+            $assignrow = $this->getDataGenerator()->create_module('assign', array('course' => $course->id, 'name' => 'Test!'));
+            $gi = grade_item::fetch(
+                    array('itemtype' => 'mod',
+                          'itemmodule' => 'assign',
+                          'iteminstance' => $assignrow->id,
+                          'courseid' => $course->id));
+
+            $gradegrade = new grade_grade();
+            $gradegrade->itemid = $gi->id;
+            $gradegrade->userid = $user->id;
+            $gradegrade->rawgrade = 55.5563;
+            $gradegrade->finalgrade = 55.5563;
+            $gradegrade->rawgrademax = 100;
+            $gradegrade->rawgrademin = 0;
+            $gradegrade->timecreated = time();
+            $gradegrade->timemodified = time();
+            if (isset($gradegradesinfo[$i])) {
+                $gradegrade->rawgrade = $gradegradesinfo[$i]->rawgrade;
+                $gradegrade->finalgrade = $gradegradesinfo[$i]->finalgrade;
+                $gi->display = $gradegradesinfo[$i]->display;
+                $gi->update('manual');
+            }
+            $gradegrade->insert();
+            $i++;
+        }
+
+        grade_set_setting($courses[4]->id, 'displaytype', GRADE_DISPLAY_TYPE_LETTER);
+        grade_set_setting($courses[5]->id, 'displaytype', GRADE_DISPLAY_TYPE_LETTER);
+        grade_set_setting($courses[7]->id, 'displaytype', GRADE_DISPLAY_TYPE_REAL);
+        grade_set_setting($courses[2]->id, 'decimalpoints', '0');
+        grade_set_setting($courses[3]->id, 'decimalpoints', '3');
+        grade_set_setting($courses[4]->id, 'decimalpoints', '3');
+        grade_set_setting($courses[5]->id, 'decimalpoints', '3');
+        grade_set_setting($courses[9]->id, 'report_overview_showtotalsifcontainhidden', '1');
+
+
+        foreach (array(5, 8) as $j) {
+            $context = context_course::instance($courses[$j]->id);
+            // Alter the boundaries so that one of them is 57.
+            $newlettersscale = array(
+                array('contextid' => $context->id, 'lowerboundary' => 90.00000, 'letter' => 'A'),
+                array('contextid' => $context->id, 'lowerboundary' => 85.00000, 'letter' => 'A-'),
+                array('contextid' => $context->id, 'lowerboundary' => 80.00000, 'letter' => 'B+'),
+                array('contextid' => $context->id, 'lowerboundary' => 75.00000, 'letter' => 'B'),
+                array('contextid' => $context->id, 'lowerboundary' => 70.00000, 'letter' => 'B-'),
+                array('contextid' => $context->id, 'lowerboundary' => 65.00000, 'letter' => 'C+'),
+                array('contextid' => $context->id, 'lowerboundary' => 57.00000, 'letter' => 'C'),
+                array('contextid' => $context->id, 'lowerboundary' => 50.00000, 'letter' => 'C-'),
+                array('contextid' => $context->id, 'lowerboundary' => 40.00000, 'letter' => 'D+'),
+                array('contextid' => $context->id, 'lowerboundary' => 25.00000, 'letter' => 'D'),
+                array('contextid' => $context->id, 'lowerboundary' => 0.00000, 'letter' => 'F'),
+            );
+            foreach ($newlettersscale as $record) {
+                // There is no API to do this, so we have to manually insert into the database.
+                $DB->insert_record('grade_letters', $record);
+            }
+        }
+
+        upgrade_rounded_grade_items();
+        // Create a course with a grade grade that doesn't have any changes to default rounding.
+        // Rounding will decrease the final grade.
+        $this->assertEquals(20160418, $CFG->{'gradebook_calculations_freeze_' . $courses[0]->id});
+        // Create a course with a grade grade that doesn't have any changes to  default rounding.
+        // Rounding will not decrease the final grade. (not affected).
+        $this->assertTrue(empty($CFG->{'gradebook_calculations_freeze_' . $courses[1]->id}));
+        // Create a course with a grade grade that does have custom rounding.
+        // Rounding will decrease the final grade.
+        $this->assertEquals(20160418, $CFG->{'gradebook_calculations_freeze_' . $courses[2]->id});
+        // Create a course with a grade grade that does have custom rounding.
+        // Rounding will not decrease the final grade. (not affected).
+        $this->assertTrue(empty($CFG->{'gradebook_calculations_freeze_' . $courses[3]->id}));
+
+        // Test 57 letter grade problem.
+        // With no alterations to the letter boundaries there should be no freeze of this course.
+        $this->assertTrue(empty($CFG->{'gradebook_calculations_freeze_' . $courses[4]->id}));
+        // With an alteration to the letter boundaries. There should be a course freeze.
+        // The course display setting is letters.
+        $this->assertEquals(20160418, $CFG->{'gradebook_calculations_freeze_' . $courses[5]->id});
+        // Check that if the grade item display is set to something that isn't a letter
+        // and the final grade will not be displayed differently that it is not frozen.
+        $this->assertTrue(empty($CFG->{'gradebook_calculations_freeze_' . $courses[6]->id}));
+        // Check that if the course display is set to something that isn't a letter
+        // and the final grade will not be displayed differently that it is not frozen.
+        $this->assertTrue(empty($CFG->{'gradebook_calculations_freeze_' . $courses[7]->id}));
+        // Check that if the grade item display is set to letter and the alteration to the letter boundaries
+        // Could result in the wrong letter being displayed, then the gradebook is frozen.
+        $this->assertEquals(20160418, $CFG->{'gradebook_calculations_freeze_' . $courses[8]->id});
+        // Course has the setting of show totals that contain hidden grade items.
+        // This course should be flagged as frozen.
+        $this->assertEquals(20160418, $CFG->{'gradebook_calculations_freeze_' . $courses[9]->id});
+
+    }
+
+    /**
+     * Test for grade item is using letter boundary.
+     */
+    public function test_upgrade_is_gradeitem_using_letters() {
+        global $CFG;
+        $this->resetAfterTest();
+        // Grade item setting is set to letters.
+        $this->assertTrue(upgrade_is_gradeitem_using_letters(3, 0));
+        // Grade item setting is not set to letters, neither is the course setting, or the system setting.
+        $this->assertFalse(upgrade_is_gradeitem_using_letters(0, 0));
+        // Grade item setting is not set, course setting is set.
+        $this->assertTrue(upgrade_is_gradeitem_using_letters(0, 31));
+        // Site wide setting is to use letters.
+        $oldsetting = $CFG->grade_displaytype;
+        set_config('grade_displaytype', 32);
+        // Grade item and course settings are default.
+        $this->assertTrue(upgrade_is_gradeitem_using_letters(0, 0));
+        // Grade item is set to something other than a letter.
+        $this->assertFalse(upgrade_is_gradeitem_using_letters(1, 0));
+        // Grade item is not set, course setting is not a boundary.
+        $this->assertFalse(upgrade_is_gradeitem_using_letters(0, 2));
+    }
+
+    /**
+     * Test upgrade_letter_boundary_needs_freeze function.
+     */
+    public function test_upgrade_letter_boundary_needs_freeze() {
+        $this->resetAfterTest();
+
+        $courses = array();
+        $contexts = array();
+        for ($i = 0; $i < 3; $i++) {
+            $courses[] = $this->getDataGenerator()->create_course();
+            $contexts[] = context_course::instance($courses[$i]->id);
+        }
+
+        // Course one is not using a letter boundary.
+        $this->assertFalse(upgrade_letter_boundary_needs_freeze($contexts[0]));
+
+        // Let's make course 2 use the bad boundary.
+        $this->assign_bad_letter_boundary($contexts[1]->id);
+        $this->assertTrue(upgrade_letter_boundary_needs_freeze($contexts[1]));
+        // Course 3 has letter boundaries that are fine.
+        $this->assign_good_letter_boundary($contexts[2]->id);
+        $this->assertFalse(upgrade_letter_boundary_needs_freeze($contexts[2]));
+        // Try the system context not using a letter boundary.
+        $systemcontext = context_system::instance();
+        $this->assertFalse(upgrade_letter_boundary_needs_freeze($systemcontext));
+    }
+
+    /**
+     * Assigns letter boundaries with comparison problems.
+     *
+     * @param int $contextid Context ID.
+     */
+    private function assign_bad_letter_boundary($contextid) {
+        global $DB;
+        $newlettersscale = array(
+                array('contextid' => $contextid, 'lowerboundary' => 90.00000, 'letter' => 'A'),
+                array('contextid' => $contextid, 'lowerboundary' => 85.00000, 'letter' => 'A-'),
+                array('contextid' => $contextid, 'lowerboundary' => 80.00000, 'letter' => 'B+'),
+                array('contextid' => $contextid, 'lowerboundary' => 75.00000, 'letter' => 'B'),
+                array('contextid' => $contextid, 'lowerboundary' => 70.00000, 'letter' => 'B-'),
+                array('contextid' => $contextid, 'lowerboundary' => 65.00000, 'letter' => 'C+'),
+                array('contextid' => $contextid, 'lowerboundary' => 57.00000, 'letter' => 'C'),
+                array('contextid' => $contextid, 'lowerboundary' => 50.00000, 'letter' => 'C-'),
+                array('contextid' => $contextid, 'lowerboundary' => 40.00000, 'letter' => 'D+'),
+                array('contextid' => $contextid, 'lowerboundary' => 25.00000, 'letter' => 'D'),
+                array('contextid' => $contextid, 'lowerboundary' => 0.00000, 'letter' => 'F'),
+            );
+        foreach ($newlettersscale as $record) {
+            // There is no API to do this, so we have to manually insert into the database.
+            $DB->insert_record('grade_letters', $record);
+        }
+    }
+
+    /**
+     * Assigns letter boundaries with no comparison problems.
+     *
+     * @param int $contextid Context ID.
+     */
+    private function assign_good_letter_boundary($contextid) {
+        global $DB;
+        $newlettersscale = array(
+                array('contextid' => $contextid, 'lowerboundary' => 90.00000, 'letter' => 'A'),
+                array('contextid' => $contextid, 'lowerboundary' => 85.00000, 'letter' => 'A-'),
+                array('contextid' => $contextid, 'lowerboundary' => 80.00000, 'letter' => 'B+'),
+                array('contextid' => $contextid, 'lowerboundary' => 75.00000, 'letter' => 'B'),
+                array('contextid' => $contextid, 'lowerboundary' => 70.00000, 'letter' => 'B-'),
+                array('contextid' => $contextid, 'lowerboundary' => 65.00000, 'letter' => 'C+'),
+                array('contextid' => $contextid, 'lowerboundary' => 54.00000, 'letter' => 'C'),
+                array('contextid' => $contextid, 'lowerboundary' => 50.00000, 'letter' => 'C-'),
+                array('contextid' => $contextid, 'lowerboundary' => 40.00000, 'letter' => 'D+'),
+                array('contextid' => $contextid, 'lowerboundary' => 25.00000, 'letter' => 'D'),
+                array('contextid' => $contextid, 'lowerboundary' => 0.00000, 'letter' => 'F'),
+            );
+        foreach ($newlettersscale as $record) {
+            // There is no API to do this, so we have to manually insert into the database.
+            $DB->insert_record('grade_letters', $record);
+        }
     }
 }
