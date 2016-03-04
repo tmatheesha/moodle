@@ -1196,15 +1196,27 @@ function grade_regrade_final_grades($courseid, $userid=null, $updated_item=null,
                 }
             }
 
+            // If this grade item has no dependancy with the updated item at all, then remove it from being recalculated.
+
+            // When we get here, all of this grade item's decendents are marked as final.
+            // Now we check to see if the direct decendants are marked as updated.
+            // If no direct decendants are marked as updated, then we don't need to update this grade item. We then mark it as
+            // final.
+
             // If $updated_item was specified we discard the grade items that do not depend on it or on any grade item that
             // depend on $updated_item.
             if (!empty($updated_item) && $gid != $updated_item->id && !in_array($updated_item->id, $depends_on[$gid])) {
-                // We need to ensure that non of this item dependencies has been updated.
+
+                // We need to ensure that none of this item's dependencies have been updated.
+                // If we find that one of the direct decendants of this grade item is marked as updated then this
+                // grade item needs to be recalculated and also marked as updated.
+                // Being marked as updated is done further down in the code.
 
                 $updateddependencies = false;
                 foreach ($depends_on[$gid] as $dependency) {
                     if (in_array($dependency, $updatedids)) {
                         $updateddependencies = true;
+                        break;
                     }
                 }
                 if ($updateddependencies === false) {
