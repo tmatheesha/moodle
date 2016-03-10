@@ -141,7 +141,7 @@ Feature: Calculated grade items can be used in the gradebook
     Then the following should exist in the "user-grade" table:
       | Grade item   | Calculated weight | Grade  | Range | Percentage | Contribution to course total |
       | grade item 1 | 66.67 %           | 75.00  | 0–100 | 75.00 %    | 50.00 %                      |
-      | calc item    | 33.33 %           | 37.50  | 0–50  | 75.00 %    | 25.00 %                      |
+      | calc item    | 33.33 %           | 37.50  | 0–50  | 75.00 %    | 24.99 %                      |
       | Course total | -                 | 112.50 | 0–150 | 75.00 %    | -                            |
     And I navigate to "Gradebook setup" node in "Grade administration > Setup"
     And I set the following settings for grade item "calc item":
@@ -155,11 +155,11 @@ Feature: Calculated grade items can be used in the gradebook
     And the following should exist in the "user-grade" table:
       | Grade item   | Calculated weight | Grade  | Range | Percentage | Contribution to course total |
       | grade item 1 | 71.43 %           | 75.00  | 0–100 | 75.00 %    | 53.57 %                      |
-      | calc item    | 28.57 %           | 37.50  | 0–40  | 93.75 %    | 26.79 %                      |
-      | Course total | -                 | 112.50 | 0–140 | 80.36 %    | -                            |
+      | calc item    | 28.57 %           | 37.50  | 0–40  | 93.75 %    | 26.78 %                      |
+      | Course total | -                 | 112.50 | 0–140 | 80.35 %    | -                            |
     And I select "Student 2" from the "Select all or one user" singleselect
     And the following should exist in the "user-grade" table:
       | Grade item   | Calculated weight | Grade  | Range | Percentage | Contribution to course total |
-      | grade item 1 | 71.43 %           | 65.00  | 0–100 | 65.00 %    | 46.43 %                      |
+      | grade item 1 | 71.43 %           | 65.00  | 0–100 | 65.00 %    | 46.42 %                      |
       | calc item    | 28.57 %           | 32.50  | 0–40  | 81.25 %    | 23.21 %                      |
       | Course total | -                 | 97.50  | 0–140 | 69.64 %    | -                            |
