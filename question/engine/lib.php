@@ -683,7 +683,7 @@ abstract class question_flags {
             global $USER;
             $user = $USER;
         }
-        return md5($qubaid . "_" . $user->secret . "_" . $questionid . "_" . $qaid . "_" . $slot);
+        return md5($qubaid . "_" . $user->username . "_" . sesskey() . "_" . $questionid . "_" . $qaid . "_" . $slot);
     }
 
     /**
