@@ -515,7 +515,9 @@ M.gradereport_grader.classes.ajax.prototype.submission_outcome = function(tid, o
                         scalegrade = parseFloat(r.finalgrade);
                         finalgrade = this.scales[r.scale][scalegrade-1];
                     } else {
-                        finalgrade = parseFloat(r.finalgrade).toFixed(info.itemdp);
+                        // Grades are being floored to the number of decimal places specified.
+                        finalgrade = r.finalgrade.substring(0, r.finalgrade.length + (info.itemdp - 5));
+                        finalgrade = parseFloat(finalgrade).toFixed(info.itemdp);
                     }
                 }
                 if (this.report.isediting) {

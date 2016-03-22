@@ -504,6 +504,13 @@ class restore_gradebook_structure_step extends restore_structure_step {
             require_once($CFG->libdir . '/db/upgradelib.php');
             upgrade_calculated_grade_items($this->get_courseid());
         }
+        // Grade items that result in the final grade being rounded up will need recalculating for backups made after the fix
+        // release (20160418).
+        if (!$gradebookcalculationsfreeze && $backupbuild < 20160418) {
+            require_once($CFG->libdir . '/db/upgradelib.php');
+            upgrade_rounded_grade_items($this->get_courseid());
+        }
+
     }
 
     /**

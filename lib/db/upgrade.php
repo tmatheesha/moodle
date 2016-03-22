@@ -1464,5 +1464,19 @@ function xmldb_main_upgrade($oldversion) {
         upgrade_main_savepoint(true, 2016030400.01);
     }
 
+    if ($oldversion < 2016041500.01) {
+        // MDL-21746. This issue fixes multiple problems with rounding and letter boundaries.
+        // If a course contains a grade that will be rounded down after this fix then the course will be frozen.
+        // Alternatively if a grade is being displayed with letters and the grade boundaries are not being adhered to properly
+        // then this course will also be frozen.
+
+        // If the changes are accepted then the display of some grades may change.
+        // This is here to freeze the gradebook in affected courses.
+        upgrade_rounded_grade_items();
+
+        // Main savepoint reached.
+        upgrade_main_savepoint(true, 2016041500.01);
+    }
+
     return true;
 }

@@ -231,7 +231,8 @@ class grade_report_grader extends grade_report {
                             // The grade item uses a numeric scale
 
                             // Format the finalgrade from the DB so that it matches the grade from the client
-                            if ($postedvalue === format_float($oldvalue->finalgrade, $oldvalue->grade_item->get_decimals())) {
+                            if ($postedvalue === grade_round_value($oldvalue->finalgrade,
+                                    $oldvalue->grade_item->get_decimals(), true, $this->courseid)) {
                                 continue;
                             }
                         }
@@ -964,7 +965,7 @@ class grade_report_grader extends grade_report {
                     if ($item->scaleid && !empty($scalesarray[$item->scaleid])) {
                         $gradevalforjs = (int)$gradeval;
                     } else {
-                        $gradevalforjs = format_float($gradeval, $decimalpoints);
+                        $gradevalforjs = grade_round_value($gradeval, $decimalpoints, true, $this->courseid);
                     }
                     $jsarguments['grades'][] = array('user'=>$userid, 'item'=>$itemid, 'grade'=>$gradevalforjs);
                 }
@@ -1086,7 +1087,7 @@ class grade_report_grader extends grade_report {
 
                     } else if ($item->gradetype != GRADE_TYPE_TEXT) { // Value type
                         if ($quickgrading and $grade->is_editable()) {
-                            $value = format_float($gradeval, $decimalpoints);
+                            $value = grade_round_value($gradeval, $decimalpoints, true, $this->courseid);
                             $gradelabel = $fullname . ' ' . $item->get_name(true);
                             $itemcell->text .= '<label class="accesshide" for="grade_'.$userid.'_'.$item->id.'">'
                                           .get_string('useractivitygrade', 'gradereport_grader', $gradelabel).'</label>';
@@ -1095,7 +1096,7 @@ class grade_report_grader extends grade_report {
                                           .$userid.'][' .$item->id.']" id="grade_'.$userid.'_'.$item->id.'" value="'.$value.'" />';
                         } else {
                             $itemcell->text .= "<span class='gradevalue{$hidden}{$gradepass}'>" .
-                                    format_float($gradeval, $decimalpoints) . "</span>";
+                                    grade_round_value($gradeval, $decimalpoints, true, $this->courseid) . "</span>";
                         }
                     }
 

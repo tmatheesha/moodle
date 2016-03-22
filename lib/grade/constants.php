@@ -263,3 +263,8 @@ define('GRADE_MIN_MAX_FROM_GRADE_ITEM', 1);
  * GRADE_MIN_MAX_FROM_GRADE_GRADE - Get the grade min/max from the grade grade.
  */
 define('GRADE_MIN_MAX_FROM_GRADE_GRADE', 2);
+
+/**
+ * GRADE_MAXIMUM_DECIMAL_POINTS - The maximum number of decimal points that Moodle stores grade grade values.
+ */
+define('GRADE_MAXIMUM_DECIMAL_POINTS', 5);

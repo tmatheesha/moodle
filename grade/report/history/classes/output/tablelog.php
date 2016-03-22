@@ -188,8 +188,8 @@ class tablelog extends \table_sql implements \renderable {
         } else {
             $decimalpoints = $this->defaultdecimalpoints;
         }
+        return grade_round_value($history->finalgrade, $decimalpoints, true, $this->courseid);
 
-        return format_float($history->finalgrade, $decimalpoints);
     }
 
     /**
@@ -205,8 +205,7 @@ class tablelog extends \table_sql implements \renderable {
         } else {
             $decimalpoints = $this->defaultdecimalpoints;
         }
-
-        return format_float($history->prevgrade, $decimalpoints);
+        return grade_round_value($history->prevgrade, $decimalpoints, true, $this->courseid);
     }
 
     /**

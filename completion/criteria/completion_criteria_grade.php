@@ -174,7 +174,7 @@ class completion_criteria_grade extends completion_criteria {
         $graderequired = $this->get_title_detailed();
 
         if ($grade) {
-            $grade = format_float($grade, $decimalpoints);
+            $grade = grade_round_value($grade, $decimalpoints, true, $this->course);
         } else {
             $grade = get_string('nograde');
         }
@@ -251,10 +251,10 @@ class completion_criteria_grade extends completion_criteria {
         $details = array();
         $details['type'] = get_string('coursegrade', 'completion');
         $details['criteria'] = get_string('graderequired', 'completion');
-        $details['requirement'] = format_float($this->gradepass, $decimalpoints);
         $details['status'] = '';
+        $details['requirement'] = grade_round_value($this->gradepass, $decimalpoints, true, $this->course);
+        $grade = grade_round_value($this->get_grade($completion), $decimalpoints, true, $this->course);
 
-        $grade = format_float($this->get_grade($completion), $decimalpoints);
         if ($grade) {
             $details['status'] = $grade;
         }

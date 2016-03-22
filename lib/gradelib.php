@@ -813,7 +813,7 @@ function grade_format_gradevalue_real($value, $grade_item, $decimals, $localized
         return format_string($scale->scale_items[$value-1]);
 
     } else {
-        return format_float($value, $decimals, $localized);
+        return grade_round_value($value, $decimals, $localized, $grade_item->courseid);
     }
 }
 
@@ -834,7 +834,7 @@ function grade_format_gradevalue_percentage($value, $grade_item, $decimals, $loc
     }
     $value = $grade_item->bounded_grade($value);
     $percentage = (($value-$min)*100)/($max-$min);
-    return format_float($percentage, $decimals, $localized).' %';
+    return grade_round_value($percentage, $decimals, $localized, $grade_item->courseid) .' %';
 }
 
 /**
@@ -846,6 +846,7 @@ function grade_format_gradevalue_percentage($value, $grade_item, $decimals, $loc
  * @return string
  */
 function grade_format_gradevalue_letter($value, $grade_item) {
+    global $CFG;
     $context = context_course::instance($grade_item->courseid, IGNORE_MISSING);
     if (!$letters = grade_get_letters($context)) {
         return ''; // no letters??
@@ -857,7 +858,16 @@ function grade_format_gradevalue_letter($value, $grade_item) {
 
     $value = grade_grade::standardise_score($value, $grade_item->grademin, $grade_item->grademax, 0, 100);
     $value = bounded_number(0, $value, 100); // just in case
+
+    $gradebookcalculationsfreeze = 'gradebook_calculations_freeze_' . $grade_item->courseid;
+
     foreach ($letters as $boundary => $letter) {
+        if (property_exists($CFG, $gradebookcalculationsfreeze) && (int)$gradebookcalculationsfreeze <= 20160418) {
+            // Do nothing.
+        } else {
+            // The boundary is a percentage out of 100 so use 0 as the min and 100 as the max.
+            $boundary = grade_grade::standardise_score($boundary, 0, 100, 0, 100);
+        }
         if ($value >= $boundary) {
             return format_string($letter);
         }
@@ -1612,4 +1622,47 @@ function grade_floats_different($f1, $f2) {
  */
 function grade_floats_equal($f1, $f2) {
     return (grade_floatval($f1) === grade_floatval($f2));
+}
+
+/**
+ * Floor the grade value to the number of decimal places provided.
+ *
+ * @param float $value The grade value to be formated and rounded (down).
+ * @param int $decimals The number of decimals to display.
+ * @param bool $localised Format this value according to the local decimal format?
+ * @param int $courseid Provide the course id to determine if the grade book is frozen. If it is, it will use format_float().
+ * @return float The grade value formated according to region and decimals.
+ */
+function grade_round_value($value, $decimals = GRADE_MAXIMUM_DECIMAL_POINTS, $localised = true, $courseid = null) {
+    global $CFG;
+    if (isset($courseid)) {
+        $gradebookcalculationsfreeze = 'gradebook_calculations_freeze_' . $courseid;
+        if (property_exists($CFG, $gradebookcalculationsfreeze) && (int)$gradebookcalculationsfreeze <= 20160418) {
+            return format_float($value, $decimals, $localised);
+        }
+    }
+
+    if (is_null($value)) {
+        return '';
+    }
+
+    // Grade values from the database are in a format that uses a period (.) as the decimal notation.
+    $separator = '.';
+    $decimallocation = strpos($value, $separator);
+    $decimalcount = 0;
+    if ($decimallocation !== false) {
+        $decimalcount = strlen($value) - ($decimallocation + 1);
+    }
+
+    $roundedvalue = $value;
+    if ($decimals < $decimalcount) {
+        // Floor the value.
+        $roundedvalue = floatval(substr($value, 0, $decimals - $decimalcount));
+    }
+    // Set the decimal notation to the region.
+    if ($localised) {
+        $separator = get_string('decsep', 'langconfig');
+    }
+    $formatedvalue = number_format($roundedvalue, $decimals, $separator, '');
+    return $formatedvalue;
 }

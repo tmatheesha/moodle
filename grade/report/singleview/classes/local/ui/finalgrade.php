@@ -51,7 +51,8 @@ class finalgrade extends grade_attribute_format implements unique_value, be_disa
         if ($this->grade->grade_item->scaleid) {
             return $val ? (int)$val : -1;
         } else {
-            return $val ? format_float($val, $this->grade->grade_item->get_decimals()) : '';
+            return $val ? grade_round_value($val, $this->grade->grade_item->get_decimals(), true,
+                    $this->grade->grade_item->courseid) : '';
         }
     }
 

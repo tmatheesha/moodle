@@ -307,3 +307,180 @@ function upgrade_course_tags() {
     }
     $DB->execute("DELETE FROM {tag_instance} WHERE itemtype = ? AND tiuserid <> 0", array('course'));
 }
+
+/**
+ * Marks all courses that require rounded grade items be updated.
+ *
+ * Used during upgrade and in course restore process.
+ *
+ * This upgrade script is needed because it has been decided that if a grade is rounded up, and it will changed a letter
+ * grade or satisfy a course completion grade criteria, then it should be set as so, and the letter will be awarded and or
+ * the course completion grade will be awarded.
+ *
+ * @param int $courseid Specify a course ID to run this script on just one course.
+ */
+function upgrade_rounded_grade_items($courseid = null) {
+    global $DB, $CFG;
+
+    $coursesql = '';
+    $params = array('contextlevel' => CONTEXT_COURSE);
+    if (!empty($courseid)) {
+        $coursesql = 'AND c.id = :courseid';
+        $params['courseid'] = $courseid;
+    }
+
+    $contextselect = context_helper::get_preload_record_columns_sql('ctx');
+
+    $sql = 'SELECT gg.id, gg.finalgrade, c.id AS courseid,
+                   COALESCE(gi.decimals, ' . $DB->sql_cast_char2int('gs.value') . ') AS decimals,
+                   gi.display AS display, gss.value AS coursedisplay, gsss.value AS reportoverview, '. $contextselect .'
+              FROM {grade_grades} gg
+              JOIN {grade_items} gi ON gi.id = gg.itemid
+              JOIN {course} c ON c.id = gi.courseid
+              JOIN {context} ctx ON ctx.instanceid = c.id AND ctx.contextlevel = :contextlevel
+         LEFT JOIN {grade_settings} gs ON gi.courseid = gs.courseid AND gs.name = \'decimalpoints\'
+         LEFT JOIN {grade_settings} gss ON gi.courseid = gss.courseid AND gss.name = \'displaytype\'
+         LEFT JOIN {grade_settings} gsss ON gi.courseid = gsss.courseid
+                   AND gsss.name = \'report_overview_showtotalsifcontainhidden\'
+             WHERE NOT (gg.finalgrade IS NULL)
+               ' . $coursesql;
+
+    $collectedcourseids = array();
+    $potentialfinalgrades = $DB->get_recordset_sql($sql, $params);
+
+    foreach ($potentialfinalgrades as $value) {
+        $gradebookfreeze = 'gradebook_calculations_freeze_' . $value->courseid;
+
+        // Check also if this course id has already been frozen.
+        // If we already have this course ID then move on to the next record.
+        if (!property_exists($CFG, $gradebookfreeze)) {
+
+            // Check course level "show totals excluding hidden items", if not here then check site level setting for this.
+            if ($value->reportoverview == 1 || (is_null($value->reportoverview) &&
+                    (isset($CFG->report_overview_showtotalsifcontainhidden) &&
+                    $CFG->report_overview_showtotalsifcontainhidden == 1))) {
+                // Flag for freeze.
+                // Put in code to freeze.
+                set_config('gradebook_calculations_freeze_' . $value->courseid, 20160418);
+                continue;
+            }
+
+            // Check for finalgrade round / floor discrepancy.
+            // Retrieve the current decimalpoint value for this course.
+            $decimalpoints = (!is_null($value->decimals)) ? $value->decimals : $CFG->grade_decimalpoints;
+            if ($decimalpoints != 5) {
+                // If the rounded value is different to the floored value then there is a potential for a grade to be changed.
+                if (round($value->finalgrade, $decimalpoints) != floatval(substr($value->finalgrade, 0, $decimalpoints - 5))) {
+                    // We have a winner.
+                    // Flag this course as being frozen.
+                    set_config('gradebook_calculations_freeze_' . $value->courseid, 20160418);
+                    continue;
+                }
+            }
+
+            // Check for 57 letter grade issue.
+            if (upgrade_is_gradeitem_using_letters($value->display, $value->coursedisplay)) {
+                context_helper::preload_from_record($value);
+                $coursecontext = context_course::instance($value->courseid);
+                if (upgrade_letter_boundary_needs_freeze($coursecontext)) {
+                    // We have a course with a possible score standardisation problem. Flag for freeze.
+                    // Flag this course as being frozen.
+                    set_config('gradebook_calculations_freeze_' . $value->courseid, 20160418);
+                }
+            }
+        }
+    }
+    $potentialfinalgrades->close();
+}
+
+/**
+ * Check if a grade item is using letters for display.
+ *
+ * @param int $gradesetting The setting for the grade item.
+ * @param int $coursesetting The setting for the course.
+ * @return bool True if the grade item is being displayed with letters.
+ */
+function upgrade_is_gradeitem_using_letters($gradesetting, $coursesetting) {
+    global $CFG;
+    // These numbers represent the number for letter, letter(percentage), letter(real).
+    $letterdisplaytypes = array(3, 31, 32);
+    return in_array($gradesetting ?: ($coursesetting ?: $CFG->grade_displaytype), $letterdisplaytypes);
+}
+
+/**
+ * Returns the array of grade letters to be used in the supplied context
+ *
+ * @param object $context Context object or null for defaults
+ * @return array of grade_boundary (minimum) => letter_string
+ */
+function upgrade_letter_boundary_needs_freeze($context) {
+    global $DB;
+
+    static $cache = array();
+
+    if (array_key_exists($context->id, $cache)) {
+        return $cache[$context->id];
+    }
+
+    if (count($cache) > 100) {
+        $cache = array(); // Cache size limit.
+    }
+
+    $letters = array();
+
+    $contexts = $context->get_parent_context_ids();
+    array_unshift($contexts, $context->id);
+
+    foreach ($contexts as $ctxid) {
+
+        // Check this context against the cache to see if there is already a value.
+        if (array_key_exists($context->id, $cache)) {
+            return $cache[$context->id];
+        }
+
+        $letters = $DB->get_records_menu('grade_letters', array('contextid' => $ctxid), 'lowerboundary DESC',
+                'lowerboundary, letter');
+
+        if (!empty($letters)) {
+
+            foreach ($letters as $boundary => $notused) {
+                $standardisedboundary = upgrade_standardise_score($boundary, 0, 100, 0, 100);
+                if ($boundary != $standardisedboundary) {
+                    $cache[$context->id] = true;
+                    return true;
+                }
+            }
+
+        }
+    }
+    $cache[$context->id] = false;
+    return false;
+}
+
+/**
+ * Given a float value situated between a source minimum and a source maximum, converts it to the
+ * corresponding value situated between a target minimum and a target maximum. Thanks to Darlene
+ * for the formula :-)
+ *
+ * @param float $rawgrade
+ * @param float $sourcemin
+ * @param float $sourcemax
+ * @param float $targetmin
+ * @param float $targetmax
+ * @return float Converted value
+ */
+function upgrade_standardise_score($rawgrade, $sourcemin, $sourcemax, $targetmin, $targetmax) {
+    if (is_null($rawgrade)) {
+        return null;
+    }
+
+    if ($sourcemax == $sourcemin or $targetmin == $targetmax) {
+        // Prevent division by 0.
+        return $targetmax;
+    }
+
+    $factor = ($rawgrade - $sourcemin) / ($sourcemax - $sourcemin);
+    $diff = $targetmax - $targetmin;
+    $standardisedvalue = $factor * $diff + $targetmin;
+    return $standardisedvalue;
+}
