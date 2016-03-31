@@ -86,15 +86,15 @@ class core_question_external_testcase extends externallib_advanced_testcase {
         $qubaid = $quba->get_id();
         $questionid = $question->id;
         $qaid = $qa->get_database_id();
-        $checksum = md5($qubaid . "_" . $this->student->secret . "_" . $questionid . "_" . $qaid . "_" . $slot);
+        $checksum = md5($qubaid . "_" . $this->student->username . "_" . sesskey() . "_" . $questionid . "_" . $qaid . "_" . $slot);
 
         $flag = core_question_external::update_flag($qubaid, $questionid, $qaid, $slot, $checksum, true);
         $this->assertTrue($flag['status']);
 
         // Test invalid checksum.
         try {
-            // Using random_string to force failing.
-            $checksum = md5($qubaid . "_" . random_string(11) . "_" . $questionid . "_" . $qaid . "_" . $slot);
+            // Using unexisting user (No mathers if it exists or not).
+            $checksum = md5($qubaid . "_anotheruser_" . sesskey() . "_" . $questionid . "_" . $qaid . "_" . $slot);
 
             core_question_external::update_flag($qubaid, $questionid, $qaid, $slot, $checksum, true);
             $this->fail('Exception expected due to invalid checksum.');
