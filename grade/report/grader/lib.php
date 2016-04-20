@@ -894,13 +894,21 @@ class grade_report_grader extends grade_report {
         $scaleslist = array();
         $tabindices = array();
 
+        // Set grade values to be truncated via the ajax grader.
+        $truncategrades = true;
+        // Check to see if we have a frozen gradebook. If it is then round grades values up.
+        $gradebookcalculationsfreeze = 'gradebook_calculations_freeze_' . $this->courseid;
+        if (property_exists($CFG, $gradebookcalculationsfreeze) && (int)$gradebookcalculationsfreeze <= 20160418) {
+            $truncategrades = false;
+        }
+
         foreach ($this->gtree->get_items() as $itemid => $item) {
             $scale = null;
             if (!empty($item->scaleid)) {
                 $scaleslist[] = $item->scaleid;
-                $jsarguments['items'][$itemid] = array('id'=>$itemid, 'name'=>$item->get_name(true), 'type'=>'scale', 'scale'=>$item->scaleid, 'decimals'=>$item->get_decimals());
+                $jsarguments['items'][$itemid] = array('id'=>$itemid, 'name'=>$item->get_name(true), 'type'=>'scale', 'scale'=>$item->scaleid, 'decimals'=>$item->get_decimals(), 'truncategrades' => $truncategrades);
             } else {
-                $jsarguments['items'][$itemid] = array('id'=>$itemid, 'name'=>$item->get_name(true), 'type'=>'value', 'scale'=>false, 'decimals'=>$item->get_decimals());
+                $jsarguments['items'][$itemid] = array('id'=>$itemid, 'name'=>$item->get_name(true), 'type'=>'value', 'scale'=>false, 'decimals'=>$item->get_decimals(), 'truncategrades' => $truncategrades);
             }
             $tabindices[$item->id]['grade'] = $gradetabindex;
             $tabindices[$item->id]['feedback'] = $gradetabindex + $numusers;
