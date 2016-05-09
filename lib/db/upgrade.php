@@ -2046,6 +2046,8 @@ function xmldb_main_upgrade($oldversion) {
     }
 
     if ($oldversion < 2016050600.01) {
+        // Set default for the grade display type to round up. Only new installs will truncate grade values by default.
+        set_config('grade_displaytype', '0');
         // MDL-21746. If a grade is being displayed with letters and the grade boundaries are not being adhered to properly
         // then this course will also be frozen.
 

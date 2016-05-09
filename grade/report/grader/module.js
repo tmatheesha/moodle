@@ -119,7 +119,8 @@ M.gradereport_grader.classes.report.prototype.get_cell_info = function(arg) {
         itemscale : this.items[itemid].scale,
         itemdp : this.items[itemid].decimals,
         feedback : feedback,
-        cell : cell
+        cell : cell,
+        truncategrades: this.items[itemid].truncategrades
     };
 };
 /**
@@ -515,7 +516,14 @@ M.gradereport_grader.classes.ajax.prototype.submission_outcome = function(tid, o
                         scalegrade = parseFloat(r.finalgrade);
                         finalgrade = this.scales[r.scale][scalegrade-1];
                     } else {
-                        finalgrade = parseFloat(r.finalgrade).toFixed(info.itemdp);
+                        if (info.truncategrades == 1) {
+                            // Grades are being floored to the number of decimal places specified. The '5' below is
+                            // The maximum number of decimal places that Moodle stores grades to.
+                            finalgrade = r.finalgrade.substring(0, r.finalgrade.length + (info.itemdp - 5));
+                            finalgrade = parseFloat(finalgrade).toFixed(info.itemdp);
+                        } else {
+                            finalgrade = parseFloat(r.finalgrade).toFixed(info.itemdp);
+                        }
                     }
                 }
                 if (this.report.isediting) {

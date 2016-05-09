@@ -327,6 +327,8 @@ $string['gradesforuser'] = 'Grades for {$a->user}';
 $string['singleview'] = 'Single view for {$a}';
 $string['gradesonly'] = 'Change to grades only';
 $string['gradessettings'] = 'Grade settings';
+$string['gradetruncategrades'] = 'Round grades down';
+$string['gradetruncategrades_help'] = 'Set grades to be either rounded down or rounded up when being displayed.';
 $string['gradetype'] = 'Grade type';
 $string['gradetype_help'] = 'There are 4 grade types:
 

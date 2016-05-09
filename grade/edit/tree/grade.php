@@ -146,7 +146,7 @@ if ($grade = $DB->get_record('grade_grades', array('itemid' => $grade_item->id, 
             $grade->finalgrade = (int)$grade->finalgrade;
         }
     } else if ($grade_item->gradetype == GRADE_TYPE_VALUE) {
-        $grade->finalgrade = format_float($grade->finalgrade, $grade_item->get_decimals());
+        $grade->finalgrade = grade_round_value($grade->finalgrade, $grade_item->get_decimals());
     }
 
     $grade->oldgrade    = $grade->finalgrade;

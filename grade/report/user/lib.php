@@ -781,7 +781,7 @@ class grade_report_user extends grade_report {
                         $content = '-';
                         if (!is_null($gradeval)) {
                             $decimals = $grade_object->get_decimals();
-                            $content = format_float($gradeval, $decimals, true) . ' %';
+                            $content = grade_round_value($gradeval, $decimals) . ' %';
                         }
                         $this->tabledata[$key]['contributiontocoursetotal']['content'] = $content;
                         break;
