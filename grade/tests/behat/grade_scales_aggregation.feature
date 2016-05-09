@@ -71,10 +71,10 @@ Feature: Control the aggregation of the scales
 
     Examples:
       | aggregation                         | totalstr                             | coursetotal | coursepc | gradecontrib | scalecontrib | coursetotal2 | coursepc2 | gradecontrib2 | scalecontrib2 |
-      | Natural                             |                                      | 10.00       | 10.00 %  | 10.00        | 0.00         | 14.00        | 13.33 %   | 9.52 %        | 3.81 %        |
+      | Natural                             |                                      | 10.00       | 10.00 %  | 10.00        | 0.00         | 14.00        | 13.33 %   | 9.52 %        | 3.80 %        |
       | Mean of grades                      | Mean of grades.                      | 10.00       | 10.00 %  | 10.00        | 0.00         | 42.50        | 42.50 %   | 5.00 %        | 37.50 %       |
       | Weighted mean of grades             | Weighted mean of grades.             | 10.00       | 10.00 %  | 10.00        | 0.00         | 42.50        | 42.50 %   | 5.00 %        | 37.50 %       |
-      | Simple weighted mean of grades      | Simple weighted mean of grades.      | 10.00       | 10.00 %  | 10.00        | 0.00         | 12.50        | 12.50 %   | 9.62 %        | 2.88 %        |
+      | Simple weighted mean of grades      | Simple weighted mean of grades.      | 10.00       | 10.00 %  | 10.00        | 0.00         | 12.50        | 12.50 %   | 9.61 %        | 2.88 %        |
       | Mean of grades (with extra credits) | Mean of grades (with extra credits). | 10.00       | 10.00 %  | 10.00        | 0.00         | 42.50        | 42.50 %   | 5.00 %        | 37.50 %       |
       | Median of grades                    | Median of grades.                    | 10.00       | 10.00 %  | 10.00        | 0.00         | 42.50        | 42.50 %   | 5.00 %        | 37.50 %       |
       | Lowest grade                        | Lowest grade.                        | 10.00       | 10.00 %  | 10.00        | 0.00         | 10.00        | 10.00 %   | 10.00 %       | 0.00 %        |

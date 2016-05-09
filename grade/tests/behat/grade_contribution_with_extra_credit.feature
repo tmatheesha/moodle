@@ -76,6 +76,6 @@ Feature: Extra credit contributions are normalised when going out of bounds
 
     Examples:
       | aggregation                         | m1w      | m1c   | m2w      | m2c   | m3w     | m3c   |
-      | Natural                             | 100.00 % | 53.33 % | 66.67 %  | 6.67 % | 57.14 % | 40.00 % |
-      | Simple weighted mean of grades      | 100.00 % | 53.33 % | 66.67 %  | 6.67 % | 57.14 % | 40.00 % |
-      | Mean of grades (with extra credits) | 100.00 % | 53.33 % | 100.00 % | 10.00 % | 52.38 % | 36.67 % |
+      | Natural                             | 100.00 % | 53.33 % | 66.67 %  | 6.66 % | 57.14 % | 40.00 % |
+      | Simple weighted mean of grades      | 100.00 % | 53.33 % | 66.67 %  | 6.66 % | 57.14 % | 40.00 % |
+      | Mean of grades (with extra credits) | 100.00 % | 53.33 % | 100.00 % | 10.00 % | 52.38 % | 36.66 % |

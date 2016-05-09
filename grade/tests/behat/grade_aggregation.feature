@@ -80,7 +80,7 @@ Feature: We can use calculated grade totals
     And I log out
     And I log in as "student1"
     And I follow "Grades" in the user menu
-    And I should see "30.42 (30.42 %)" in the "overview-grade" "table"
+    And I should see "30.41 (30.41 %)" in the "overview-grade" "table"
 
   Scenario: Weighted mean of grades aggregation
     And I set the following settings for grade item "Course 1":
@@ -115,7 +115,7 @@ Feature: We can use calculated grade totals
     And I set the following settings for grade item "Test assignment one":
       | Extra credit | 1 |
     And I turn editing mode off
-    Then I should see "45.19 (45.19 %)" in the ".course" "css_element"
+    Then I should see "45.18 (45.18 %)" in the ".course" "css_element"
     And I navigate to "Course grade settings" node in "Grade administration > Setup"
     And I set the field "Hide totals if they contain hidden items" to "Show totals excluding hidden items"
     And I press "Save changes"
@@ -153,7 +153,7 @@ Feature: We can use calculated grade totals
       | Aggregation          | Median of grades |
       | Exclude empty grades | 0                |
     And I turn editing mode off
-    Then I should see "26.67 (26.67 %)" in the ".course" "css_element"
+    Then I should see "26.66 (26.66 %)" in the ".course" "css_element"
     And I navigate to "Course grade settings" node in "Grade administration > Setup"
     And I set the field "Hide totals if they contain hidden items" to "Show totals excluding hidden items"
     And I press "Save changes"
@@ -252,7 +252,7 @@ Feature: We can use calculated grade totals
     And I log out
     And I log in as "student1"
     And I follow "Grades" in the user menu
-    Then I should see "114.82 (18.27 %)" in the "overview-grade" "table"
+    Then I should see "114.81 (18.26 %)" in the "overview-grade" "table"
     And I follow "Course 1"
     And "Test outcome item one" row "Grade" column of "user-grade" table should contain "Excellent (100.00 %)"
     And I log out
@@ -266,7 +266,7 @@ Feature: We can use calculated grade totals
     And I log out
     And I log in as "student1"
     And I follow "Grades" in the user menu
-    Then I should see "114.00 (18.39 %)" in the "overview-grade" "table"
+    Then I should see "114.00 (18.38 %)" in the "overview-grade" "table"
     And I follow "Course 1"
     And "Test outcome item one" row "Grade" column of "user-grade" table should contain "Excellent (100.00 %)"
     And I log out
@@ -337,7 +337,7 @@ Feature: We can use calculated grade totals
     And I set the following settings for grade item "Test assignment three":
       | Extra credit | 1 |
     And I turn editing mode off
-    Then I should see "152.68 (24.43 %)" in the ".course" "css_element"
+    Then I should see "152.67 (24.42 %)" in the ".course" "css_element"
     And I navigate to "Course grade settings" node in "Grade administration > Setup"
     And I set the field "report_overview_showtotalsifcontainhidden" to "Show totals excluding hidden items"
     And I set the field "report_user_showtotalsifcontainhidden" to "Show totals excluding hidden items"
@@ -348,20 +348,20 @@ Feature: We can use calculated grade totals
     And I select "Student 1" from the "Select all or one user" singleselect
     And the following should exist in the "user-grade" table:
       | Grade item | Calculated weight | Grade | Range | Contribution to course total |
-      | Test assignment five | 28.57 % | 10.00 (50.00 %) | 0–20 | 1.03 % |
+      | Test assignment five | 28.57 % | 10.00 (50.00 %) | 0–20 | 1.02 % |
       | Test assignment six | 50.00 % | 5.00 (50.00 %) | 0–10 | 1.80 % |
       | Test assignment seven | 21.43 % | - | 0–15 | 0.00 % |
       | Test assignment eight | 66.67 % | 10.00 (50.00 %) | 0–20 | 1.60 % |
-      | Test assignment nine | 33.33 % | 5.00 (50.00 %) | 0–10 | 0.80 % |
+      | Test assignment nine | 33.33 % | 5.00 (50.00 %) | 0–10 | 0.79 % |
       | Test assignment ten | 0.00 %( Empty ) | - | 0–15 | 0.00 % |
       | Test assignment one | 48.00 % | 60.00 (20.00 %) | 0–300 | 9.60 % |
       | Test assignment two | 16.00 % | 20.00 (20.00 %) | 0–100 | 3.20 % |
-      | Test assignment three | 24.00 %( Extra credit ) | 40.00 (26.67 %) | 0–150 | 6.40 % |
+      | Test assignment three | 24.00 %( Extra credit ) | 40.00 (26.66 %) | 0–150 | 6.40 % |
       | Test assignment four | 24.00 % | - | 0–150 | 0.00 % |
     And I log out
     And I log in as "student1"
     And I follow "Grades" in the user menu
-    And I should see "113.75 (23.45 %)" in the "overview-grade" "table"
+    And I should see "113.74 (23.45 %)" in the "overview-grade" "table"
     And I follow "Course 1"
     And the following should exist in the "user-grade" table:
       | Grade item | Calculated weight | Grade | Range | Contribution to course total |
@@ -370,7 +370,7 @@ Feature: We can use calculated grade totals
       | Test assignment nine | 100.00 % | 5.00 (50.00 %) | 0–10 | 1.03 % |
       | Test assignment ten | -( Empty ) | - | 0–15 | - |
       | Test assignment one | 61.86 % | 60.00 (20.00 %) | 0–300 | 12.37 % |
-      | Test assignment three | 30.93 %( Extra credit ) | 40.00 (26.67 %) | 0–150 | 8.25 % |
+      | Test assignment three | 30.93 %( Extra credit ) | 40.00 (26.66 %) | 0–150 | 8.24 % |
       | Test assignment four | 30.93 % | - | 0–150 | 0.00 % |
 
   Scenario: Natural aggregation with drop lowest
@@ -433,7 +433,7 @@ Feature: We can use calculated grade totals
     And I give the grade "20.00" to the user "Student 1" for the grade item "Manual item 2"
     And I press "Save changes"
     And I turn editing mode off
-    And I should see "270.00 (22.69 %)" in the ".course" "css_element"
+    And I should see "270.00 (22.68 %)" in the ".course" "css_element"
     And I turn editing mode on
     And I set the following settings for grade item "Manual item 2":
       | Extra credit  | 0   |
@@ -537,7 +537,7 @@ Feature: We can use calculated grade totals
     And I select "Student 1" from the "Select all or one user" singleselect
     And the following should exist in the "user-grade" table:
       | Grade item            | Calculated weight | Grade           | Contribution to course total |
-      | Test assignment five  | 57.14 %           | 10.00 (50.00 %) | 2.25 %                        |
+      | Test assignment five  | 57.14 %           | 10.00 (50.00 %) | 2.24 %                        |
       | Test assignment six   | 0.00 %            | 5.00 (50.00 %)  | 0.00 %                        |
       | Test assignment seven | 42.86 %           | -               | 0.00 %                        |
       | Test assignment eight | 0.00 %            | 10.00 (50.00 %) | 0.00 %                        |
@@ -545,19 +545,19 @@ Feature: We can use calculated grade totals
       | Test assignment ten   | 0.00 %            | -               | 0.00 %                         |
       | Test assignment one   | 0.00 %            | 60.00 (20.00 %) | 0.00 %                         |
       | Test assignment two   | 22.47 %           | 20.00 (20.00 %) | 4.49 %                        |
-      | Test assignment three | 33.71 %           | 40.00 (26.67 %) | 8.99 %                        |
+      | Test assignment three | 33.71 %           | 40.00 (26.66 %) | 8.98 %                        |
       | Test assignment four  | 33.71 %           | -               | 0.00                         |
     And I log out
     And I log in as "student1"
     And I follow "Grades" in the user menu
-    And I should see "45.00 (13.85 %)" in the "overview-grade" "table"
+    And I should see "45.00 (13.84 %)" in the "overview-grade" "table"
     And I follow "Course 1"
     And the following should exist in the "user-grade" table:
       | Grade item            | Calculated weight | Grade           | Contribution to course total |
       | Test assignment six   | 0.00 %            | 5.00 (50.00 %)  | 0.00 %                         |
       | Test assignment seven | 100.00 %          | -               | 0.00 %                         |
-      | Test assignment nine  | 100.00 %          | 5.00 (50.00 %)  | 1.54 %                         |
+      | Test assignment nine  | 100.00 %          | 5.00 (50.00 %)  | 1.53 %                         |
       | Test assignment ten   | 0.00              | -               | 0.00 %                         |
       | Test assignment one   | 0.00 %            | 60.00 (20.00 %) | 0.00 %                         |
-      | Test assignment three | 46.15 %           | 40.00 (26.67 %) | 12.31 %                        |
+      | Test assignment three | 46.15 %           | 40.00 (26.66 %) | 12.30 %                        |
       | Test assignment four  | 46.15 %           | -               | 0.00 %                        |
