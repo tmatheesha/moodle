@@ -2045,7 +2045,7 @@ function xmldb_main_upgrade($oldversion) {
         upgrade_main_savepoint(true, 2016042600.01);
     }
 
-    if ($oldversion < 2016051000.01) {
+    if ($oldversion < 2016051000.02) {
         // This script is included in each major version upgrade process (3.0, 3.1) so make sure we don't run it twice.
         if (empty($CFG->upgrade_letterboundarycourses)) {
             // MDL-21746. If a grade is being displayed with letters and the grade boundaries are not being adhered to properly
@@ -2058,7 +2058,7 @@ function xmldb_main_upgrade($oldversion) {
             set_config('upgrade_letterboundarycourses', 1);
         }
         // Main savepoint reached.
-        upgrade_main_savepoint(true, 2016051000.01);
+        upgrade_main_savepoint(true, 2016051000.02);
     }
 
     return true;
