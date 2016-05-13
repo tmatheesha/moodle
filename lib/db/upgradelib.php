@@ -340,9 +340,15 @@ function upgrade_course_letter_boundary($courseid = null) {
             // These courses are definitely affected.
             $sql = "SELECT DISTINCT c.id AS courseid
                       FROM {grade_items} gi
-                      JOIN {course} c on c.id = gi.courseid
+                      JOIN {course} c ON c.id = gi.courseid
                  LEFT JOIN {grade_settings} gs ON gs.courseid = c.id AND name = 'displaytype'
-                     WHERE (gi.display = 0 AND (gs.value is NULL )) $coursesql";
+                 LEFT JOIN (SELECT DISTINCT c.id
+                              FROM {grade_letters} gl
+                              JOIN {context} ctx ON gl.contextid = ctx.id
+                              JOIN {course} c ON ctx.instanceid = c.id
+                             WHERE ctx.contextlevel = :contextlevel) gl ON gl.id = c.id
+                     WHERE (gi.display = 0 AND (gs.value is NULL))
+                     AND gl.id is NULL $coursesql";
             $affectedcourseids = $DB->get_recordset_sql($sql, $params);
             foreach ($affectedcourseids as $courseid) {
                 set_config('gradebook_calculations_freeze_' . $courseid->courseid, 20160511);

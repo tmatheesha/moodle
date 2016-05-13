@@ -695,8 +695,8 @@ class core_upgradelib_testcase extends advanced_testcase {
         $this->assertEquals(20160511, $CFG->{'gradebook_calculations_freeze_' . $courses[21]->id});
         // [22] A grade item with display settings of letters which are default.
         $this->assertEquals(20160511, $CFG->{'gradebook_calculations_freeze_' . $courses[22]->id});
-        // [23] A grade item with display settings of letters which are not default, but not affected. Grade total here should also mean that it be frozen
-        $this->assertEquals(20160511, $CFG->{'gradebook_calculations_freeze_' . $courses[23]->id});
+        // [23] A grade item with display settings of letters which are not default, but not affected. Course uses new letter boundary setting.
+        $this->assertTrue(empty($CFG->{'gradebook_calculations_freeze_' . $courses[23]->id}));
         // [24] A grade item with display settings of letters which are not default, which will be affected.
         $this->assertEquals(20160511, $CFG->{'gradebook_calculations_freeze_' . $courses[24]->id});
     }
