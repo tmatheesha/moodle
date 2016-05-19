@@ -116,6 +116,20 @@ class notification_task extends \core\task\adhoc_task {
             $modulelink = $cm->url;
             $template = str_replace('{modulelink}', $modulelink, $template);
         }
+        if (!empty($eventobj->courseid) && $eventobj->courseid > 0) {
+            $course = get_course($eventobj->courseid);
+            $template = str_replace('{coursefullname}', $course->fullname, $template);
+        }
+
+        if (!empty($eventobj->relateduserid)) {
+            $ruser = \core_user::get_user($eventobj->relateduserid, '*', MUST_EXIST);
+            $template = str_replace('{relatedusername}', fullname($ruser), $template);
+        }
+
+        if (!empty($eventobj->userid)) {
+            $user = \core_user::get_user($eventobj->userid, '*', MUST_EXIST);
+            $template = str_replace('{username}', fullname($user), $template);
+        }
         $template = str_replace('{rulename}', $subscription->get_name($context), $template);
         $template = str_replace('{description}', $subscription->get_description($context), $template);
         $template = str_replace('{eventname}', $subscription->get_event_name(), $template);
