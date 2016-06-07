@@ -3078,9 +3078,6 @@ function forum_print_post($post, $discussion, $forum, &$cm, $course, $ownpost=fa
 
     // String cache
     static $str;
-    // As we should only have one element with the id of unread we keep track of whether this post is the first
-    // unread post.
-    static $firstunread = true;
 
     $modcontext = context_module::instance($cm->id);
 
@@ -3296,11 +3293,6 @@ function forum_print_post($post, $discussion, $forum, &$cm, $course, $ownpost=fa
             $forumpostclass = ' read';
         } else {
             $forumpostclass = ' unread';
-            // If this is the first unread post then give it an anchor and id of unread.
-            if ($firstunread) {
-                $output .= html_writer::tag('a', '', array('id' => 'unread'));
-                $firstunread = false;
-            }
         }
     } else {
         // ignore trackign status if not tracked or tracked param missing
@@ -5642,6 +5634,12 @@ function forum_print_discussion($course, $cm, $forum, $discussion, $post, $mode,
 
     $postread = !empty($post->postread);
 
+    $firstunread = true;
+    if ($forumtracked && !$postread) {
+        echo html_writer::empty_tag('a', array('id' => 'unread'));
+        $firstunread = false;
+    }
+
     forum_print_post($post, $discussion, $forum, $cm, $course, $ownpost, $reply, false,
                          '', '', $postread, true, $forumtracked);
 
@@ -5649,15 +5647,15 @@ function forum_print_discussion($course, $cm, $forum, $discussion, $post, $mode,
         case FORUM_MODE_FLATOLDEST :
         case FORUM_MODE_FLATNEWEST :
         default:
-            forum_print_posts_flat($course, $cm, $forum, $discussion, $post, $mode, $reply, $forumtracked, $posts);
+            forum_print_posts_flat($course, $cm, $forum, $discussion, $post, $mode, $reply, $forumtracked, $posts, $firstunread);
             break;
 
         case FORUM_MODE_THREADED :
-            forum_print_posts_threaded($course, $cm, $forum, $discussion, $post, 0, $reply, $forumtracked, $posts);
+            forum_print_posts_threaded($course, $cm, $forum, $discussion, $post, 0, $reply, $forumtracked, $posts, $firstunread);
             break;
 
         case FORUM_MODE_NESTED :
-            forum_print_posts_nested($course, $cm, $forum, $discussion, $post, $reply, $forumtracked, $posts);
+            forum_print_posts_nested($course, $cm, $forum, $discussion, $post, $reply, $forumtracked, $posts, $firstunread);
             break;
     }
 }
@@ -5678,7 +5676,8 @@ function forum_print_discussion($course, $cm, $forum, $discussion, $post, $mode,
  * @param array $posts
  * @return void
  */
-function forum_print_posts_flat($course, &$cm, $forum, $discussion, $post, $mode, $reply, $forumtracked, $posts) {
+function forum_print_posts_flat($course, &$cm, $forum, $discussion, $post, $mode, $reply, $forumtracked, $posts,
+                            $firstunread = true) {
     global $USER, $CFG;
 
     $link  = false;
@@ -5698,6 +5697,11 @@ function forum_print_posts_flat($course, &$cm, $forum, $discussion, $post, $mode
 
         $postread = !empty($post->postread);
 
+        if ($forumtracked && !$postread && $firstunread) {
+            echo html_writer::empty_tag('a', array('id' => 'unread'));
+            $firstunread = false;
+        }
+
         forum_print_post($post, $discussion, $forum, $cm, $course, $ownpost, $reply, $link,
                              '', '', $postread, true, $forumtracked);
     }
@@ -5711,7 +5715,8 @@ function forum_print_posts_flat($course, &$cm, $forum, $discussion, $post, $mode
  * @uses CONTEXT_MODULE
  * @return void
  */
-function forum_print_posts_threaded($course, &$cm, $forum, $discussion, $parent, $depth, $reply, $forumtracked, $posts) {
+function forum_print_posts_threaded($course, &$cm, $forum, $discussion, $parent, $depth, $reply, $forumtracked, $posts,
+                                &$firstunread = true) {
     global $USER, $CFG;
 
     $link  = false;
@@ -5730,6 +5735,11 @@ function forum_print_posts_threaded($course, &$cm, $forum, $discussion, $parent,
                 $post->subject = format_string($post->subject);
 
                 $postread = !empty($post->postread);
+
+                if ($forumtracked && !$postread && $firstunread) {
+                    echo html_writer::empty_tag('a', array('id' => 'unread'));
+                    $firstunread = false;
+                }
 
                 forum_print_post($post, $discussion, $forum, $cm, $course, $ownpost, $reply, $link,
                                      '', '', $postread, true, $forumtracked);
@@ -5757,7 +5767,8 @@ function forum_print_posts_threaded($course, &$cm, $forum, $discussion, $parent,
                 echo "</span>";
             }
 
-            forum_print_posts_threaded($course, $cm, $forum, $discussion, $post, $depth-1, $reply, $forumtracked, $posts);
+            forum_print_posts_threaded($course, $cm, $forum, $discussion, $post, $depth-1, $reply, $forumtracked, $posts,
+                    $firstunread);
             echo "</div>\n";
         }
     }
@@ -5769,7 +5780,8 @@ function forum_print_posts_threaded($course, &$cm, $forum, $discussion, $parent,
  * @global object
  * @return void
  */
-function forum_print_posts_nested($course, &$cm, $forum, $discussion, $parent, $reply, $forumtracked, $posts) {
+function forum_print_posts_nested($course, &$cm, $forum, $discussion, $parent, $reply, $forumtracked, $posts,
+                                &$firstunread = true) {
     global $USER, $CFG;
 
     $link  = false;
@@ -5789,9 +5801,14 @@ function forum_print_posts_nested($course, &$cm, $forum, $discussion, $parent, $
             $post->subject = format_string($post->subject);
             $postread = !empty($post->postread);
 
+            if ($forumtracked && !$postread && $firstunread) {
+                echo html_writer::empty_tag('a', array('id' => 'unread'));
+                $firstunread = false;
+            }
+
             forum_print_post($post, $discussion, $forum, $cm, $course, $ownpost, $reply, $link,
                                  '', '', $postread, true, $forumtracked);
-            forum_print_posts_nested($course, $cm, $forum, $discussion, $post, $reply, $forumtracked, $posts);
+            forum_print_posts_nested($course, $cm, $forum, $discussion, $post, $reply, $forumtracked, $posts, $firstunread);
             echo "</div>\n";
         }
     }
