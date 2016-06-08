@@ -3746,43 +3746,64 @@ function glossary_get_entries_by_search($glossary, $context, $query, $fullsearch
         }
     }
 
-    list($searchcond, $params) = glossary_get_search_terms_sql($terms, $fullsearch);
+    // print_object($glossary);
+    $qb = new mod_glossary_entry_query_builder($glossary);
 
-    $userfields = user_picture::fields('u', null, 'userdataid', 'userdata');
+    // list($searchcond, $params) = glossary_get_search_terms_sql($terms, $fullsearch);
 
-    // Need one inner view here to avoid distinct + text.
-    $sqlwrapheader = 'SELECT ge.*, ge.concept AS glossarypivot, ' . $userfields . '
-                        FROM {glossary_entries} ge
-                        LEFT JOIN {user} u ON u.id = ge.userid
-                        JOIN ( ';
-    $sqlwrapfooter = ' ) gei ON (ge.id = gei.id)';
-    $sqlselect  = "SELECT DISTINCT ge.id";
-    $sqlfrom    = "FROM {glossary_entries} ge
-                   LEFT JOIN {glossary_alias} al ON al.entryid = ge.id";
+    // $userfields = user_picture::fields('u', null, 'userdataid', 'userdata');
+
+    // // Need one inner view here to avoid distinct + text.
+    // $sqlwrapheader = 'SELECT ge.*, ge.concept AS glossarypivot, ' . $userfields . '
+    //                     FROM {glossary_entries} ge
+    //                     LEFT JOIN {user} u ON u.id = ge.userid
+    //                     JOIN ( ';
+    // $sqlwrapfooter = ' ) gei ON (ge.id = gei.id)';
+    // $sqlselect  = "SELECT DISTINCT ge.id";
+    // $sqlfrom    = "FROM {glossary_entries} ge
+    //                LEFT JOIN {glossary_alias} al ON al.entryid = ge.id";
 
     if (!empty($options['includenotapproved']) && has_capability('mod/glossary:approve', $context)) {
-        $approvedsql = '';
+        $qb->filter_by_non_approved(mod_glossary_entry_query_builder::NON_APPROVED_ALL);
+        // $approvedsql = '';
     } else {
-        $approvedsql = 'AND (ge.approved <> 0 OR ge.userid = :myid)';
-        $params['myid'] = $USER->id;
+        $qb->filter_by_non_approved(mod_glossary_entry_query_builder::NON_APPROVED_SELF);
+        // $approvedsql = 'AND (ge.approved <> 0 OR ge.userid = :myid)';
+        // $params['myid'] = $USER->id;
     }
+
+    $qb->add_field('*', 'entries');
+    $qb->join_alias();
+    $qb->distinct('id', 'entries');
+    $qb->join_user();
+    $qb->add_user_fields();
+    $qb->filter_by_search_terms($terms, $fullsearch);
 
     if ($order == 'CREATION') {
-        $sqlorderby = "ORDER BY ge.timecreated $sort";
+        $qb->order_by('timecreated', 'entries', $sort);
+        // $sqlorderby = "ORDER BY ge.timecreated $sort";
     } else if ($order == 'UPDATE') {
-        $sqlorderby = "ORDER BY ge.timemodified $sort";
+        $qb->order_by('timemodified', 'entries', $sort);
+        // $sqlorderby = "ORDER BY ge.timemodified $sort";
     } else {
-        $sqlorderby = "ORDER BY ge.concept $sort";
+        $qb->order_by('concept', 'entries', $sort);
+        // $sqlorderby = "ORDER BY ge.concept $sort";
     }
-    $sqlorderby .= " , ge.id ASC"; // Sort on ID to avoid random ordering when entries share an ordering value.
 
-    $sqlwhere = "WHERE ($searchcond) $approvedsql";
+    $qb->order_by('id', 'entries', $sort);
+    $qb->limit($from, $limit);
+    // $sqlorderby .= " , ge.id ASC"; // Sort on ID to avoid random ordering when entries share an ordering value.
+
+    // $sqlwhere = "WHERE ($searchcond) $approvedsql";
+    print_object($qb->get_query());
 
     // Fetching the entries.
-    $count = $DB->count_records_sql("SELECT COUNT(DISTINCT(ge.id)) $sqlfrom $sqlwhere", $params);
+    $count = $qb->count_records();
+    $entries = $qb->get_recordset();
+    // $count = $DB->count_records_sql("SELECT COUNT(DISTINCT(ge.id)) $sqlfrom $sqlwhere", $params);
 
-    $query = "$sqlwrapheader $sqlselect $sqlfrom $sqlwhere $sqlwrapfooter $sqlorderby";
-    $entries = $DB->get_recordset_sql($query, $params, $from, $limit);
+    // $query = "$sqlwrapheader $sqlselect $sqlfrom $sqlwhere $sqlwrapfooter $sqlorderby";
+    // $entries = $DB->get_recordset_sql($query, $params, $from, $limit);
 
     return array($entries, $count);
 }
