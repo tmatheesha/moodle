@@ -69,6 +69,9 @@ $string['messagetemplate_help'] = 'A notification message is sent to subscribers
 * Link to the area monitored {modulelink}<br />
 * Rule name {rulename}<br />
 * Description {description}<br />
+* Coursename {coursename}<br />
+* Username {username}<br />
+* Releated Username {relatedusername}<br />
 * Event {eventname}';
 $string['messagetemplate_link'] = 'admin/tool/monitor/managerules';
 $string['moduleinstance'] = 'Instance';
