@@ -118,7 +118,7 @@ class notification_task extends \core\task\adhoc_task {
         }
         if (!empty($eventobj->courseid) && $eventobj->courseid > 0) {
             $course = get_course($eventobj->courseid);
-            $template = str_replace('{coursefullname}', $course->fullname, $template);
+            $template = str_replace('{coursename}', $course->fullname, $template);
         }
 
         if (!empty($eventobj->relateduserid)) {

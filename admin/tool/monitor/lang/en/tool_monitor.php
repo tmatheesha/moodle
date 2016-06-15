@@ -66,13 +66,13 @@ $string['messagetemplate'] = 'Notification message';
 $string['messagetemplate_help'] = 'A notification message is sent to subscribers once the notification threshold has been reached. It can include any or all of the following placeholders:
 <br /><br />
 * Link to the location of the event {link}<br />
-* Link to the area monitored {modulelink}<br />
+* Link to the activity or resource being monitored if available {modulelink}<br />
 * Rule name {rulename}<br />
 * Description {description}<br />
-* Coursename {coursename}<br />
-* Username {username}<br />
-* Releated Username {relatedusername}<br />
-* Event {eventname}';
+* Name of the course if available {coursename}<br />
+* The name of the user doing the action (e.g. The teacher marking an assignment) {username}<br />
+* The name of the user related to the action (e.g. The student receiving a grade) if available {relatedusername}<br />
+* Name of the event being monitored {eventname}';
 $string['messagetemplate_link'] = 'admin/tool/monitor/managerules';
 $string['moduleinstance'] = 'Instance';
 $string['monitorenabled'] = 'Event monitoring is currently enabled. ';
