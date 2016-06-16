@@ -109,6 +109,7 @@ class notification_task extends \core\task\adhoc_task {
      * @return mixed final template string.
      */
     protected function replace_placeholders($template, subscription $subscription, $eventobj, $context) {
+        global $DB;
         $template = str_replace('{link}', $eventobj->link, $template);
         if ($eventobj->contextlevel == CONTEXT_MODULE && !empty($eventobj->contextinstanceid)
             && (strpos($template, '{modulelink}') !== false)) {
@@ -117,8 +118,10 @@ class notification_task extends \core\task\adhoc_task {
             $template = str_replace('{modulelink}', $modulelink, $template);
         }
         if (!empty($eventobj->courseid) && $eventobj->courseid > 0) {
-            $course = get_course($eventobj->courseid);
-            $template = str_replace('{coursename}', $course->fullname, $template);
+            // We could be observing a course deleted event and the course would no longer exist.
+            if ($course = $DB->get_record('course', array('id' => $eventobj->courseid))) {
+                $template = str_replace('{coursename}', $course->fullname, $template);
+            }
         }
 
         if (!empty($eventobj->relateduserid)) {
