@@ -400,6 +400,8 @@ class core_plugin_manager {
             // Orphaned subplugins!
             $plugintypeclass = static::resolve_plugininfo_class($type);
             $this->pluginsinfo[$type] = $plugintypeclass::get_plugins($type, null, $plugintypeclass, $this);
+            // Sort the plugins.
+            core_collator::asort_objects_by_property($this->pluginsinfo[$type], 'displayname');
             return $this->pluginsinfo[$type];
         }
 
@@ -407,6 +409,8 @@ class core_plugin_manager {
         $plugintypeclass = static::resolve_plugininfo_class($type);
         $plugins = $plugintypeclass::get_plugins($type, $types[$type], $plugintypeclass, $this);
         $this->pluginsinfo[$type] = $plugins;
+        // Sort the plugins.
+        core_collator::asort_objects_by_property($this->pluginsinfo[$type], 'displayname');
 
         return $this->pluginsinfo[$type];
     }
