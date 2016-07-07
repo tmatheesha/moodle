@@ -315,7 +315,7 @@ class assign_feedback_comments extends assign_feedback_plugin {
             }
         }
 
-        $mform->addElement('editor', 'assignfeedbackcomments_editor', $this->get_name(), null, null);
+        $mform->addElement('editor', 'assignfeedbackcomments_editor', $this->get_name(), null, array('autosave' => false));
 
         return true;
     }
