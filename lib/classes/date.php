@@ -45,6 +45,9 @@ class core_date {
     /** @var string the default PHP timezone right after config.php */
     protected static $defaultphptimezone = null;
 
+    /** @var int $testtime initial time for testing. */
+    protected static $testtime = null;
+
     /**
      * Returns a localised list of timezones.
      * @param string $currentvalue
@@ -552,5 +555,40 @@ class core_date {
                 unset(self::$badzones[$zone]);
             }
         }
+    }
+
+    /**
+     * Get the current time. Use of this function allows unit tests to set
+     * the current time.
+     *
+     * @return int Current server time.
+     */
+    public static function current_time() {
+        if (!defined('PHPUNIT_TEST')) {
+            return time();
+        }
+        return self::get_test_time();
+    }
+
+    /**
+     * Set the current time to a specific timestamp. This is for unit tests only.
+     * Do not use directly. Use $this->setTime(xxxxxxx) instead.
+     *
+     * @param int $settime timestamp to set the current time to.
+     */
+    public static function set_test_time($settime) {
+        if (!defined('PHPUNIT_TEST')) {
+            throw new coding_exception('core_date::set_test_time() must be used only from unit tests');
+        }
+        self::$testtime = $settime;
+    }
+
+    /**
+     * Returns the current test time. For unit tests only.
+     *
+     * @return int timestamp test timestamp.
+     */
+    protected static function get_test_time() {
+        return isset(self::$testtime) ? self::$testtime : time();
     }
 }

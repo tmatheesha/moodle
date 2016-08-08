@@ -568,6 +568,15 @@ abstract class advanced_testcase extends base_testcase {
     }
 
     /**
+     * Change the server time.
+     *
+     * @param int $testtime timestamp to change the time to.
+     */
+    public static function setTime($testtime) {
+        core_date::set_test_time($testtime);
+    }
+
+    /**
      * Get data generator
      * @static
      * @return testing_data_generator

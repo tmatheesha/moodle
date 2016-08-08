@@ -555,4 +555,17 @@ class core_date_testcase extends advanced_testcase {
             $this->assertSame($zone, $tz->getName());
         }
     }
+
+    /**
+     * Test the current time method.
+     */
+    public function test_current_time() {
+        // Check the current time;
+        $this->assertSame(time(), core_date::current_time());
+
+        // Check that we can set the time to 2016/06/06 - 12:00am
+        $testtime = 1465171200;
+        $this->setTime($testtime);
+        $this->assertEquals($testtime, core_date::current_time());
+    }
 }
