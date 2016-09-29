@@ -1104,6 +1104,7 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
         if (!ui.helper.hasClass('mod_lesson_page_element')) {
             var lastoffset = ui.helper.offset();
             ui.helper.addClass('mod_lesson_page_element');
+            ui.helper.css({height: "100px", width: "240px"});
             ui.helper.removeClass('mod_lesson_menu_item');
 
             var defaultdata = {
@@ -1527,23 +1528,13 @@ define(['jqueryui', 'jquery'], function(jqui, $) {
             lessonobjectdata.positionx = 0;
             var lessonelement = $("#mod_lesson_page_element_" + pageid);
             var parentelement = lessonelement.parent();
-            // Don't use this. There is positioning done else where without using this jqueryui function.
-            lessonelement.position({
-                my: "left top",
-                at: "left+" + lessonobjectdata.positionx + " top+" + lessonobjectdata.positiony,
-                of: parentelement
-            });
+            lessonelement.css({position: "absolute", top: lessonobjectdata.positiony, left: lessonobjectdata.positionx});
         }
         if (lessonobjectdata.positiony < 40) {
             lessonobjectdata.positiony = 40;
             var lessonelement = $("#mod_lesson_page_element_" + pageid);
             var parentelement = lessonelement.parent();
-            // Don't use this. There is positioning done else where without using this jqueryui function.
-            lessonelement.position({
-                my: "left top",
-                at: "left+" + lessonobjectdata.positionx + " top+" + lessonobjectdata.positiony,
-                of: parentelement
-            });
+            lessonelement.css({position: "absolute", top: lessonobjectdata.positiony, left: lessonobjectdata.positionx});
         }
 
         var data = {

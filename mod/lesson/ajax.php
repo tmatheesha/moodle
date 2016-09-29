@@ -176,6 +176,7 @@ if ($action == 'saveposition') {
 } else if ($action == 'getjumpoptions') {
     $lesson = lesson::load($lessonid);
     $page = lesson_page::load($pageid, $lesson);
+    $PAGE->set_context(context_module::instance($lessonid));
     if ($page->qtype == LESSON_PAGE_BRANCHTABLE) {
         $pageid = false;
     }
