@@ -51,7 +51,6 @@ final class ip_utils {
         }
         // Tertiary domain labels can have 63 octets max, and must not have begin or end with a hyphen. Number = unlimited.
         // The TLD label cannot begin with a number, but otherwise, is only loosely restricted (as per lib/validateurlsyntax.php).
-
         $domaintertiary   = '([a-zA-Z0-9](([a-zA-Z0-9-]{0,61})[a-zA-Z0-9])?\.)*';
         $domaintoplevel   = '([a-zA-Z](([a-zA-Z0-9-]*)[a-zA-Z0-9])?)';
         $address       = '(' . $domaintertiary .  $domaintoplevel . ')';
@@ -80,5 +79,44 @@ final class ip_utils {
         $address       = '(' . $domainwildcard . $domaintertiary .  $domaintoplevel . ')';
         $regexp = '#^' . $address . '$#i'; // Case insensitive matching.
         return preg_match($regexp, $domainname, $match) == true; // False for error, 0 for no match - we treat the same.
+    }
+
+    /**
+     * Checks the domain name against a list of allowed domains. The list of allowed domains is may use
+     * wildcards that match {@link is_wildcard_domain_name()}.
+     *
+     * @param  string $domain Domain address
+     * @param  array $alloweddomains An array of allowed domains.
+     * @return boolean True if the domain matches one of the entries in the allowed domains list.
+     */
+    public static function is_domain_in_allowed_list($domain, $alloweddomains) {
+
+        if (!self::is_domain_name($domain)) {
+            return false;
+        }
+
+        foreach ($alloweddomains as $alloweddomain) {
+            if (strpos($alloweddomain, '*') !== false) {
+                if (!self::is_wildcard_domain_name($alloweddomain)) {
+                    continue;
+                }
+                // Use of wildcard for possible subdomains.
+                $escapeperiods = str_replace('.', '\.', $alloweddomain);
+                $replacewildcard = str_replace('*', '.*', $escapeperiods);
+                $ultimatepattern = '/' . $replacewildcard . '$/';
+                if (preg_match($ultimatepattern, $domain)) {
+                    return true;
+                }
+            } else {
+                if (!self::is_domain_name($alloweddomain)) {
+                    continue;
+                }
+                // Strict domain setting.
+                if ($domain === $alloweddomain) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 }
