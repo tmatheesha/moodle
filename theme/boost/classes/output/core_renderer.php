@@ -607,7 +607,14 @@ class core_renderer extends \core_renderer {
         if ($context->contextlevel == CONTEXT_MODULE) {
 
             $node = $this->page->navigation->find_active_node();
-            if (!empty($node) && ($node->type == navigation_node::TYPE_ACTIVITY ||
+            // If the settings menu has been forced then show the menu.
+            if ($this->page->is_settings_menu_forced()) {
+                $node = $this->page->settingsnav->find('modulesettings', navigation_node::TYPE_SETTING);
+                if ($node) {
+                    // Build an action menu based on the visible nodes from this navigation tree.
+                    $this->build_action_menu_from_navigation($menu, $node);
+                }
+            } else if (!empty($node) && ($node->type == navigation_node::TYPE_ACTIVITY ||
                     $node->type == navigation_node::TYPE_RESOURCE)) {
 
                 $items = $this->page->navbar->get_items();
