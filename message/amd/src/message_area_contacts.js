@@ -149,9 +149,12 @@ define(['jquery', 'core/ajax', 'core/templates', 'core/notification', 'core/cust
             this.messageArea.onDelegateEvent(CustomEvents.events.scrollBottom, SELECTORS.CONTACTS,
                 this._loadContacts.bind(this));
 
-            // Set the number of conversations. We set this to the number of conversations we asked to retrieve not by
-            // the number that was actually retrieved, see MDL-55870.
-            this._numConversationsDisplayed = 20;
+            var displaycontacts = $('.messaging-area-container').data('displayContacts');
+            if (!displaycontacts) {
+                // Set the number of conversations. We set this to the number of conversations we asked to retrieve not by
+                // the number that was actually retrieved, see MDL-55870.
+                this._numConversationsDisplayed = 20;
+            }
         };
 
         /**

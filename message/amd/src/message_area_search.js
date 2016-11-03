@@ -145,7 +145,8 @@ define(['jquery', 'core/ajax', 'core/templates', 'core/notification', 'core/str'
         );
 
         // Set the initial search area.
-        this._searchArea = this._searchAreas.MESSAGES;
+        var selectedsearch = $('.messaging-area-container').data('displayContacts');
+        this._searchArea = ($selectedsearch) ? this._searchAreas.USERS : this._searchAreas.MESSAGES;
     };
 
     /**

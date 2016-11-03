@@ -54,6 +54,16 @@
     {{$headeractions}}
         {{< core/hover_tooltip }}
             {{$anchor}}
+                <a href="{{{urls.writeamessage}}}"
+                   title="{{#str}} newmessage, message {{/str}}">{{#str}} newmessage, message {{/str}}
+                </a>
+
+            {{/anchor}}
+            {{$tooltip}}{{#str}} newmessage, message {{/str}}{{/tooltip}}
+        {{/ core/hover_tooltip }}
+
+        {{< core/hover_tooltip }}
+            {{$anchor}}
                 <a class="mark-all-read-button"
                     href="#"
                     role="button"
