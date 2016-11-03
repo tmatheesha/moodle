@@ -64,6 +64,11 @@ class message_area implements templatable, renderable {
     public $requestedconversation;
 
     /**
+     * @var bool Are we creating a new message and show the contacts section first?
+     */
+    protected $contactsfirst;
+
+    /**
      * Constructor.
      *
      * @param int $userid The ID of the user whose contacts and messages we are viewing
@@ -72,12 +77,14 @@ class message_area implements templatable, renderable {
      * @param array|null $messages
      * @param bool $requestedconversation
      */
-    public function __construct($userid, $otheruserid, $contacts, $messages, $requestedconversation) {
+    public function __construct($userid, $otheruserid, $contacts, $messages, $requestedconversation, $contactsfirst = false) {
         $this->userid = $userid;
-        $this->otheruserid = $otheruserid;
+        // Setting the other user to null when showing contacts will remove any contact from being selected.
+        $this->otheruserid = (!$contactsfirst) ? $otheruserid : null;
         $this->contacts = $contacts;
         $this->messages = $messages;
         $this->requestedconversation = $requestedconversation;
+        $this->contactsfirst = $contactsfirst;
     }
 
     public function export_for_template(\renderer_base $output) {
@@ -85,10 +92,13 @@ class message_area implements templatable, renderable {
         $data->userid = $this->userid;
         $contacts = new contacts($this->otheruserid, $this->contacts);
         $data->contacts = $contacts->export_for_template($output);
-        $messages = new messages($this->userid, $this->otheruserid, $this->messages);
+        // Don't show any messages if we are creating a new message.
+        $messages = ($this->contactsfirst) ? new messages($this->userid, null, array()) :
+                new messages($this->userid, $this->otheruserid, $this->messages);
         $data->messages = $messages->export_for_template($output);
         $data->isconversation = true;
         $data->requestedconversation = $this->requestedconversation;
+        $data->contactsfirst = $this->contactsfirst;
 
         return $data;
     }
