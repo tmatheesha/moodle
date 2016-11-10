@@ -23,9 +23,9 @@
  */
 define(['jquery', 'core/ajax', 'core/templates', 'core/notification', 'core/custom_interaction_events',
         'core/auto_rows', 'core_message/message_area_actions', 'core/modal_factory', 'core/modal_events',
-        'core/str', 'core_message/message_area_events', 'core/backoff_timer'],
+        'core/str', 'core_message/message_area_events', 'core/backoff_timer', 'core/backoff_timer_functions'],
     function($, Ajax, Templates, Notification, CustomEvents, AutoRows, Actions, ModalFactory,
-             ModalEvents, Str, Events, BackOffTimer) {
+             ModalEvents, Str, Events, BackOffTimer, BackOffTimerFunctions) {
 
         /** @type {int} The message area default height. */
         var MESSAGES_AREA_DEFAULT_HEIGHT = 500;
@@ -52,6 +52,9 @@ define(['jquery', 'core/ajax', 'core/templates', 'core/notification', 'core/cust
             SHOWCONTACTS: "[data-action='show-contacts']",
             STARTDELETEMESSAGES: "[data-action='start-delete-messages']"
         };
+
+        /** @type {int} The number of milliseconds in a second. */
+        var MILLISECONDSINSEC = 1000;
 
         /**
          * Messages class.
@@ -81,7 +84,7 @@ define(['jquery', 'core/ajax', 'core/templates', 'core/notification', 'core/cust
         /** @type {int} the timestamp for the earliest visible message */
         Messages.prototype._earliestMessageTimestamp = 0;
 
-        /** @type {BackOffTime} the backoff timer */
+        /** @type {BackOffTimer} the backoff timer */
         Messages.prototype._timer = null;
 
         /** @type {Messagearea} The messaging area object. */
@@ -146,9 +149,9 @@ define(['jquery', 'core/ajax', 'core/templates', 'core/notification', 'core/cust
             }
 
             // Create a timer to poll the server for new messages.
-            this._timer = new BackOffTimer(function() {
-                this._loadNewMessages();
-            }.bind(this));
+            this._timer = new BackOffTimer(this._loadNewMessages.bind(this),
+                BackOffTimerFunctions.getIncrementalCallback(this.messageArea.pollmin * MILLISECONDSINSEC, MILLISECONDSINSEC,
+                    this.messageArea.pollmax * MILLISECONDSINSEC, this.messageArea.polltimeout * MILLISECONDSINSEC));
 
             // Start the timer.
             this._timer.start();
