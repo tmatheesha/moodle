@@ -63,5 +63,14 @@
             </div>
             {{> core/loading }}
         </div>
+        {{$anchor}}
+            <a class="see-all-link"
+                href="{{{urls.seeall}}}"
+                title="{{#str}} seeall, message {{/str}}">
+                <div class="popover-region-footer-container">
+                    <div class="popover-region-seeall-text">{{#str}} seeall, message {{/str}}</div>
+                </div>
+            </a>
+        {{/anchor}}
     </div>
 </div>
