@@ -109,6 +109,7 @@
 
                 .searchfilterarea {
                     line-height: 20px;
+                    cursor: pointer;
 
                     .searchfilter {
                         float: left;
@@ -117,7 +118,6 @@
                     .searchfilterdelete {
                         float: left;
                         margin-left: 5px;
-                        cursor: pointer;
                     }
                 }
             }
