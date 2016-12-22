@@ -2583,9 +2583,7 @@ abstract class lesson_page extends lesson_base {
                 }
             }
             // TODO: merge this code with the jump code below.  Convert jumpto page into a proper page id
-            if ($result->newpageid == 0) {
-                $result->newpageid = $this->properties->id;
-            } elseif ($result->newpageid == LESSON_NEXTPAGE) {
+            if ($result->newpageid == 0 || $result->newpageid == LESSON_NEXTPAGE) {
                 $result->newpageid = $this->lesson->get_next_page($this->properties->nextpageid);
             }
 
