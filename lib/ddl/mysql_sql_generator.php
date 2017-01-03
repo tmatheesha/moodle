@@ -218,6 +218,17 @@ class mysql_sql_generator extends sql_generator {
             }
         }
 
+        // Terrible kludge. If we're using utf8mb4 AND we're using InnoDB, we need to specify row format to
+        // be either dynamic or compressed (default is compact) in order to allow for bigger indexes (MySQL
+        // errors #1709 and #1071).
+        if (strtolower($engine) === 'innodb' && strpos($collation, 'utf8mb4_')) {
+            if ($this->mdb->is_compressed_row_format_supported()) {
+                $rowformat = "\n ROW_FORMAT=Compressed";
+            } else {
+                $rowformat = "\n ROW_FORMAT=Dynamic";
+            }
+        }
+
         $sqlarr = parent::getCreateTableSQL($xmldb_table);
 
         // This is a very nasty hack that tries to use just one query per created table

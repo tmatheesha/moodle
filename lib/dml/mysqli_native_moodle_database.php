@@ -544,9 +544,12 @@ class mysqli_native_moodle_database extends moodle_database {
      * @param string $table The table we want to get indexes from.
      * @return array An associative array of indexes containing 'unique' flag and 'columns' being indexed
      */
-    public function get_indexes($table) {
+    public function get_indexes($table, $noprefix = false) {
         $indexes = array();
         $sql = "SHOW INDEXES FROM {$this->prefix}$table";
+        if ($noprefix) {
+            $sql = "SHOW INDEXES FROM $table";
+        }
         $this->query_start($sql, null, SQL_QUERY_AUX);
         $result = $this->mysqli->query($sql);
         try {

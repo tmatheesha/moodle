@@ -87,6 +87,7 @@ if (!empty($options['collation'])) {
 
         $sql = "SHOW FULL COLUMNS FROM $table->name WHERE collation IS NOT NULL";
         $rs2 = $DB->get_recordset_sql($sql);
+        $indexes = $DB->get_indexes($table->name, true);
         foreach ($rs2 as $column) {
             $column = (object)array_change_key_case((array)$column, CASE_LOWER);
             echo '    '.str_pad($column->field, 36). " - ";
@@ -104,10 +105,41 @@ if (!empty($options['collation'])) {
                 $DB->change_database_structure($sql);
 
             } else if (strpos($column->type, 'varchar') === 0) {
+
+                // Check if this is an index.
+
+                // If the column length is 255 then we need to drop it down to 191 for utf8mb4.
+
+                // var_dump($indexes);
+                // print_object($column);
+
+                // print_object($indexes);
+                foreach ($indexes as $indexname => $index) {
+                    // print_object($index);
+                    foreach ($index['columns'] as $thing) {
+                        // print_object($thing);
+                        preg_match('/varchar\((\d+)\)/', $column->type, $matches);
+
+                        if ($column->field == $thing && (int)$matches[1] > 191) {
+                            $uniqueorindex = 'INDEX';
+                            if (isset($index->unique)) {
+                                $uniqueorindex = 'UNIQUE';
+                            }
+                            // print_object($indexname);
+                            // print_object($column->type);
+                            $sql = "ALTER TABLE $table->name ADD $uniqueorindex $indexname ($column->field(191)), DROP INDEX $indexname";
+                            $DB->change_database_structure($sql);
+                        }
+                    }
+                }
+                //     $sql = "alter table $table->name add unique"
+
                 $notnull = ($column->null === 'NO') ? 'NOT NULL' : 'NULL';
                 $default = !is_null($column->default) ? "DEFAULT '$column->default'" : '';
                 // primary, unique and inc are not supported for texts
                 $sql = "ALTER TABLE $table->name MODIFY COLUMN $column->field $column->type COLLATE $collation $notnull $default";
+
+
                 $DB->change_database_structure($sql);
             } else {
                 echo "ERROR (unknown column type: $column->type)\n";
@@ -180,7 +212,7 @@ function mysql_get_collations() {
     global $DB;
 
     $collations = array();
-    $sql = "SHOW COLLATION WHERE Collation LIKE 'utf8\_%' AND Charset = 'utf8'";
+    $sql = "SHOW COLLATION WHERE Collation LIKE 'utf8\_%' AND Charset = 'utf8' OR Collation LIKE 'utf8mb4\_%' AND Charset = 'utf8mb4'";
     $rs = $DB->get_recordset_sql($sql);
     foreach ($rs as $collation) {
         $collations[$collation->collation] = $collation->collation;
