@@ -419,6 +419,12 @@ class mysqli_native_moodle_database extends moodle_database {
             throw new dml_exception('dbdriverproblem', $driverstatus);
         }
 
+        // Store the character set.
+        if (isset($dboptions['dbcollation'])) {
+            $charset = explode('_', $dboptions['dbcollation']);
+            $dboptions['dbcharset'] = $charset[0];
+        }
+
         $this->store_settings($dbhost, $dbuser, $dbpass, $dbname, $prefix, $dboptions);
 
         // dbsocket is used ONLY if host is NULL or 'localhost',
@@ -450,7 +456,12 @@ class mysqli_native_moodle_database extends moodle_database {
         }
 
         $this->query_start("--set_charset()", null, SQL_QUERY_AUX);
-        $this->mysqli->set_charset('utf8');
+        if (isset($dboptions['dbcharset'])) {
+            $this->mysqli->set_charset($dboptions['dbcharset']);
+        } else {
+            $this->mysqli->set_charset('utf8');
+        }
+
         $this->query_end(true);
 
         // If available, enforce strict mode for the session. That guaranties
@@ -1516,12 +1527,16 @@ class mysqli_native_moodle_database extends moodle_database {
 
     public function sql_equal($fieldname, $param, $casesensitive = true, $accentsensitive = true, $notequal = false) {
         $equalop = $notequal ? '<>' : '=';
+        $collate = 'utf8_bin';
+        if (isset($this->dboptions['dbcharset'])) {
+            $collate = $this->dboptions['dbcharset'] . '_bin';
+        }
         if ($casesensitive) {
             // Current MySQL versions do not support case sensitive and accent insensitive.
-            return "$fieldname COLLATE utf8_bin $equalop $param";
+            return "$fieldname COLLATE $collate $equalop $param";
         } else if ($accentsensitive) {
             // Case insensitive and accent sensitive, we can force a binary comparison once all texts are using the same case.
-            return "LOWER($fieldname) COLLATE utf8_bin $equalop LOWER($param)";
+            return "LOWER($fieldname) COLLATE $collate $equalop LOWER($param)";
         } else {
             // Case insensitive and accent insensitive. All collations are that way, but utf8_bin.
             $collation = '';
@@ -1554,13 +1569,18 @@ class mysqli_native_moodle_database extends moodle_database {
 
         $LIKE = $notlike ? 'NOT LIKE' : 'LIKE';
 
+        $collate = 'utf8_bin';
+        if (isset($this->dboptions['dbcharset'])) {
+            $collate = $this->dboptions['dbcharset'] . '_bin';
+        }
+
         if ($casesensitive) {
             // Current MySQL versions do not support case sensitive and accent insensitive.
-            return "$fieldname $LIKE $param COLLATE utf8_bin ESCAPE '$escapechar'";
+            return "$fieldname $LIKE $param COLLATE $collate ESCAPE '$escapechar'";
 
         } else if ($accentsensitive) {
             // Case insensitive and accent sensitive, we can force a binary comparison once all texts are using the same case.
-            return "LOWER($fieldname) $LIKE LOWER($param) COLLATE utf8_bin ESCAPE '$escapechar'";
+            return "LOWER($fieldname) $LIKE LOWER($param) COLLATE $collate ESCAPE '$escapechar'";
 
         } else {
             // Case insensitive and accent insensitive.

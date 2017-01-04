@@ -127,7 +127,8 @@ if (!empty($options['collation'])) {
                             }
                             // print_object($indexname);
                             // print_object($column->type);
-                            $sql = "ALTER TABLE $table->name ADD $uniqueorindex $indexname ($column->field(191)), DROP INDEX $indexname";
+                            // What if the index has more than one value? Must change.
+                            $sql = "ALTER TABLE $table->name ADD $uniqueorindex $indexname ($column->field(191)), DROP $uniqueorindex $indexname";
                             $DB->change_database_structure($sql);
                         }
                     }
