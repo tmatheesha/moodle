@@ -221,13 +221,13 @@ class mysql_sql_generator extends sql_generator {
         // Terrible kludge. If we're using utf8mb4 AND we're using InnoDB, we need to specify row format to
         // be either dynamic or compressed (default is compact) in order to allow for bigger indexes (MySQL
         // errors #1709 and #1071).
-        if (strtolower($engine) === 'innodb' && strpos($collation, 'utf8mb4_')) {
-            if ($this->mdb->is_compressed_row_format_supported()) {
-                $rowformat = "\n ROW_FORMAT=Compressed";
-            } else {
-                $rowformat = "\n ROW_FORMAT=Dynamic";
-            }
-        }
+        // if (strtolower($engine) === 'innodb' && strpos($collation, 'utf8mb4_') === 0) {
+            // if ($this->mdb->is_compressed_row_format_supported()) {
+            //     $rowformat = "\n ROW_FORMAT=Compressed";
+            // } else {
+            //     $rowformat = "\n ROW_FORMAT=Dynamic";
+            // }
+        // }
 
         $sqlarr = parent::getCreateTableSQL($xmldb_table);
 
@@ -266,6 +266,7 @@ class mysql_sql_generator extends sql_generator {
                 }
                 if (preg_match('/^CREATE INDEX ([^ ]+) ON '.$prevcreate.' (.*)$/s', $sql, $matches)) {
                     $prev = array_pop($sqls);
+                    // print_object($matches);
                     if (strpos($prev, '/*keyblock*/')) {
                         $prev = str_replace('/*keyblock*/', "\n, KEY $matches[1] $matches[2]/*keyblock*/", $prev);
                         $sqls[] = $prev;

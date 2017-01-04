@@ -416,6 +416,9 @@ class database_manager {
             return; // nothing to do
         }
 
+        // print_object($sqlarr);
+        // die();
+
         $tablenames = array();
         foreach ($xmldb_structure as $xmldb_table) {
             if ($xmldb_table instanceof xmldb_table) {
