@@ -217,18 +217,6 @@ class mysql_sql_generator extends sql_generator {
                 $rowformat = "\n ROW_FORMAT=Compressed";
             }
         }
-
-        // Terrible kludge. If we're using utf8mb4 AND we're using InnoDB, we need to specify row format to
-        // be either dynamic or compressed (default is compact) in order to allow for bigger indexes (MySQL
-        // errors #1709 and #1071).
-        // if (strtolower($engine) === 'innodb' && strpos($collation, 'utf8mb4_') === 0) {
-            // if ($this->mdb->is_compressed_row_format_supported()) {
-            //     $rowformat = "\n ROW_FORMAT=Compressed";
-            // } else {
-            //     $rowformat = "\n ROW_FORMAT=Dynamic";
-            // }
-        // }
-
         $sqlarr = parent::getCreateTableSQL($xmldb_table);
 
         // This is a very nasty hack that tries to use just one query per created table
@@ -295,6 +283,45 @@ class mysql_sql_generator extends sql_generator {
         }
 
         return $sqls;
+    }
+
+    /**
+     * Given one correct xmldb_index, returns the SQL statements
+     * needed to create it (in array).
+     *
+     * @param xmldb_table $xmldb_table The xmldb_table instance to create the index on.
+     * @param xmldb_index $xmldb_index The xmldb_index to create.
+     * @return array An array of SQL statements to create the index.
+     * @throws coding_exception Thrown if the xmldb_index does not validate with the xmldb_table.
+     */
+    public function getCreateIndexSQL($xmldb_table, $xmldb_index) {
+        if ($error = $xmldb_index->validateDefinition($xmldb_table)) {
+            throw new coding_exception($error);
+        }
+
+        $unique = '';
+        $suffix = 'ix';
+        if ($xmldb_index->getUnique()) {
+            $unique = ' UNIQUE';
+            $suffix = 'uix';
+        }
+
+        $index = 'CREATE' . $unique . ' INDEX ';
+        $index .= $this->getNameForObject($xmldb_table->getName(), implode(', ', $xmldb_index->getFields()), $suffix);
+        $index .= ' ON ' . $this->getTableName($xmldb_table);
+        $indexfields = $this->getEncQuoted($xmldb_index->getFields());
+        // print_object(XMLDB_TYPE_CHAR);
+        foreach ($indexfields as $key => $field) {
+            $fieldinfo = $xmldb_table->getField($field);
+            // print_object($fieldinfo);
+            if (!empty($fieldinfo) && $fieldinfo->getType() == XMLDB_TYPE_CHAR && $fieldinfo->getLength() > 191) {
+                $indexfields[$key] = $field . '(191)';
+            }
+        }
+        // print_object($indexfields);
+        $index .= ' (' . implode(', ', $indexfields) . ')';
+
+        return array($index);
     }
 
     /**
