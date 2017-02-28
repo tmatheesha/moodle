@@ -15,7 +15,7 @@
     along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 }}
 {{!
-    @template course/modchooser_item
+    @template core_course/modchooser_item
 
     Modchooser item.
 
@@ -26,6 +26,12 @@
         "value": "1",
         "label": "item one",
         "description": "description one",
+        "icon": {
+            "attributes": [
+                {"name": "src", "value": "https://raw.githubusercontent.com/moodle/moodle/master/pix/t/check.png"},
+                {"name": "alt", "value": "Action link's icon"}
+            ]
+        },
         "pinned": "pinned"
     }
 }}
