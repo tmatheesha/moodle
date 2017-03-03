@@ -137,7 +137,6 @@ before_script:
           sed -i \
             -e "s%= 'pgsql'%= 'mysqli'%" \
             -e "s%= 'username'%= 'travis'%" \
-            -e "s%=> 'utf8mb4_unicode_ci'%=> 'utf8mb4_bin'%" \
             config.php;
 
           mysql -u root -e 'SET GLOBAL innodb_file_format=barracuda;' ;

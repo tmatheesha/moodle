@@ -121,6 +121,21 @@ class mysqli_native_moodle_database extends moodle_database {
     }
 
     /**
+     * Returns the db related part of config.php
+     *
+     * @return stdClass Database config variables.
+     */
+    public function export_dbconfig() {
+        $cfg = parent::export_dbconfig();
+        // Don't write this configuration setting to config.php. We want to maintain
+        // automatic detection of the database collation.
+        if (isset($cfg->dboptions['dbcollation'])) {
+            unset($cfg->dboptions['dbcollation']);
+        }
+        return $cfg;
+    }
+
+    /**
      * Returns database family type - describes SQL dialect
      * Note: can be used before connect()
      * @return string db family name (mysql, postgres, mssql, oracle, etc.)
